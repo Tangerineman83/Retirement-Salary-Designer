@@ -41,18 +41,21 @@ function setupListeners() {
         });
     });
 
-    // Tooltips 
+    // Unified Smart Tooltip Engine (Handles both Inputs AND Slider Labels)
     const tooltip = document.getElementById('smart-tooltip');
+    const hideTooltip = () => tooltip.classList.remove('show');
+
+    // 1. Tooltips for Input Fields
     document.querySelectorAll('.pers-input').forEach(input => {
         input.addEventListener('input', (e) => extrapolate(e.target.dataset.pillar));
         
-        const showTooltip = (e) => {
+        const showInputTooltip = (e) => {
             const cat = e.target.dataset.cat;
             const pillar = e.target.dataset.pillar;
             const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
             
-            let b = pillar === 'home' && cat === 'rent' 
-                ? rldConfig.benchmarks.home.rent[state.tenure] 
+            let b = pillar === 'home' && cat === 'shelter' 
+                ? rldConfig.benchmarks.home.shelter[state.tenure] 
                 : rldConfig.benchmarks[pillar][cat];
 
             const name = rldConfig.benchmarks[pillar][cat].name;
@@ -68,12 +71,24 @@ function setupListeners() {
             tooltip.classList.add('show');
         };
 
-        const hideTooltip = () => tooltip.classList.remove('show');
-
-        input.addEventListener('focus', showTooltip);
-        input.addEventListener('mouseenter', showTooltip);
+        input.addEventListener('focus', showInputTooltip);
+        input.addEventListener('mouseenter', showInputTooltip);
         input.addEventListener('blur', hideTooltip);
         input.addEventListener('mouseleave', hideTooltip);
+    });
+
+    // 2. Tooltips for Staples/Signature/Designer Labels
+    document.querySelectorAll('.tt-trigger').forEach(label => {
+        label.addEventListener('mouseenter', (e) => {
+            const desc = e.currentTarget.dataset.desc;
+            tooltip.innerHTML = `<span class="tt-title" style="color:white; text-transform:none; font-family:'Inter', sans-serif; font-weight:400;">${desc}</span>`;
+            
+            const rect = e.currentTarget.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + window.scrollX - 20}px`;
+            tooltip.style.top = `${rect.top + window.scrollY - 60}px`;
+            tooltip.classList.add('show');
+        });
+        label.addEventListener('mouseleave', hideTooltip);
     });
 }
 
@@ -82,7 +97,6 @@ function togglePersonalize(id) {
     panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
 }
 
-// Pro-Rata Extrapolation Engine
 function extrapolate(pillar) {
     const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
     const inputs = document.querySelectorAll(`#pers-${pillar} .pers-input`);
@@ -93,15 +107,15 @@ function extrapolate(pillar) {
     inputs.forEach(input => {
         if (input.value && parseFloat(input.value) > 0) {
             const cat = input.dataset.cat;
-            let b = (pillar === 'home' && cat === 'rent') 
-                ? rldConfig.benchmarks.home.rent[state.tenure] 
+            let b = (pillar === 'home' && cat === 'shelter') 
+                ? rldConfig.benchmarks.home.shelter[state.tenure] 
                 : rldConfig.benchmarks[pillar][cat];
             
             const annualVal = parseFloat(input.value) * (52 / (52/freq));
 
             let score = 50;
             if (b.staples === b.designer) {
-                score = 50; // No range, ignore
+                score = 50; 
             } else if (annualVal <= b.staples) {
                 score = 0;
             } else if (annualVal >= b.designer) {
@@ -121,7 +135,6 @@ function extrapolate(pillar) {
 
     if (inputCount === 0) return;
 
-    // Average the proportional position of all inputted categories
     const averageScore = Math.round(totalSliderScore / inputCount);
     state[pillar] = averageScore;
     document.getElementById(`slider-${pillar}`).value = averageScore;
@@ -134,7 +147,7 @@ function calculateAll() {
     for (const pillar of ['essentials', 'home', 'living']) {
         const sliderVal = state[pillar];
         for (const [key, catData] of Object.entries(rldConfig.benchmarks[pillar])) {
-            let b = (pillar === 'home' && key === 'rent') ? catData[state.tenure] : catData;
+            let b = (pillar === 'home' && key === 'shelter') ? catData[state.tenure] : catData;
             if(b.staples === undefined) continue;
 
             let val = 0;
