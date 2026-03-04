@@ -1,0 +1,25 @@
+{
+    "tax": {
+        "personalAllowance": 12570,
+        "basicRate": 0.20,
+        "higherRateThreshold": 50270,
+        "higherRate": 0.40
+    },
+    "benchmarks": {
+        "foundations": {
+            "staples": 14200,
+            "signature": 18200,
+            "designer": 23500
+        },
+        "home": {
+            "owner": { "staples": 5500, "signature": 9100, "designer": 16000 },
+            "private": { "staples": 22000, "signature": 22000, "designer": 35000 },
+            "social": { "staples": 14500, "signature": 14500, "designer": 14500 }
+        },
+        "wellness": {
+            "staples": 4000,
+            "signature": 16000,
+            "designer": 38000
+        }
+    }
+}
