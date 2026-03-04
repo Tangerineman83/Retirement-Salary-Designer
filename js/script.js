@@ -1,11 +1,21 @@
-// Register the datalabels plugin with Chart.js
 Chart.register(ChartDataLabels);
 
 let rldConfig = null;
 let state = { tenure: 'owner', essentials: 50, home: 50, living: 50 };
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
-let charts = { polar: null, stacked: null }; 
+let charts = { polar: null, spline: null }; // Switched to Spline Area
+
+// Editorial Palette
+const palette = {
+    sage: '#A3C6C4',
+    sageFill: 'rgba(163, 198, 196, 0.4)',
+    stone: '#E8E6E1',
+    stoneFill: 'rgba(232, 230, 225, 0.6)',
+    orange: '#FF5A36',
+    orangeFill: 'rgba(255, 90, 54, 0.4)',
+    espresso: '#2B2625'
+};
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -44,15 +54,11 @@ function setupListeners() {
         });
     });
 
-    /* --- BULLETPROOF GLOBAL TOOLTIP ENGINE --- */
     const tooltip = document.getElementById('smart-tooltip');
     let tooltipTimeout;
 
-    const hideTooltip = () => {
-        tooltip.classList.remove('show');
-    };
+    const hideTooltip = () => tooltip.classList.remove('show');
 
-    // 1. Tooltips for Input Fields
     document.querySelectorAll('.pers-input').forEach(input => {
         input.addEventListener('input', (e) => extrapolate(e.target.dataset.pillar));
         
@@ -74,7 +80,6 @@ function setupListeners() {
             tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
             
             const rect = e.target.getBoundingClientRect();
-            // Centered above the element
             tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
             tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
             tooltip.classList.add('show');
@@ -86,12 +91,11 @@ function setupListeners() {
         input.addEventListener('blur', hideTooltip);
     });
 
-    // 2. Tooltips for Staples/Signature/Designer Labels
     document.querySelectorAll('.tt-trigger').forEach(label => {
         const showLabelTooltip = (e) => {
             clearTimeout(tooltipTimeout);
             const desc = e.currentTarget.dataset.desc;
-            tooltip.innerHTML = `<span style="color:white; font-family:'Inter', sans-serif; font-weight:400;">${desc}</span>`;
+            tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
             
             const rect = e.currentTarget.getBoundingClientRect();
             tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
@@ -101,12 +105,8 @@ function setupListeners() {
 
         label.addEventListener('mouseenter', showLabelTooltip);
         label.addEventListener('touchstart', showLabelTooltip, {passive: true});
-        
         label.addEventListener('mouseleave', hideTooltip);
-        label.addEventListener('touchend', () => {
-            // Delay hiding on touch so the user can actually read it
-            tooltipTimeout = setTimeout(hideTooltip, 2500);
-        });
+        label.addEventListener('touchend', () => tooltipTimeout = setTimeout(hideTooltip, 2500));
     });
 }
 
@@ -125,20 +125,14 @@ function extrapolate(pillar) {
     inputs.forEach(input => {
         if (input.value && parseFloat(input.value) > 0) {
             const cat = input.dataset.cat;
-            let b = (pillar === 'home' && cat === 'shelter') 
-                ? rldConfig.benchmarks.home.shelter[state.tenure] 
-                : rldConfig.benchmarks[pillar][cat];
-            
+            let b = (pillar === 'home' && cat === 'shelter') ? rldConfig.benchmarks.home.shelter[state.tenure] : rldConfig.benchmarks[pillar][cat];
             const annualVal = parseFloat(input.value) * (52 / (52/freq));
 
             let score = 50;
-            if (b.staples === b.designer) {
-                score = 50; 
-            } else if (annualVal <= b.staples) {
-                score = 0;
-            } else if (annualVal >= b.designer) {
-                score = 100;
-            } else if (annualVal <= b.signature) {
+            if (b.staples === b.designer) score = 50; 
+            else if (annualVal <= b.staples) score = 0;
+            else if (annualVal >= b.designer) score = 100;
+            else if (annualVal <= b.signature) {
                 if (b.signature === b.staples) score = 50;
                 else score = ((annualVal - b.staples) / (b.signature - b.staples)) * 50;
             } else {
@@ -152,10 +146,8 @@ function extrapolate(pillar) {
     });
 
     if (inputCount === 0) return;
-
-    const averageScore = Math.round(totalSliderScore / inputCount);
-    state[pillar] = averageScore;
-    document.getElementById(`slider-${pillar}`).value = averageScore;
+    state[pillar] = Math.round(totalSliderScore / inputCount);
+    document.getElementById(`slider-${pillar}`).value = state[pillar];
     calculateAll();
 }
 
@@ -169,11 +161,8 @@ function calculateAll() {
             if(b.staples === undefined) continue;
 
             let val = 0;
-            if (sliderVal <= 50) {
-                val = b.staples + ((b.signature - b.staples) * (sliderVal / 50));
-            } else {
-                val = b.signature + ((b.designer - b.signature) * ((sliderVal - 50) / 50));
-            }
+            if (sliderVal <= 50) val = b.staples + ((b.signature - b.staples) * (sliderVal / 50));
+            else val = b.signature + ((b.designer - b.signature) * ((sliderVal - 50) / 50));
             
             categoryData[`${pillar}_${key}`] = { value: val, shape: catData.shape, inf: catData.inflation };
             currentValues[pillar] += val;
@@ -209,44 +198,35 @@ function calculateAll() {
 function setupCharts() {
     const ctxPolar = document.getElementById('polarChart').getContext('2d');
     
-    // Polar Area Chart with Internal Datalabels
+    // Polar Area Chart (Sunburst equivalent)
     charts.polar = new Chart(ctxPolar, {
         type: 'polarArea',
         data: { 
             labels: ['Essentials', 'Home', 'Living'], 
             datasets: [{ 
-                data: [50, 50, 50], // Radius driven by Slider Score
-                backgroundColor: ['rgba(0, 212, 255, 0.7)', 'rgba(10, 37, 64, 0.7)', 'rgba(0, 163, 204, 0.7)'],
-                borderColor: ['#00d4ff', '#0a2540', '#00a3cc'],
+                data: [50, 50, 50],
+                backgroundColor: [palette.sage, palette.stone, palette.orange],
+                borderColor: [palette.sage, palette.stone, palette.orange],
                 borderWidth: 2
             }] 
         },
         options: { 
             responsive: true,
-            layout: { padding: 20 },
-            scales: {
-                r: {
-                    min: -20, // Prevents tiny scores from disappearing entirely
-                    max: 100,
-                    ticks: { display: false },
-                    grid: { color: 'rgba(0,0,0,0.05)' }
-                }
-            },
+            layout: { padding: 15 },
+            scales: { r: { min: -20, max: 100, ticks: { display: false }, grid: { color: 'rgba(0,0,0,0.03)' } } },
             plugins: { 
                 legend: { display: false }, 
-                tooltip: { enabled: false }, // Disabled native tooltip since we have internal labels now
+                tooltip: { enabled: false }, 
                 datalabels: {
-                    color: '#ffffff',
-                    font: { family: 'Inter', weight: 'bold', size: 12 },
+                    color: palette.espresso,
+                    font: { family: 'Space Grotesk', weight: '600', size: 11 },
                     textAlign: 'center',
                     formatter: function(value, context) {
-                        // value here is the 0-100 shape score. We want to display the £ amount.
                         const labelName = context.chart.data.labels[context.dataIndex];
                         let cashVal = 0;
                         if(labelName === 'Essentials') cashVal = currentValues.essentials;
                         if(labelName === 'Home') cashVal = currentValues.home;
                         if(labelName === 'Living') cashVal = currentValues.living;
-                        
                         return labelName + '\n£' + Math.round(cashVal).toLocaleString();
                     }
                 }
@@ -254,23 +234,34 @@ function setupCharts() {
         }
     });
 
-    const ctxStacked = document.getElementById('stackedChart').getContext('2d');
-    charts.stacked = new Chart(ctxStacked, {
-        type: 'bar',
+    const ctxSpline = document.getElementById('splineChart').getContext('2d');
+    
+    // Smooth Area Spline Chart (Replacing the rigid bar chart)
+    charts.spline = new Chart(ctxSpline, {
+        type: 'line',
         data: { 
-            labels: ['Age 67', '70', '75', '80', '85', '90'], 
+            labels: ['67 (Active)', '70', '75 (Comfort)', '80', '85 (Legacy)', '90'], 
             datasets: [
-                { label: 'Essentials', backgroundColor: '#00d4ff', data: [] },
-                { label: 'Home', backgroundColor: '#0a2540', data: [] },
-                { label: 'Living', backgroundColor: '#00a3cc', data: [] }
+                { label: 'Essentials', backgroundColor: palette.sageFill, borderColor: palette.sage, fill: true, tension: 0.4, data: [] },
+                { label: 'Home', backgroundColor: palette.stoneFill, borderColor: palette.stone, fill: true, tension: 0.4, data: [] },
+                { label: 'Living', backgroundColor: palette.orangeFill, borderColor: palette.orange, fill: true, tension: 0.4, data: [] }
             ] 
         },
         options: { 
             responsive: true, 
-            scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, 
+            scales: { x: { grid: { display: false } }, y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } }, 
             plugins: { 
-                legend: { position: 'bottom', labels: { boxWidth: 12 } },
-                datalabels: { display: false } // Turn off datalabels for the stacked chart
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Space Grotesk'} } },
+                datalabels: { display: false },
+                tooltip: {
+                    backgroundColor: palette.espresso,
+                    titleFont: { family: 'Space Grotesk', size: 13 },
+                    bodyFont: { family: 'Space Grotesk', size: 12 },
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; }
+                    }
+                }
             } 
         }
     });
@@ -285,10 +276,8 @@ function updateCharts() {
 
     for (const [key, data] of Object.entries(categoryData)) {
         const pillar = key.split('_')[0];
-        
         yearsArr.forEach((years, index) => {
             let projectedVal = data.value * Math.pow(1 + data.inf, years);
-            
             if (data.shape === 'taper' && years >= 13) projectedVal *= 0.5; 
             if (data.shape === 'spike' && years >= 13) projectedVal *= 1.5; 
 
@@ -298,8 +287,8 @@ function updateCharts() {
         });
     }
 
-    charts.stacked.data.datasets[0].data = dataE;
-    charts.stacked.data.datasets[1].data = dataH;
-    charts.stacked.data.datasets[2].data = dataL;
-    charts.stacked.update();
+    charts.spline.data.datasets[0].data = dataE;
+    charts.spline.data.datasets[1].data = dataH;
+    charts.spline.data.datasets[2].data = dataL;
+    charts.spline.update();
 }
