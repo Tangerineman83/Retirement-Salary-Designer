@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Salary Designer | Editorial Collection</title>
+    <title>Retirement Salary Designer</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 </head>
@@ -16,9 +15,15 @@
 
 <div class="app-container">
     <header class="designer-header">
-        <div>
-            <h1>Retirement Salary Designer</h1>
-            <p class="subtitle">Behavioral Architecture: The 2026/27 Collection</p>
+        <div class="header-top">
+            <div>
+                <h1>Retirement Salary Designer</h1>
+                <p class="subtitle">The 2026/27 Collection</p>
+            </div>
+            <div class="age-input-container">
+                <label for="user-age">Current Age</label>
+                <input type="number" id="user-age" value="67" min="50" max="95">
+            </div>
         </div>
     </header>
 
@@ -43,7 +48,7 @@
                 <button class="text-btn" onclick="togglePersonalize('essentials')">Curate this pillar +</button>
                 <div class="personalize-panel" id="pers-essentials">
                     <div class="panel-header">
-                        <span class="panel-desc">Curate your variable spend:</span>
+                        <span class="panel-desc">Enter one or more known spending need and we’ll work out the rest:</span>
                         <select class="freq-select" id="freq-essentials" onchange="extrapolate('essentials')">
                             <option value="52">Weekly</option>
                             <option value="12" selected>Monthly</option>
@@ -66,8 +71,8 @@
                 </div>
                 <div class="tenure-toggle">
                     <button class="toggle-btn active" data-tenure="owner">Homeowner</button>
-                    <button class="toggle-btn" data-tenure="private">Private Rent</button>
-                    <button class="toggle-btn" data-tenure="social">Social Rent</button>
+                    <button class="toggle-btn" data-tenure="mortgage">Homeowner (Mortgage)</button>
+                    <button class="toggle-btn" data-tenure="rent">Renter</button>
                 </div>
                 
                 <div class="slider-container">
@@ -82,14 +87,14 @@
                 <button class="text-btn" onclick="togglePersonalize('home')">Curate this pillar +</button>
                 <div class="personalize-panel" id="pers-home">
                     <div class="panel-header">
-                        <span class="panel-desc">Curate your home's baseline:</span>
+                        <span class="panel-desc">Enter one or more known spending need and we’ll work out the rest:</span>
                         <select class="freq-select" id="freq-home" onchange="extrapolate('home')">
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
                         </select>
                     </div>
                     <div class="input-grid">
-                        <label>Shelter (Rent/Mortgage): <input type="number" class="pers-input" data-cat="shelter" data-pillar="home" placeholder="£"></label>
+                        <label>Shelter (Rent/Mortgage): <input type="number" class="pers-input" id="input-shelter" data-cat="shelter" data-pillar="home" placeholder="£"></label>
                         <label>Property Tax: <input type="number" class="pers-input" data-cat="tax" data-pillar="home" placeholder="£"></label>
                         <label>Water & Sewerage: <input type="number" class="pers-input" data-cat="water" data-pillar="home" placeholder="£"></label>
                         <label>Home Protection: <input type="number" class="pers-input" data-cat="protection" data-pillar="home" placeholder="£"></label>
@@ -116,7 +121,7 @@
                 <button class="text-btn" onclick="togglePersonalize('living')">Curate this pillar +</button>
                 <div class="personalize-panel" id="pers-living">
                      <div class="panel-header">
-                        <span class="panel-desc">Curate your lifestyle & wellbeing costs:</span>
+                        <span class="panel-desc">Enter one or more known spending need and we’ll work out the rest:</span>
                         <select class="freq-select" id="freq-living" onchange="extrapolate('living')">
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
@@ -156,7 +161,7 @@
                 </div>
 
                 <div class="chart-card spline-wrapper">
-                    <h3>Life Chapters (Evolution)</h3>
+                    <h3>Life Chapters</h3>
                     <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
                     <canvas id="splineChart"></canvas>
                 </div>
