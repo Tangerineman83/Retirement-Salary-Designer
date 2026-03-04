@@ -12,14 +12,26 @@
     },
     "benchmarks": {
         "foundations": {
-            "staples": { "total": 14200, "food": 3900, "energy": 2500, "other": 7800 },
-            "signature": { "total": 18200, "food": 5500, "energy": 3000, "other": 9700 },
-            "designer": { "total": 23500, "food": 8000, "energy": 4000, "other": 11500 }
+            "staples": { "total": 14200, "food": 3900, "energy": 2500, "comms": 800, "other": 7000 },
+            "signature": { "total": 18200, "food": 5500, "energy": 3000, "comms": 1200, "other": 8500 },
+            "designer": { "total": 23500, "food": 8000, "energy": 4000, "comms": 2000, "other": 9500 }
         },
         "home": {
-            "owner": { "staples": 5500, "signature": 9100, "designer": 16000 },
-            "private": { "staples": 22000, "signature": 22000, "designer": 35000 },
-            "social": { "staples": 14500, "signature": 14500, "designer": 14500 }
+            "owner": { 
+                "staples": { "total": 5500, "base": 0, "counciltax": 1500, "maint": 4000 }, 
+                "signature": { "total": 9100, "base": 0, "counciltax": 2100, "maint": 7000 }, 
+                "designer": { "total": 16000, "base": 0, "counciltax": 4000, "maint": 12000 }
+            },
+            "private": { 
+                "staples": { "total": 22000, "base": 18000, "counciltax": 1500, "maint": 2500 }, 
+                "signature": { "total": 22000, "base": 18000, "counciltax": 2100, "maint": 1900 }, 
+                "designer": { "total": 35000, "base": 30000, "counciltax": 4000, "maint": 1000 }
+            },
+            "social": { 
+                "staples": { "total": 14500, "base": 12000, "counciltax": 1500, "maint": 1000 }, 
+                "signature": { "total": 14500, "base": 12000, "counciltax": 1500, "maint": 1000 }, 
+                "designer": { "total": 14500, "base": 12000, "counciltax": 1500, "maint": 1000 }
+            }
         },
         "wellness": {
             "staples": { "total": 4000, "health": 0, "travel": 1500, "leisure": 2500 },
