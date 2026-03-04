@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Salary Designer</title>
+    <title>Retirement Salary Designer | The Partner Platform</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
 </head>
 <body>
 
@@ -20,9 +22,15 @@
                 <h1>Retirement Salary Designer</h1>
                 <p class="subtitle">The 2026/27 Collection</p>
             </div>
-            <div class="age-input-container">
-                <label for="user-age">Current Age</label>
-                <input type="number" id="user-age" value="67" min="50" max="95">
+            <div class="header-inputs">
+                <div class="age-input-container">
+                    <label for="user-age">Current Age</label>
+                    <input type="number" id="user-age" value="67" min="50" max="95">
+                </div>
+                <div class="age-input-container">
+                    <label for="wealth-pot">Pension/Wealth Pot (£)</label>
+                    <input type="number" id="wealth-pot" value="500000" step="50000">
+                </div>
             </div>
         </div>
     </header>
@@ -120,7 +128,14 @@
 
                 <button class="text-btn" onclick="togglePersonalize('living')">Curate this pillar +</button>
                 <div class="personalize-panel" id="pers-living">
-                     <div class="panel-header">
+                    
+                    <div class="chapter-toggles">
+                        <span class="panel-desc">Curate your chapter transitions:</span>
+                        <label class="toggle-row"><input type="checkbox" id="toggle-travel" checked> Scale back international travel after age 75</label>
+                        <label class="toggle-row"><input type="checkbox" id="toggle-care"> Ring-fence a private later-life care fund (Age 80+)</label>
+                    </div>
+
+                    <div class="panel-header" style="margin-top:20px;">
                         <span class="panel-desc">Enter one or more known spending need and we’ll work out the rest:</span>
                         <select class="freq-select" id="freq-living" onchange="extrapolate('living')">
                             <option value="12" selected>Monthly</option>
@@ -136,6 +151,7 @@
                     </div>
                 </div>
             </section>
+
         </main>
 
         <aside class="outputs-section">
@@ -161,13 +177,43 @@
                 </div>
 
                 <div class="chart-card spline-wrapper">
-                    <h3>Life Chapters</h3>
-                    <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
+                    <h3>Life Chapters & Pot Depletion</h3>
+                    <p class="chart-desc">Your projected needs plotted against your current wealth pot.</p>
                     <canvas id="splineChart"></canvas>
                 </div>
+
+                <div id="partner-zone" class="partner-zone">
+                    <div class="partner-card" id="partner-bupa">
+                        <div class="pc-content">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Bupa_logo.svg" alt="Bupa" class="partner-logo">
+                            <div class="pc-text">
+                                <strong>Secure your Health Buffer</strong>
+                                <span>Explore preferred private medical plans based on your choices.</span>
+                            </div>
+                        </div>
+                        <button class="pc-btn">Explore</button>
+                    </div>
+
+                    <div class="partner-card" id="partner-savills">
+                        <div class="pc-content">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6d/Savills_logo.svg" alt="Savills" class="partner-logo" style="max-height: 20px;">
+                            <div class="pc-text">
+                                <strong>Designer Home Management</strong>
+                                <span>Explore premium estate care and property management.</span>
+                            </div>
+                        </div>
+                        <button class="pc-btn">Explore</button>
+                    </div>
+                </div>
+
             </div>
         </aside>
     </div>
+    
+    <div class="data-provenance">
+        <a href="#" onclick="alert('Data Provenance:\n\nThe foundational baselines driving this designer are powered by the independent Minimum Income Standard (MIS) 2024 societal research, conducted by the Centre for Research in Social Policy at Loughborough University. \n\nNo guff. Just robust, academic reality.'); return false;">Powered by 2024 UK Societal Research ⓘ</a>
+    </div>
+
 </div>
 
 <div id="smart-tooltip" class="smart-tooltip"></div>
