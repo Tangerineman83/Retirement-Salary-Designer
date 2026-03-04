@@ -5,38 +5,31 @@
         "higherRateThreshold": 50270,
         "higherRate": 0.40
     },
-    "inflation": {
-        "foundations": 0.025,
-        "home": 0.03,
-        "wellness": 0.11
-    },
     "benchmarks": {
         "foundations": {
-            "staples": { "total": 14200, "food": 3900, "energy": 2500, "comms": 800, "other": 7000 },
-            "signature": { "total": 18200, "food": 5500, "energy": 3000, "comms": 1200, "other": 8500 },
-            "designer": { "total": 23500, "food": 8000, "energy": 4000, "comms": 2000, "other": 9500 }
+            "food": { "staples": 3239, "signature": 6801, "designer": 8672, "inflation": 0.025, "shape": "linear", "name": "Food & Groceries" },
+            "energy": { "staples": 1245, "signature": 2151, "designer": 2151, "inflation": 0.03, "shape": "linear", "name": "Domestic Fuel" },
+            "water": { "staples": 480, "signature": 463, "designer": 463, "inflation": 0.02, "shape": "linear", "name": "Water Rates" },
+            "clothing": { "staples": 430, "signature": 1284, "designer": 1284, "inflation": 0.02, "shape": "linear", "name": "Clothing & Footwear" },
+            "household": { "staples": 1321, "signature": 3077, "designer": 5910, "inflation": 0.025, "shape": "linear", "name": "Household Goods & Services" },
+            "personal": { "staples": 1550, "signature": 2254, "designer": 2544, "inflation": 0.025, "shape": "linear", "name": "Personal Goods" }
         },
         "home": {
-            "owner": { 
-                "staples": { "total": 5500, "base": 0, "counciltax": 1500, "maint": 4000 }, 
-                "signature": { "total": 9100, "base": 0, "counciltax": 2100, "maint": 7000 }, 
-                "designer": { "total": 16000, "base": 0, "counciltax": 4000, "maint": 12000 }
+            "rent": { 
+                "owner": { "staples": 0, "signature": 0, "designer": 0 },
+                "private": { "staples": 18000, "signature": 22000, "designer": 35000 },
+                "social": { "staples": 12000, "signature": 12000, "designer": 12000 },
+                "inflation": 0.03, "shape": "linear", "name": "Rent Base" 
             },
-            "private": { 
-                "staples": { "total": 22000, "base": 18000, "counciltax": 1500, "maint": 2500 }, 
-                "signature": { "total": 22000, "base": 18000, "counciltax": 2100, "maint": 1900 }, 
-                "designer": { "total": 35000, "base": 30000, "counciltax": 4000, "maint": 1000 }
-            },
-            "social": { 
-                "staples": { "total": 14500, "base": 12000, "counciltax": 1500, "maint": 1000 }, 
-                "signature": { "total": 14500, "base": 12000, "counciltax": 1500, "maint": 1000 }, 
-                "designer": { "total": 14500, "base": 12000, "counciltax": 1500, "maint": 1000 }
-            }
+            "counciltax": { "staples": 1112, "signature": 1507, "designer": 1507, "inflation": 0.03, "shape": "linear", "name": "Council Tax" },
+            "insurance": { "staples": 56, "signature": 245, "designer": 245, "inflation": 0.04, "shape": "linear", "name": "Insurances" },
+            "maintenance": { "staples": 200, "signature": 1202, "designer": 1303, "inflation": 0.035, "shape": "linear", "name": "Maintenance" }
         },
         "wellness": {
-            "staples": { "total": 4000, "health": 0, "travel": 1500, "leisure": 2500 },
-            "signature": { "total": 16000, "health": 3500, "travel": 5000, "leisure": 7500 },
-            "designer": { "total": 38000, "health": 12000, "travel": 15000, "leisure": 11000 }
+            "social": { "staples": 2855, "signature": 7181, "designer": 13390, "inflation": 0.025, "shape": "linear", "name": "Social & Leisure" },
+            "alcohol": { "staples": 356, "signature": 747, "designer": 902, "inflation": 0.025, "shape": "linear", "name": "Alcohol & Dining" },
+            "travel": { "staples": 539, "signature": 4663, "designer": 5440, "inflation": 0.03, "shape": "taper", "name": "Transport & Holidays" },
+            "health": { "staples": 0, "signature": 3500, "designer": 12000, "inflation": 0.08, "shape": "spike", "name": "Private Healthcare" }
         }
     }
 }
