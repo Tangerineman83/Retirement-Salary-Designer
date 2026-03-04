@@ -5,8 +5,13 @@
         "higherRateThreshold": 50270,
         "higherRate": 0.40
     },
+    "inflation": {
+        "essentials": 0.025,
+        "home": 0.03,
+        "living": 0.11
+    },
     "benchmarks": {
-        "foundations": {
+        "essentials": {
             "food": { "staples": 3239, "signature": 6801, "designer": 8672, "inflation": 0.025, "shape": "linear", "name": "Food & Groceries" },
             "energy": { "staples": 1245, "signature": 2151, "designer": 2151, "inflation": 0.03, "shape": "linear", "name": "Domestic Fuel" },
             "water": { "staples": 480, "signature": 463, "designer": 463, "inflation": 0.02, "shape": "linear", "name": "Water Rates" },
@@ -25,7 +30,7 @@
             "insurance": { "staples": 56, "signature": 245, "designer": 245, "inflation": 0.04, "shape": "linear", "name": "Insurances" },
             "maintenance": { "staples": 200, "signature": 1202, "designer": 1303, "inflation": 0.035, "shape": "linear", "name": "Maintenance" }
         },
-        "wellness": {
+        "living": {
             "social": { "staples": 2855, "signature": 7181, "designer": 13390, "inflation": 0.025, "shape": "linear", "name": "Social & Leisure" },
             "alcohol": { "staples": 356, "signature": 747, "designer": 902, "inflation": 0.025, "shape": "linear", "name": "Alcohol & Dining" },
             "travel": { "staples": 539, "signature": 4663, "designer": 5440, "inflation": 0.03, "shape": "taper", "name": "Transport & Holidays" },
