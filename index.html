@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Salary Designer | V5</title>
+    <title>Retirement Salary Designer | V6</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,7 +14,7 @@
     <header class="designer-header">
         <div>
             <h1>Retirement Salary Designer</h1>
-            <p class="subtitle">Personal Architecture: 2026/27</p>
+            <p class="subtitle">Behavioral Architecture: 2026/27</p>
         </div>
     </header>
 
@@ -23,7 +23,7 @@
             
             <section class="pillar-section" id="pillar-essentials">
                 <div class="pillar-header">
-                    <h2>1. Essentials</h2>
+                    <h2>1. Essentials <span class="sub-header-text">(Running the person)</span></h2>
                     <span class="live-price" id="val-essentials">£0</span>
                 </div>
                 
@@ -31,16 +31,16 @@
                     <input type="range" class="blender-slider snap-slider" id="slider-essentials" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
-                        <div class="label-group" title="Reliable basics, mostly supermarket own-brands."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
-                        <div class="label-group" title="50% branded goods, comfortable energy usage, and upgraded tech."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
-                        <div class="label-group" title="Premium goods, unrestricted energy, and frictionless living."><strong>Designer</strong><span>The Premium Edit ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="Reliable basics, mostly supermarket own-brands. The minimum socially acceptable standard."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="50% branded goods, comfortable energy usage, and upgraded tech subscriptions."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="Premium organic goods, unrestricted energy, and frictionless living."><strong>Designer</strong><span>The Premium Edit ⓘ</span></div>
                     </div>
                 </div>
                 
                 <button class="text-btn" onclick="togglePersonalize('essentials')">⚙️ Personalise Breakdown</button>
                 <div class="personalize-panel" id="pers-essentials">
                     <div class="panel-header">
-                        <span class="panel-desc">Define your spend to auto-adjust the blend:</span>
+                        <span class="panel-desc">Define your variable spend:</span>
                         <select class="freq-select" id="freq-essentials" onchange="extrapolate('essentials')">
                             <option value="52">Weekly</option>
                             <option value="12" selected>Monthly</option>
@@ -48,19 +48,17 @@
                         </select>
                     </div>
                     <div class="input-grid">
-                        <label>Food & Groceries: <input type="number" class="pers-input" data-cat="food" data-pillar="essentials" placeholder="£"></label>
+                        <label>Groceries & Household: <input type="number" class="pers-input" data-cat="groceries" data-pillar="essentials" placeholder="£"></label>
                         <label>Domestic Energy: <input type="number" class="pers-input" data-cat="energy" data-pillar="essentials" placeholder="£"></label>
-                        <label>Water Rates: <input type="number" class="pers-input" data-cat="water" data-pillar="essentials" placeholder="£"></label>
-                        <label>Clothing/Footwear: <input type="number" class="pers-input" data-cat="clothing" data-pillar="essentials" placeholder="£"></label>
-                        <label>Household Goods: <input type="number" class="pers-input" data-cat="household" data-pillar="essentials" placeholder="£"></label>
-                        <label>Personal (Hair/Care): <input type="number" class="pers-input" data-cat="personal" data-pillar="essentials" placeholder="£"></label>
+                        <label>Connectivity & Media: <input type="number" class="pers-input" data-cat="connectivity" data-pillar="essentials" placeholder="£"></label>
+                        <label>Other Utilities: <input type="number" class="pers-input" data-cat="utilities" data-pillar="essentials" placeholder="£"></label>
                     </div>
                 </div>
             </section>
 
             <section class="pillar-section" id="pillar-home">
                 <div class="pillar-header">
-                    <h2>2. Home</h2>
+                    <h2>2. Home <span class="sub-header-text">(Running the building)</span></h2>
                     <span class="live-price" id="val-home">£0</span>
                 </div>
                 <div class="tenure-toggle">
@@ -73,33 +71,34 @@
                     <input type="range" class="blender-slider snap-slider" id="slider-home" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
-                        <div class="label-group" title="Basic insurance and a £200/yr DIY repair budget."><strong>Staples</strong><span>Essential Upkeep ⓘ</span></div>
-                        <div class="label-group" title="Full boiler cover and £500/yr for decorating/tradesmen."><strong>Signature</strong><span>Modern Maintenance ⓘ</span></div>
-                        <div class="label-group" title="Extensive cover, high-band council tax, and estate management."><strong>Designer</strong><span>Full Estate Care ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="Basic insurance and a modest DIY sinking fund for repairs."><strong>Staples</strong><span>Essential Upkeep ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="Full boiler cover, standard council tax, and budget for tradesmen."><strong>Signature</strong><span>Modern Maintenance ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="Extensive cover, high-band council tax, and full estate/garden management."><strong>Designer</strong><span>Full Estate Care ⓘ</span></div>
                     </div>
                 </div>
 
                 <button class="text-btn" onclick="togglePersonalize('home')">⚙️ Personalise Breakdown</button>
                 <div class="personalize-panel" id="pers-home">
                     <div class="panel-header">
-                        <span class="panel-desc">Define your structure costs:</span>
+                        <span class="panel-desc">Define your fixed contractual costs:</span>
                         <select class="freq-select" id="freq-home" onchange="extrapolate('home')">
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
                         </select>
                     </div>
                     <div class="input-grid">
-                        <label>Rent/Mortgage: <input type="number" class="pers-input" data-cat="rent" data-pillar="home" placeholder="£"></label>
-                        <label>Council Tax: <input type="number" class="pers-input" data-cat="counciltax" data-pillar="home" placeholder="£"></label>
-                        <label>Insurances: <input type="number" class="pers-input" data-cat="insurance" data-pillar="home" placeholder="£"></label>
-                        <label>Maintenance: <input type="number" class="pers-input" data-cat="maintenance" data-pillar="home" placeholder="£"></label>
+                        <label>Shelter (Rent/Mortgage): <input type="number" class="pers-input" data-cat="shelter" data-pillar="home" placeholder="£"></label>
+                        <label>Property Tax: <input type="number" class="pers-input" data-cat="tax" data-pillar="home" placeholder="£"></label>
+                        <label>Water & Sewerage: <input type="number" class="pers-input" data-cat="water" data-pillar="home" placeholder="£"></label>
+                        <label>Home Protection: <input type="number" class="pers-input" data-cat="protection" data-pillar="home" placeholder="£"></label>
+                        <label>Maintenance Fund: <input type="number" class="pers-input" data-cat="maintenance" data-pillar="home" placeholder="£"></label>
                     </div>
                 </div>
             </section>
 
             <section class="pillar-section" id="pillar-living">
                 <div class="pillar-header">
-                    <h2>3. Living</h2>
+                    <h2>3. Living <span class="sub-header-text">(Enjoying the years)</span></h2>
                     <span class="live-price" id="val-living">£0</span>
                 </div>
                 
@@ -107,26 +106,27 @@
                     <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
-                        <div class="label-group" title="Local leisure, free bus pass, 1 UK coach holiday, reliant on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
-                        <div class="label-group" title="3-year-old car, 1 Med holiday, and a £3.5k private diagnostics buffer."><strong>Signature</strong><span>Private Health Buffer ⓘ</span></div>
-                        <div class="label-group" title="Premium car replacement, long-haul travel, and full private medical cover."><strong>Designer</strong><span>Global & Comprehensive ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="Local leisure, free bus pass, 1 UK holiday, reliant entirely on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="Car ownership, European holidays, and a private healthcare diagnostic buffer."><strong>Signature</strong><span>Private Health Buffer ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="Premium car, long-haul travel, full PMI, and charitable giving."><strong>Designer</strong><span>Global & Comprehensive ⓘ</span></div>
                     </div>
                 </div>
 
                 <button class="text-btn" onclick="togglePersonalize('living')">⚙️ Personalise Breakdown</button>
                 <div class="personalize-panel" id="pers-living">
                      <div class="panel-header">
-                        <span class="panel-desc">Define your lifestyle details:</span>
+                        <span class="panel-desc">Define your lifestyle & wellbeing costs:</span>
                         <select class="freq-select" id="freq-living" onchange="extrapolate('living')">
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
                         </select>
                     </div>
                     <div class="input-grid">
-                        <label>Social & Leisure: <input type="number" class="pers-input" data-cat="social" data-pillar="living" placeholder="£"></label>
-                        <label>Dining & Alcohol: <input type="number" class="pers-input" data-cat="alcohol" data-pillar="living" placeholder="£"></label>
-                        <label>Travel & Motoring: <input type="number" class="pers-input" data-cat="travel" data-pillar="living" placeholder="£"></label>
-                        <label>Private Healthcare: <input type="number" class="pers-input" data-cat="health" data-pillar="living" placeholder="£"></label>
+                        <label>Transport & Mobility: <input type="number" class="pers-input" data-cat="transport" data-pillar="living" placeholder="£"></label>
+                        <label>Health & Wellness: <input type="number" class="pers-input" data-cat="health" data-pillar="living" placeholder="£"></label>
+                        <label>Leisure & Social: <input type="number" class="pers-input" data-cat="leisure" data-pillar="living" placeholder="£"></label>
+                        <label>Travel & Exploration: <input type="number" class="pers-input" data-cat="travel" data-pillar="living" placeholder="£"></label>
+                        <label>Life Protection & Giving: <input type="number" class="pers-input" data-cat="giving" data-pillar="living" placeholder="£"></label>
                     </div>
                 </div>
             </section>
