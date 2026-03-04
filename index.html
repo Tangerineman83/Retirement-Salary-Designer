@@ -3,116 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Salary Designer | 2026 Beta</title>
+    <title>Retirement Salary Designer | V2</title>
     <link rel="stylesheet" href="css/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <div class="app-container">
     <header class="designer-header">
-        <div class="header-content">
+        <div>
             <h1>Retirement Salary Designer</h1>
-            <p class="subtitle">Personal Architecture: 2026/27 Specification</p>
+            <p class="subtitle">Personal Architecture: 2026/27</p>
         </div>
-        <div class="status-badge">Beta v1.0</div>
     </header>
 
-    <main class="designer-grid">
-        <section class="pillar-section" id="pillar-foundations">
-            <div class="pillar-info">
-                <h2>1. The Foundations</h2>
-                <p>The "Capsule Wardrobe" of your daily life: Food, Energy, and Tech.</p>
-            </div>
-            <div class="grade-selector" data-pillar="foundations">
-                <div class="grade-card" data-grade="staples">
-                    <h3>Staples</h3>
-                    <p class="price" id="price-foundations-staples">-</p>
-                    <span class="desc">Reliable basics</span>
+    <div class="main-layout">
+        <main class="controls-section">
+            
+            <section class="pillar-section" id="pillar-foundations">
+                <div class="pillar-header">
+                    <h2>1. Foundations <span class="info-icon" title="Daily essentials: Food, Energy, Tech.">ⓘ</span></h2>
+                    <span class="live-price" id="val-foundations">£18,200</span>
                 </div>
-                <div class="grade-card active" data-grade="signature">
-                    <h3>Signature</h3>
-                    <p class="price" id="price-foundations-signature">-</p>
-                    <span class="desc">Quality & Comfort</span>
+                <input type="range" class="blender-slider" id="slider-foundations" min="0" max="100" value="50">
+                <div class="slider-labels"><span>Staples</span><span>Signature</span><span>Designer</span></div>
+                
+                <button class="text-btn" onclick="togglePersonalize('foundations')">+ Personalise via Weekly Food Spend</button>
+                <div class="personalize-panel" id="pers-foundations">
+                    <label>Weekly Food Spend (£):</label>
+                    <input type="number" id="input-food" placeholder="e.g. 100">
+                    <button onclick="extrapolateFoundations()">Apply & Adjust</button>
+                    <div class="breakdown-data" id="breakdown-foundations"></div>
                 </div>
-                <div class="grade-card" data-grade="designer">
-                    <h3>Designer</h3>
-                    <p class="price" id="price-foundations-designer">-</p>
-                    <span class="desc">No compromises</span>
-                </div>
-            </div>
-        </section>
+            </section>
 
-        <section class="pillar-section" id="pillar-home">
-            <div class="pillar-info">
-                <h2>2. The Structure</h2>
+            <section class="pillar-section" id="pillar-home">
+                <div class="pillar-header">
+                    <h2>2. Structure <span class="info-icon" title="Social Rent = Subsidized housing via council/association.">ⓘ</span></h2>
+                    <span class="live-price" id="val-home">£9,100</span>
+                </div>
                 <div class="tenure-toggle">
-                    <button class="toggle-btn active" data-tenure="owner">Homeowner</button>
-                    <button class="toggle-btn" data-tenure="private">Private Renter</button>
-                    <button class="toggle-btn" data-tenure="social">Social Renter</button>
+                    <button class="toggle-btn active" data-tenure="owner">Owner</button>
+                    <button class="toggle-btn" data-tenure="private">Private Rent</button>
+                    <button class="toggle-btn" data-tenure="social">Social Rent</button>
                 </div>
-            </div>
-            <div class="grade-selector" data-pillar="home">
-                <div class="grade-card active" data-grade="staples">
-                    <h3>Staples</h3>
-                    <p class="price" id="price-home-staples">-</p>
-                    <span class="desc">Core Maintenance</span>
-                </div>
-                <div class="grade-card" data-grade="signature">
-                    <h3>Signature</h3>
-                    <p class="price" id="price-home-signature">-</p>
-                    <span class="desc">Modern Standard</span>
-                </div>
-                <div class="grade-card" data-grade="designer">
-                    <h3>Designer</h3>
-                    <p class="price" id="price-home-designer">-</p>
-                    <span class="desc">Full Management</span>
-                </div>
-            </div>
-        </section>
+                <input type="range" class="blender-slider" id="slider-home" min="0" max="100" value="50">
+                <div class="slider-labels"><span>Staples</span><span>Signature</span><span>Designer</span></div>
+            </section>
 
-        <section class="pillar-section" id="pillar-wellness">
-            <div class="pillar-info">
-                <h2>3. The Details</h2>
-                <p>Personal health-certainty and your lifestyle flair.</p>
+            <section class="pillar-section" id="pillar-wellness">
+                <div class="pillar-header">
+                    <h2>3. Wellness <span class="info-icon" title="Health certainty, travel, and leisure.">ⓘ</span></h2>
+                    <span class="live-price" id="val-wellness">£16,000</span>
+                </div>
+                <input type="range" class="blender-slider" id="slider-wellness" min="0" max="100" value="50">
+                <div class="slider-labels"><span>Staples</span><span>Signature</span><span>Designer</span></div>
+                <div class="breakdown-data" id="breakdown-wellness"></div>
+            </section>
+        </main>
+
+        <aside class="outputs-section">
+            <div class="chart-card">
+                <h3>Salary Shape</h3>
+                <canvas id="donutChart"></canvas>
             </div>
-            <div class="grade-selector" data-pillar="wellness">
-                <div class="grade-card active" data-grade="staples">
-                    <h3>Staples</h3>
-                    <p class="price" id="price-wellness-staples">-</p>
-                    <span class="desc">Local Focus</span>
-                </div>
-                <div class="grade-card" data-grade="signature">
-                    <h3>Signature</h3>
-                    <p class="price" id="price-wellness-signature">-</p>
-                    <span class="desc">Health Buffer</span>
-                </div>
-                <div class="grade-card" data-grade="designer">
-                    <h3>Designer</h3>
-                    <p class="price" id="price-wellness-designer">-</p>
-                    <span class="desc">Private Floor</span>
-                </div>
+            <div class="chart-card">
+                <h3>Evolution (Age 67 - 90)</h3>
+                <canvas id="lineChart"></canvas>
             </div>
-        </section>
-    </main>
+        </aside>
+    </div>
 
     <footer class="salary-summary-bar">
         <div class="summary-content">
             <div class="metric">
-                <label>Your Take-Home Need (Net)</label>
+                <label>Net Need</label>
                 <span id="display-net">£0</span>
             </div>
             <div class="metric tax-metric">
-                <label>Tax Tailoring</label>
+                <label>Tax</label>
                 <span id="display-tax">+ £0</span>
             </div>
             <div class="metric primary">
-                <label>Proposed Retirement Salary</label>
+                <label>Gross Salary</label>
                 <span id="display-salary">£0</span>
             </div>
+            <button class="spec-btn" onclick="alert('Downloading JSON Config...')">Download</button>
         </div>
-        <button class="spec-btn">Download Specification</button>
     </footer>
 </div>
 
