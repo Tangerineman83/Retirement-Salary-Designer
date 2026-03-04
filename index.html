@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Salary Designer | V2</title>
+    <title>Retirement Salary Designer | V3</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -23,75 +23,123 @@
             
             <section class="pillar-section" id="pillar-foundations">
                 <div class="pillar-header">
-                    <h2>1. Foundations <span class="info-icon" title="Daily essentials: Food, Energy, Tech.">ⓘ</span></h2>
+                    <h2>1. Foundations</h2>
                     <span class="live-price" id="val-foundations">£18,200</span>
                 </div>
-                <input type="range" class="blender-slider" id="slider-foundations" min="0" max="100" value="50">
-                <div class="slider-labels"><span>Staples</span><span>Signature</span><span>Designer</span></div>
                 
-                <button class="text-btn" onclick="togglePersonalize('foundations')">+ Personalise via Weekly Food Spend</button>
+                <div class="slider-container">
+                    <input type="range" class="blender-slider snap-slider" id="slider-foundations" min="0" max="100" value="50">
+                    <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
+                    <div class="slider-labels">
+                        <div class="label-group"><strong>Staples</strong><span>The Value Basket</span></div>
+                        <div class="label-group"><strong>Signature</strong><span>The Comfort Standard</span></div>
+                        <div class="label-group"><strong>Designer</strong><span>The Premium Edit</span></div>
+                    </div>
+                </div>
+                
+                <button class="text-btn" onclick="togglePersonalize('foundations')">⚙️ Personalise Breakdown</button>
                 <div class="personalize-panel" id="pers-foundations">
-                    <label>Weekly Food Spend (£):</label>
-                    <input type="number" id="input-food" placeholder="e.g. 100">
-                    <button onclick="extrapolateFoundations()">Apply & Adjust</button>
-                    <div class="breakdown-data" id="breakdown-foundations"></div>
+                    <p class="panel-desc">Input your expected spend to adjust the blend:</p>
+                    <div class="input-grid">
+                        <label>Food/Groceries: <input type="number" id="input-f-food" placeholder="£" onchange="extrapolate('foundations')"></label>
+                        <label>Energy/Gas: <input type="number" id="input-f-energy" placeholder="£" onchange="extrapolate('foundations')"></label>
+                        <label>Comms/Tech: <input type="number" id="input-f-comms" placeholder="£" onchange="extrapolate('foundations')"></label>
+                        <select id="freq-foundations" onchange="extrapolate('foundations')">
+                            <option value="52">Weekly</option>
+                            <option value="12" selected>Monthly</option>
+                            <option value="1">Annually</option>
+                        </select>
+                    </div>
                 </div>
             </section>
 
             <section class="pillar-section" id="pillar-home">
                 <div class="pillar-header">
-                    <h2>2. Structure <span class="info-icon" title="Social Rent = Subsidized housing via council/association.">ⓘ</span></h2>
+                    <h2>2. Structure</h2>
                     <span class="live-price" id="val-home">£9,100</span>
                 </div>
                 <div class="tenure-toggle">
-                    <button class="toggle-btn active" data-tenure="owner">Owner</button>
+                    <button class="toggle-btn active" data-tenure="owner">Homeowner</button>
                     <button class="toggle-btn" data-tenure="private">Private Rent</button>
                     <button class="toggle-btn" data-tenure="social">Social Rent</button>
                 </div>
-                <input type="range" class="blender-slider" id="slider-home" min="0" max="100" value="50">
-                <div class="slider-labels"><span>Staples</span><span>Signature</span><span>Designer</span></div>
+                
+                <div class="slider-container">
+                    <input type="range" class="blender-slider snap-slider" id="slider-home" min="0" max="100" value="50">
+                    <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
+                    <div class="slider-labels">
+                        <div class="label-group"><strong>Staples</strong><span>Essential Upkeep</span></div>
+                        <div class="label-group"><strong>Signature</strong><span>Modern Maintenance</span></div>
+                        <div class="label-group"><strong>Designer</strong><span>Full Estate Care</span></div>
+                    </div>
+                </div>
+
+                <button class="text-btn" onclick="togglePersonalize('home')">⚙️ Personalise Breakdown</button>
+                <div class="personalize-panel" id="pers-home">
+                    <div class="input-grid">
+                        <label>Rent/Mortgage: <input type="number" id="input-h-base" placeholder="£" onchange="extrapolate('home')"></label>
+                        <label>Council Tax: <input type="number" id="input-h-counciltax" placeholder="£" onchange="extrapolate('home')"></label>
+                        <label>Maintenance: <input type="number" id="input-h-maint" placeholder="£" onchange="extrapolate('home')"></label>
+                        <select id="freq-home" onchange="extrapolate('home')">
+                            <option value="12" selected>Monthly</option>
+                            <option value="1">Annually</option>
+                        </select>
+                    </div>
+                </div>
             </section>
 
             <section class="pillar-section" id="pillar-wellness">
                 <div class="pillar-header">
-                    <h2>3. Wellness <span class="info-icon" title="Health certainty, travel, and leisure.">ⓘ</span></h2>
+                    <h2>3. Wellness</h2>
                     <span class="live-price" id="val-wellness">£16,000</span>
                 </div>
-                <input type="range" class="blender-slider" id="slider-wellness" min="0" max="100" value="50">
-                <div class="slider-labels"><span>Staples</span><span>Signature</span><span>Designer</span></div>
-                <div class="breakdown-data" id="breakdown-wellness"></div>
+                
+                <div class="slider-container">
+                    <input type="range" class="blender-slider snap-slider" id="slider-wellness" min="0" max="100" value="50">
+                    <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
+                    <div class="slider-labels">
+                        <div class="label-group"><strong>Staples</strong><span>Local & NHS Core</span></div>
+                        <div class="label-group"><strong>Signature</strong><span>Private Health Buffer</span></div>
+                        <div class="label-group"><strong>Designer</strong><span>Global & Comprehensive</span></div>
+                    </div>
+                </div>
+
+                <button class="text-btn" onclick="togglePersonalize('wellness')">⚙️ Personalise Breakdown</button>
+                <div class="personalize-panel" id="pers-wellness">
+                    <div class="input-grid">
+                        <label>Private Health: <input type="number" id="input-w-health" placeholder="£" onchange="extrapolate('wellness')"></label>
+                        <label>Travel/Holidays: <input type="number" id="input-w-travel" placeholder="£" onchange="extrapolate('wellness')"></label>
+                        <label>Leisure/Hobbies: <input type="number" id="input-w-leisure" placeholder="£" onchange="extrapolate('wellness')"></label>
+                        <select id="freq-wellness" onchange="extrapolate('wellness')">
+                            <option value="12" selected>Monthly</option>
+                            <option value="1">Annually</option>
+                        </select>
+                    </div>
+                </div>
             </section>
         </main>
 
         <aside class="outputs-section">
-            <div class="chart-card">
-                <h3>Salary Shape</h3>
-                <canvas id="donutChart"></canvas>
+            <div class="chart-card donut-wrapper">
+                <h3>Your Retirement Salary</h3>
+                <div class="donut-container">
+                    <canvas id="donutChart"></canvas>
+                    <div class="donut-center">
+                        <span class="center-label">Gross Required</span>
+                        <span class="center-gross" id="display-salary">£0</span>
+                        <div class="center-net-tax">
+                            Net: <span id="display-net">£0</span><br>
+                            Tax: <span id="display-tax" class="tax-text">+£0</span>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="chart-card">
-                <h3>Evolution (Age 67 - 90)</h3>
-                <canvas id="lineChart"></canvas>
+                <h3>Projected Evolution (Stacked)</h3>
+                <canvas id="stackedChart"></canvas>
             </div>
         </aside>
     </div>
-
-    <footer class="salary-summary-bar">
-        <div class="summary-content">
-            <div class="metric">
-                <label>Net Need</label>
-                <span id="display-net">£0</span>
-            </div>
-            <div class="metric tax-metric">
-                <label>Tax</label>
-                <span id="display-tax">+ £0</span>
-            </div>
-            <div class="metric primary">
-                <label>Gross Salary</label>
-                <span id="display-salary">£0</span>
-            </div>
-            <button class="spec-btn" onclick="alert('Downloading JSON Config...')">Download</button>
-        </div>
-    </footer>
 </div>
 
 <script src="js/script.js"></script>
