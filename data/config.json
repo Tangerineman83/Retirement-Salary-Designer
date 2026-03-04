@@ -5,11 +5,16 @@
         "higherRateThreshold": 50270,
         "higherRate": 0.40
     },
+    "inflation": {
+        "foundations": 0.025,
+        "home": 0.03,
+        "wellness": 0.11
+    },
     "benchmarks": {
         "foundations": {
-            "staples": 14200,
-            "signature": 18200,
-            "designer": 23500
+            "staples": { "total": 14200, "food": 3900, "energy": 2500, "other": 7800 },
+            "signature": { "total": 18200, "food": 5500, "energy": 3000, "other": 9700 },
+            "designer": { "total": 23500, "food": 8000, "energy": 4000, "other": 11500 }
         },
         "home": {
             "owner": { "staples": 5500, "signature": 9100, "designer": 16000 },
@@ -17,9 +22,9 @@
             "social": { "staples": 14500, "signature": 14500, "designer": 14500 }
         },
         "wellness": {
-            "staples": 4000,
-            "signature": 16000,
-            "designer": 38000
+            "staples": { "total": 4000, "health": 0, "travel": 1500, "leisure": 2500 },
+            "signature": { "total": 16000, "health": 3500, "travel": 5000, "leisure": 7500 },
+            "designer": { "total": 38000, "health": 12000, "travel": 15000, "leisure": 11000 }
         }
     }
 }
