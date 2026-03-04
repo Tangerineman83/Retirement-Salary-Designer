@@ -1,7 +1,7 @@
 let rldConfig = null;
-let state = { tenure: 'owner', foundations: 50, home: 50, wellness: 50 };
-let currentValues = { foundations: 0, home: 0, wellness: 0, gross: 0, net: 0, tax: 0 };
-let categoryData = {}; // Stores calculated values per exhaustive category
+let state = { tenure: 'owner', essentials: 50, home: 50, living: 50 };
+let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
+let categoryData = {}; 
 let charts = { donut: null, stacked: null };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -19,7 +19,7 @@ function initApp() {
 }
 
 function setupListeners() {
-    ['foundations', 'home', 'wellness'].forEach(pillar => {
+    ['essentials', 'home', 'living'].forEach(pillar => {
         const slider = document.getElementById(`slider-${pillar}`);
         slider.addEventListener('input', (e) => {
             let val = parseInt(e.target.value);
@@ -41,17 +41,16 @@ function setupListeners() {
         });
     });
 
-    // Setup Smart Tooltips & Extrapolation on Inputs
+    // Tooltips 
     const tooltip = document.getElementById('smart-tooltip');
     document.querySelectorAll('.pers-input').forEach(input => {
         input.addEventListener('input', (e) => extrapolate(e.target.dataset.pillar));
         
-        input.addEventListener('focus', (e) => {
+        const showTooltip = (e) => {
             const cat = e.target.dataset.cat;
             const pillar = e.target.dataset.pillar;
             const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
             
-            // Get benchmarks based on tenure/category
             let b = pillar === 'home' && cat === 'rent' 
                 ? rldConfig.benchmarks.home.rent[state.tenure] 
                 : rldConfig.benchmarks[pillar][cat];
@@ -67,52 +66,72 @@ function setupListeners() {
             tooltip.style.left = `${rect.left + window.scrollX}px`;
             tooltip.style.top = `${rect.top + window.scrollY - 50}px`;
             tooltip.classList.add('show');
-        });
+        };
 
-        input.addEventListener('blur', () => tooltip.classList.remove('show'));
+        const hideTooltip = () => tooltip.classList.remove('show');
+
+        input.addEventListener('focus', showTooltip);
+        input.addEventListener('mouseenter', showTooltip);
+        input.addEventListener('blur', hideTooltip);
+        input.addEventListener('mouseleave', hideTooltip);
     });
 }
 
-// Extrapolation Engine: Reverse maps total inputs to slider value
+function togglePersonalize(id) {
+    const panel = document.getElementById(`pers-${id}`);
+    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+}
+
+// Pro-Rata Extrapolation Engine
 function extrapolate(pillar) {
     const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
-    let totalInputAnnual = 0;
+    const inputs = document.querySelectorAll(`#pers-${pillar} .pers-input`);
     
-    document.querySelectorAll(`#pers-${pillar} .pers-input`).forEach(input => {
-        if (input.value) totalInputAnnual += (parseFloat(input.value) * (52 / (52/freq)));
+    let totalSliderScore = 0;
+    let inputCount = 0;
+
+    inputs.forEach(input => {
+        if (input.value && parseFloat(input.value) > 0) {
+            const cat = input.dataset.cat;
+            let b = (pillar === 'home' && cat === 'rent') 
+                ? rldConfig.benchmarks.home.rent[state.tenure] 
+                : rldConfig.benchmarks[pillar][cat];
+            
+            const annualVal = parseFloat(input.value) * (52 / (52/freq));
+
+            let score = 50;
+            if (b.staples === b.designer) {
+                score = 50; // No range, ignore
+            } else if (annualVal <= b.staples) {
+                score = 0;
+            } else if (annualVal >= b.designer) {
+                score = 100;
+            } else if (annualVal <= b.signature) {
+                if (b.signature === b.staples) score = 50;
+                else score = ((annualVal - b.staples) / (b.signature - b.staples)) * 50;
+            } else {
+                if (b.designer === b.signature) score = 100;
+                else score = 50 + (((annualVal - b.signature) / (b.designer - b.signature)) * 50);
+            }
+            
+            totalSliderScore += score;
+            inputCount++;
+        }
     });
 
-    if (totalInputAnnual === 0) return;
+    if (inputCount === 0) return;
 
-    // Calculate baseline totals for the pillar
-    let sumStaples = 0, sumSignature = 0, sumDesigner = 0;
-    for (const [key, catData] of Object.entries(rldConfig.benchmarks[pillar])) {
-        let b = (pillar === 'home' && key === 'rent') ? catData[state.tenure] : catData;
-        if(b.staples !== undefined) sumStaples += b.staples;
-        if(b.signature !== undefined) sumSignature += b.signature;
-        if(b.designer !== undefined) sumDesigner += b.designer;
-    }
-
-    let newVal = 50;
-    if (totalInputAnnual <= sumStaples) newVal = 0;
-    else if (totalInputAnnual >= sumDesigner) newVal = 100;
-    else if (totalInputAnnual <= sumSignature) {
-        newVal = ((totalInputAnnual - sumStaples) / (sumSignature - sumStaples)) * 50;
-    } else {
-        newVal = 50 + (((totalInputAnnual - sumSignature) / (sumDesigner - sumSignature)) * 50);
-    }
-
-    state[pillar] = Math.round(newVal);
-    document.getElementById(`slider-${pillar}`).value = state[pillar];
+    // Average the proportional position of all inputted categories
+    const averageScore = Math.round(totalSliderScore / inputCount);
+    state[pillar] = averageScore;
+    document.getElementById(`slider-${pillar}`).value = averageScore;
     calculateAll();
 }
 
-// Calculate individual category values based on slider position
 function calculateAll() {
-    currentValues.foundations = 0; currentValues.home = 0; currentValues.wellness = 0;
+    currentValues.essentials = 0; currentValues.home = 0; currentValues.living = 0;
     
-    // Loop exhaustive config to calculate precise value per category
-    for (const pillar of ['foundations', 'home', 'wellness']) {
+    for (const pillar of ['essentials', 'home', 'living']) {
         const sliderVal = state[pillar];
         for (const [key, catData] of Object.entries(rldConfig.benchmarks[pillar])) {
             let b = (pillar === 'home' && key === 'rent') ? catData[state.tenure] : catData;
@@ -130,7 +149,7 @@ function calculateAll() {
         }
     }
 
-    const gross = currentValues.foundations + currentValues.home + currentValues.wellness;
+    const gross = currentValues.essentials + currentValues.home + currentValues.living;
     let tax = 0;
     const pa = rldConfig.tax.personalAllowance;
 
@@ -146,8 +165,7 @@ function calculateAll() {
     currentValues.net = gross - tax;
     currentValues.tax = tax;
 
-    // Update UI
-    ['foundations', 'home', 'wellness'].forEach(p => {
+    ['essentials', 'home', 'living'].forEach(p => {
         document.getElementById(`val-${p}`).innerText = `£${Math.round(currentValues[p]).toLocaleString()}`;
     });
     document.getElementById('display-salary').innerText = `£${Math.round(gross).toLocaleString()}`;
@@ -161,7 +179,7 @@ function setupCharts() {
     const ctxDonut = document.getElementById('donutChart').getContext('2d');
     charts.donut = new Chart(ctxDonut, {
         type: 'doughnut',
-        data: { labels: ['Foundations', 'Structure', 'Wellness'], datasets: [{ data: [0,0,0], backgroundColor: ['#00d4ff', '#0a2540', '#00a3cc'], borderWidth: 0 }] },
+        data: { labels: ['Essentials', 'Home', 'Living'], datasets: [{ data: [0,0,0], backgroundColor: ['#00d4ff', '#0a2540', '#00a3cc'], borderWidth: 0 }] },
         options: { responsive: true, cutout: '82%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { return ' £' + Math.round(c.raw).toLocaleString(); } } } } }
     });
 
@@ -171,9 +189,9 @@ function setupCharts() {
         data: { 
             labels: ['Age 67', '70', '75', '80', '85', '90'], 
             datasets: [
-                { label: 'Foundations', backgroundColor: '#00d4ff', data: [] },
-                { label: 'Structure', backgroundColor: '#0a2540', data: [] },
-                { label: 'Wellness', backgroundColor: '#00a3cc', data: [] }
+                { label: 'Essentials', backgroundColor: '#00d4ff', data: [] },
+                { label: 'Home', backgroundColor: '#0a2540', data: [] },
+                { label: 'Living', backgroundColor: '#00a3cc', data: [] }
             ] 
         },
         options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
@@ -181,31 +199,29 @@ function setupCharts() {
 }
 
 function updateCharts() {
-    charts.donut.data.datasets[0].data = [currentValues.foundations, currentValues.home, currentValues.wellness];
+    charts.donut.data.datasets[0].data = [currentValues.essentials, currentValues.home, currentValues.living];
     charts.donut.update();
 
-    const dataF = [0,0,0,0,0,0]; const dataH = [0,0,0,0,0,0]; const dataW = [0,0,0,0,0,0];
-    const yearsArr = [0, 3, 8, 13, 18, 23]; // Age 67 to 90
+    const dataE = [0,0,0,0,0,0]; const dataH = [0,0,0,0,0,0]; const dataL = [0,0,0,0,0,0];
+    const yearsArr = [0, 3, 8, 13, 18, 23]; 
 
-    // Apply trajectory shape logic to individual categories
     for (const [key, data] of Object.entries(categoryData)) {
         const pillar = key.split('_')[0];
         
         yearsArr.forEach((years, index) => {
             let projectedVal = data.value * Math.pow(1 + data.inf, years);
             
-            // Trajectory Modeling
-            if (data.shape === 'taper' && years >= 13) projectedVal *= 0.5; // E.g., travel drops at 80
-            if (data.shape === 'spike' && years >= 13) projectedVal *= 1.5; // E.g., healthcare spikes at 80
+            if (data.shape === 'taper' && years >= 13) projectedVal *= 0.5; 
+            if (data.shape === 'spike' && years >= 13) projectedVal *= 1.5; 
 
-            if (pillar === 'foundations') dataF[index] += projectedVal;
+            if (pillar === 'essentials') dataE[index] += projectedVal;
             if (pillar === 'home') dataH[index] += projectedVal;
-            if (pillar === 'wellness') dataW[index] += projectedVal;
+            if (pillar === 'living') dataL[index] += projectedVal;
         });
     }
 
-    charts.stacked.data.datasets[0].data = dataF;
+    charts.stacked.data.datasets[0].data = dataE;
     charts.stacked.data.datasets[1].data = dataH;
-    charts.stacked.data.datasets[2].data = dataW;
+    charts.stacked.data.datasets[2].data = dataL;
     charts.stacked.update();
 }
