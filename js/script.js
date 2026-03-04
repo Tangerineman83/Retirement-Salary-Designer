@@ -1,5 +1,4 @@
 Chart.register(ChartDataLabels);
-Chart.register(window['chartjs-plugin-annotation']);
 
 let rldConfig = null;
 let state = { tenure: 'owner', essentials: 50, home: 50, living: 50 };
@@ -33,13 +32,10 @@ function initApp() {
 }
 
 function setupListeners() {
-    // Header Inputs
-    document.getElementById('user-age').addEventListener('change', calculateAll);
-    document.getElementById('wealth-pot').addEventListener('input', updateCharts); // Only needs to redraw chart lines
-
-    // Living Toggles
-    document.getElementById('toggle-travel').addEventListener('change', updateCharts);
-    document.getElementById('toggle-care').addEventListener('change', updateCharts);
+    // Current Age Input Listener
+    document.getElementById('user-age').addEventListener('change', () => {
+        calculateAll(); // Redraws charts based on new age
+    });
 
     ['essentials', 'home', 'living'].forEach(pillar => {
         const slider = document.getElementById(`slider-${pillar}`);
@@ -73,13 +69,16 @@ function setupListeners() {
         
         const showInputTooltip = (e) => {
             clearTimeout(tooltipTimeout);
-            if(e.target.disabled) return;
-
             const cat = e.target.dataset.cat;
             const pillar = e.target.dataset.pillar;
-            const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
             
-            let b = pillar === 'home' && cat === 'shelter' ? rldConfig.benchmarks.home.shelter[state.tenure] : rldConfig.benchmarks[pillar][cat];
+            // Do not show tooltip if disabled (e.g., owner shelter)
+            if(e.target.disabled) return;
+
+            const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
+            let b = pillar === 'home' && cat === 'shelter' 
+                ? rldConfig.benchmarks.home.shelter[state.tenure] 
+                : rldConfig.benchmarks[pillar][cat];
 
             const name = rldConfig.benchmarks[pillar][cat].name;
             const st = Math.round(b.staples / (52/ (52/freq))); 
@@ -104,7 +103,7 @@ function setupListeners() {
         const showLabelTooltip = (e) => {
             clearTimeout(tooltipTimeout);
             const desc = e.currentTarget.dataset.desc;
-            tooltip.innerHTML = `<span style="color:white; font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
+            tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
             
             const rect = e.currentTarget.getBoundingClientRect();
             tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
@@ -170,18 +169,6 @@ function extrapolate(pillar) {
     calculateAll();
 }
 
-function updatePartners() {
-    // Lead Gen Logic: Display Bupa if Living is high enough to trigger Private Health
-    const bupa = document.getElementById('partner-bupa');
-    if (state.living >= 50) { bupa.style.display = 'flex'; } 
-    else { bupa.style.display = 'none'; }
-
-    // Lead Gen Logic: Display Savills if Home is near Designer (Estate Management)
-    const savills = document.getElementById('partner-savills');
-    if (state.home >= 80) { savills.style.display = 'flex'; } 
-    else { savills.style.display = 'none'; }
-}
-
 function calculateAll() {
     currentValues.essentials = 0; currentValues.home = 0; currentValues.living = 0;
     const currentAge = parseInt(document.getElementById('user-age').value) || 67;
@@ -196,8 +183,10 @@ function calculateAll() {
             if (sliderVal <= 50) val = b.staples + ((b.signature - b.staples) * (sliderVal / 50));
             else val = b.signature + ((b.designer - b.signature) * ((sliderVal - 50) / 50));
             
-            // Baseline Mortgage Logic (Drops out at 75)
-            if (pillar === 'home' && key === 'shelter' && state.tenure === 'mortgage' && currentAge >= 75) { val = 0; }
+            // Instant Dashboard rule: if user is >= 75 and has a mortgage, the dashboard shouldn't charge them for it anymore
+            if (pillar === 'home' && key === 'shelter' && state.tenure === 'mortgage' && currentAge >= 75) {
+                val = 0;
+            }
 
             categoryData[`${pillar}_${key}`] = { value: val, shape: catData.shape, inf: catData.inflation };
             currentValues[pillar] += val;
@@ -227,12 +216,12 @@ function calculateAll() {
     document.getElementById('display-net').innerText = `£${Math.round(currentValues.net).toLocaleString()}`;
     document.getElementById('display-tax').innerText = `+£${Math.round(tax).toLocaleString()}`;
 
-    updatePartners();
     updateCharts();
 }
 
 function setupCharts() {
     const ctxPolar = document.getElementById('polarChart').getContext('2d');
+    
     charts.polar = new Chart(ctxPolar, {
         type: 'polarArea',
         data: { 
@@ -245,12 +234,16 @@ function setupCharts() {
             }] 
         },
         options: { 
-            responsive: true, layout: { padding: 15 },
+            responsive: true,
+            layout: { padding: 15 },
             scales: { r: { min: -20, max: 100, ticks: { display: false }, grid: { color: 'rgba(0,0,0,0.03)' } } },
             plugins: { 
-                legend: { display: false }, tooltip: { enabled: false }, 
+                legend: { display: false }, 
+                tooltip: { enabled: false }, 
                 datalabels: {
-                    color: palette.espresso, font: { family: 'Space Grotesk', weight: '600', size: 11 }, textAlign: 'center',
+                    color: palette.espresso,
+                    font: { family: 'Space Grotesk', weight: '600', size: 11 },
+                    textAlign: 'center',
                     formatter: function(value, context) {
                         const labelName = context.chart.data.labels[context.dataIndex];
                         let cashVal = 0;
@@ -265,10 +258,11 @@ function setupCharts() {
     });
 
     const ctxSpline = document.getElementById('splineChart').getContext('2d');
+    
     charts.spline = new Chart(ctxSpline, {
         type: 'line',
         data: { 
-            labels: [], 
+            labels: [], // Populated dynamically
             datasets: [
                 { label: 'Essentials', backgroundColor: palette.sageFill, borderColor: palette.sage, fill: true, tension: 0.4, data: [] },
                 { label: 'Home', backgroundColor: palette.stoneFill, borderColor: palette.stone, fill: true, tension: 0.4, data: [] },
@@ -277,33 +271,20 @@ function setupCharts() {
         },
         options: { 
             responsive: true, 
-            scales: { x: { grid: { display: false } }, y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } }, 
+            scales: { 
+                x: { grid: { display: false } }, 
+                y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } 
+            }, 
             plugins: { 
                 legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Space Grotesk'} } },
                 datalabels: { display: false },
                 tooltip: {
-                    backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 }, padding: 12,
-                    callbacks: { label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; } }
-                },
-                annotation: {
-                    annotations: {
-                        exhaustionLine: {
-                            type: 'line',
-                            scaleID: 'x',
-                            value: 0, // Set dynamically
-                            borderColor: palette.orange,
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            label: {
-                                display: true,
-                                content: 'Pot Empty',
-                                position: 'start',
-                                backgroundColor: palette.orange,
-                                color: '#fff',
-                                font: { family: 'Space Grotesk', size: 11 }
-                            },
-                            display: false
-                        }
+                    backgroundColor: palette.espresso,
+                    titleFont: { family: 'Space Grotesk', size: 13 },
+                    bodyFont: { family: 'Space Grotesk', size: 12 },
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; }
                     }
                 }
             } 
@@ -316,19 +297,12 @@ function updateCharts() {
     charts.polar.update();
 
     const startAge = parseInt(document.getElementById('user-age').value) || 67;
-    const initialPot = parseInt(document.getElementById('wealth-pot').value) || 0;
-    let runningPot = initialPot;
-    const endAge = 95; // Extended to 95 to allow pot to run out later
+    const endAge = 90;
     
     const labels = [];
     const dataE = []; const dataH = []; const dataL = [];
-    
-    // Explicit Toggles
-    const doTravelTaper = document.getElementById('toggle-travel').checked;
-    const doCareSpike = document.getElementById('toggle-care').checked;
 
-    let exhaustionIndex = -1;
-
+    // Calculate dynamic timeline starting from the user's age
     for (let age = startAge; age <= endAge; age++) {
         labels.push(age);
         const yearsPassed = age - startAge;
@@ -341,11 +315,11 @@ function updateCharts() {
 
             let projectedVal = data.value * Math.pow(1 + data.inf, yearsPassed);
             
-            // Explicit Age-based modifiers driven by Toggles
-            if (data.shape === 'taper' && age >= 75 && doTravelTaper) projectedVal *= 0.5; 
-            if (data.shape === 'spike' && age >= 80 && doCareSpike) projectedVal *= 2.5; // Significant spike for Care Ring-fence
+            // Age-based modifiers
+            if (data.shape === 'taper' && age >= 80) projectedVal *= 0.5; 
+            if (data.shape === 'spike' && age >= 80) projectedVal *= 1.5; 
             
-            // Mortgage Drop-off
+            // Dynamic Mortgage Drop-off (terminates entirely at age 75)
             if (pillar === 'home' && cat === 'shelter' && state.tenure === 'mortgage' && age >= 75) {
                 projectedVal = 0;
             }
@@ -353,30 +327,6 @@ function updateCharts() {
             if (pillar === 'essentials') eSum += projectedVal;
             if (pillar === 'home') hSum += projectedVal;
             if (pillar === 'living') lSum += projectedVal;
-        }
-
-        // Calculate Gross Need for the year based on tax
-        const totalNetNeed = eSum + hSum + lSum;
-        let totalGrossNeed = totalNetNeed; // Fallback
-        const pa = rldConfig.tax.personalAllowance;
-        
-        // Reverse engineer gross for pot depletion (simplified assumption of constant tax bands)
-        if (totalNetNeed > pa) {
-            const limitBasicNet = pa + ((rldConfig.tax.higherRateThreshold - pa) * (1 - rldConfig.tax.basicRate));
-            if (totalNetNeed <= limitBasicNet) {
-                totalGrossNeed = (totalNetNeed - pa * rldConfig.tax.basicRate) / (1 - rldConfig.tax.basicRate);
-            } else {
-                const basicTax = (rldConfig.tax.higherRateThreshold - pa) * rldConfig.tax.basicRate;
-                const netAboveHigher = totalNetNeed - limitBasicNet;
-                const grossAboveHigher = netAboveHigher / (1 - rldConfig.tax.higherRate);
-                totalGrossNeed = rldConfig.tax.higherRateThreshold + grossAboveHigher;
-            }
-        }
-
-        // Deplete Pot
-        runningPot -= totalGrossNeed;
-        if (runningPot <= 0 && exhaustionIndex === -1 && initialPot > 0) {
-            exhaustionIndex = age - startAge;
         }
 
         dataE.push(eSum);
@@ -388,14 +338,5 @@ function updateCharts() {
     charts.spline.data.datasets[0].data = dataE;
     charts.spline.data.datasets[1].data = dataH;
     charts.spline.data.datasets[2].data = dataL;
-
-    // Trigger Annotation Line
-    if (exhaustionIndex !== -1 && exhaustionIndex < (endAge - startAge)) {
-        charts.spline.options.plugins.annotation.annotations.exhaustionLine.value = exhaustionIndex;
-        charts.spline.options.plugins.annotation.annotations.exhaustionLine.display = true;
-    } else {
-        charts.spline.options.plugins.annotation.annotations.exhaustionLine.display = false;
-    }
-
     charts.spline.update();
 }
