@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Retirement Salary Designer | 2026 Beta</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -26,17 +26,17 @@
                 <p>The "Capsule Wardrobe" of your daily life: Food, Energy, and Tech.</p>
             </div>
             <div class="grade-selector" data-pillar="foundations">
-                <div class="grade-card" data-grade="staples" onclick="selectGrade('foundations', 'staples')">
+                <div class="grade-card" data-grade="staples">
                     <h3>Staples</h3>
                     <p class="price" id="price-foundations-staples">-</p>
                     <span class="desc">Reliable basics</span>
                 </div>
-                <div class="grade-card" data-grade="signature" onclick="selectGrade('foundations', 'signature')">
+                <div class="grade-card active" data-grade="signature">
                     <h3>Signature</h3>
                     <p class="price" id="price-foundations-signature">-</p>
                     <span class="desc">Quality & Comfort</span>
                 </div>
-                <div class="grade-card" data-grade="designer" onclick="selectGrade('foundations', 'designer')">
+                <div class="grade-card" data-grade="designer">
                     <h3>Designer</h3>
                     <p class="price" id="price-foundations-designer">-</p>
                     <span class="desc">No compromises</span>
@@ -48,23 +48,23 @@
             <div class="pillar-info">
                 <h2>2. The Structure</h2>
                 <div class="tenure-toggle">
-                    <button class="toggle-btn active" onclick="setTenure('owner')">Homeowner</button>
-                    <button class="toggle-btn" onclick="setTenure('private')">Private Renter</button>
-                    <button class="toggle-btn" onclick="setTenure('social')">Social Renter</button>
+                    <button class="toggle-btn active" data-tenure="owner">Homeowner</button>
+                    <button class="toggle-btn" data-tenure="private">Private Renter</button>
+                    <button class="toggle-btn" data-tenure="social">Social Renter</button>
                 </div>
             </div>
             <div class="grade-selector" data-pillar="home">
-                <div class="grade-card" data-grade="staples" onclick="selectGrade('home', 'staples')">
+                <div class="grade-card active" data-grade="staples">
                     <h3>Staples</h3>
                     <p class="price" id="price-home-staples">-</p>
                     <span class="desc">Core Maintenance</span>
                 </div>
-                <div class="grade-card" data-grade="signature" onclick="selectGrade('home', 'signature')">
+                <div class="grade-card" data-grade="signature">
                     <h3>Signature</h3>
                     <p class="price" id="price-home-signature">-</p>
                     <span class="desc">Modern Standard</span>
                 </div>
-                <div class="grade-card" data-grade="designer" onclick="selectGrade('home', 'designer')">
+                <div class="grade-card" data-grade="designer">
                     <h3>Designer</h3>
                     <p class="price" id="price-home-designer">-</p>
                     <span class="desc">Full Management</span>
@@ -78,17 +78,17 @@
                 <p>Personal health-certainty and your lifestyle flair.</p>
             </div>
             <div class="grade-selector" data-pillar="wellness">
-                <div class="grade-card" data-grade="staples" onclick="selectGrade('wellness', 'staples')">
+                <div class="grade-card active" data-grade="staples">
                     <h3>Staples</h3>
                     <p class="price" id="price-wellness-staples">-</p>
                     <span class="desc">Local Focus</span>
                 </div>
-                <div class="grade-card" data-grade="signature" onclick="selectGrade('wellness', 'signature')">
+                <div class="grade-card" data-grade="signature">
                     <h3>Signature</h3>
                     <p class="price" id="price-wellness-signature">-</p>
                     <span class="desc">Health Buffer</span>
                 </div>
-                <div class="grade-card" data-grade="designer" onclick="selectGrade('wellness', 'designer')">
+                <div class="grade-card" data-grade="designer">
                     <h3>Designer</h3>
                     <p class="price" id="price-wellness-designer">-</p>
                     <span class="desc">Private Floor</span>
@@ -116,6 +116,6 @@
     </footer>
 </div>
 
-<script src="script.js"></script>
+<script src="js/script.js"></script>
 </body>
 </html>
