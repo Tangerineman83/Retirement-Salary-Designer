@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Salary Designer | V8</title>
+    <title>Retirement Salary Designer | Editorial Collection</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 </head>
@@ -15,7 +18,7 @@
     <header class="designer-header">
         <div>
             <h1>Retirement Salary Designer</h1>
-            <p class="subtitle">Behavioral Architecture: 2026/27</p>
+            <p class="subtitle">Behavioral Architecture: The 2026/27 Collection</p>
         </div>
     </header>
 
@@ -24,13 +27,12 @@
             
             <section class="pillar-section" id="pillar-essentials">
                 <div class="pillar-header">
-                    <h2>1. Essentials <span class="sub-header-text">(Running the person)</span></h2>
+                    <h2>I. Essentials <span class="sub-header-text">(Running the person)</span></h2>
                     <span class="live-price" id="val-essentials">£0</span>
                 </div>
                 
                 <div class="slider-container">
                     <input type="range" class="blender-slider snap-slider" id="slider-essentials" min="0" max="100" value="50">
-                    <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
                         <div class="label-group tt-trigger" data-desc="Reliable basics, mostly supermarket own-brands. The minimum socially acceptable standard."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
                         <div class="label-group tt-trigger" data-desc="50% branded goods, comfortable energy usage, and upgraded tech subscriptions."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
@@ -38,10 +40,10 @@
                     </div>
                 </div>
                 
-                <button class="text-btn" onclick="togglePersonalize('essentials')">⚙️ Personalise Breakdown</button>
+                <button class="text-btn" onclick="togglePersonalize('essentials')">Curate this pillar +</button>
                 <div class="personalize-panel" id="pers-essentials">
                     <div class="panel-header">
-                        <span class="panel-desc">Define your variable spend:</span>
+                        <span class="panel-desc">Curate your variable spend:</span>
                         <select class="freq-select" id="freq-essentials" onchange="extrapolate('essentials')">
                             <option value="52">Weekly</option>
                             <option value="12" selected>Monthly</option>
@@ -59,7 +61,7 @@
 
             <section class="pillar-section" id="pillar-home">
                 <div class="pillar-header">
-                    <h2>2. Home <span class="sub-header-text">(Running the building)</span></h2>
+                    <h2>II. Home <span class="sub-header-text">(Running the building)</span></h2>
                     <span class="live-price" id="val-home">£0</span>
                 </div>
                 <div class="tenure-toggle">
@@ -70,7 +72,6 @@
                 
                 <div class="slider-container">
                     <input type="range" class="blender-slider snap-slider" id="slider-home" min="0" max="100" value="50">
-                    <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
                         <div class="label-group tt-trigger" data-desc="Basic insurance and a modest DIY sinking fund for repairs."><strong>Staples</strong><span>Essential Upkeep ⓘ</span></div>
                         <div class="label-group tt-trigger" data-desc="Full boiler cover, standard council tax, and budget for tradesmen."><strong>Signature</strong><span>Modern Maintenance ⓘ</span></div>
@@ -78,10 +79,10 @@
                     </div>
                 </div>
 
-                <button class="text-btn" onclick="togglePersonalize('home')">⚙️ Personalise Breakdown</button>
+                <button class="text-btn" onclick="togglePersonalize('home')">Curate this pillar +</button>
                 <div class="personalize-panel" id="pers-home">
                     <div class="panel-header">
-                        <span class="panel-desc">Define your fixed contractual costs:</span>
+                        <span class="panel-desc">Curate your home's baseline:</span>
                         <select class="freq-select" id="freq-home" onchange="extrapolate('home')">
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
@@ -99,13 +100,12 @@
 
             <section class="pillar-section" id="pillar-living">
                 <div class="pillar-header">
-                    <h2>3. Living <span class="sub-header-text">(Enjoying the years)</span></h2>
+                    <h2>III. Living <span class="sub-header-text">(Enjoying the years)</span></h2>
                     <span class="live-price" id="val-living">£0</span>
                 </div>
                 
                 <div class="slider-container">
                     <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50">
-                    <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
                         <div class="label-group tt-trigger" data-desc="Local leisure, free bus pass, 1 UK holiday, reliant entirely on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
                         <div class="label-group tt-trigger" data-desc="Car ownership, European holidays, and a private healthcare diagnostic buffer."><strong>Signature</strong><span>Private Health Buffer ⓘ</span></div>
@@ -113,10 +113,10 @@
                     </div>
                 </div>
 
-                <button class="text-btn" onclick="togglePersonalize('living')">⚙️ Personalise Breakdown</button>
+                <button class="text-btn" onclick="togglePersonalize('living')">Curate this pillar +</button>
                 <div class="personalize-panel" id="pers-living">
                      <div class="panel-header">
-                        <span class="panel-desc">Define your lifestyle & wellbeing costs:</span>
+                        <span class="panel-desc">Curate your lifestyle & wellbeing costs:</span>
                         <select class="freq-select" id="freq-living" onchange="extrapolate('living')">
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
@@ -136,28 +136,29 @@
         <aside class="outputs-section">
             <div class="sticky-wrapper">
                 
+                <div class="salary-dashboard">
+                    <div class="salary-total">
+                        <span class="sd-label">Target Gross Fit</span>
+                        <span class="sd-gross" id="display-salary">£0</span>
+                    </div>
+                    <div class="salary-breakdown">
+                        <div class="sd-net">The Net Fit: <span id="display-net">£0</span></div>
+                        <div class="sd-tax">The Tax Fit: <span id="display-tax">+£0</span></div>
+                    </div>
+                </div>
+
                 <div class="chart-card polar-wrapper">
                     <h3>Your Lifestyle Shape</h3>
-                    <p class="chart-desc">Radius visualizes intensity: Staples (Core) to Designer (Outer).</p>
+                    <p class="chart-desc">Radius visualizes intensity across your personalized collection.</p>
                     <div class="polar-container">
                         <canvas id="polarChart"></canvas>
                     </div>
                 </div>
 
-                <div class="salary-dashboard">
-                    <div class="salary-total">
-                        <span class="sd-label">Target Gross Salary</span>
-                        <span class="sd-gross" id="display-salary">£0</span>
-                    </div>
-                    <div class="salary-breakdown">
-                        <div class="sd-net">Net Target: <span id="display-net">£0</span></div>
-                        <div class="sd-tax">Tax Tailoring: <span id="display-tax">+£0</span></div>
-                    </div>
-                </div>
-
-                <div class="chart-card">
-                    <h3>Projected Evolution (Stacked)</h3>
-                    <canvas id="stackedChart"></canvas>
+                <div class="chart-card spline-wrapper">
+                    <h3>Life Chapters (Evolution)</h3>
+                    <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
+                    <canvas id="splineChart"></canvas>
                 </div>
             </div>
         </aside>
@@ -165,7 +166,6 @@
 </div>
 
 <div id="smart-tooltip" class="smart-tooltip"></div>
-
 <script src="js/script.js"></script>
 </body>
 </html>
