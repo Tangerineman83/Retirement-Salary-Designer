@@ -64,3 +64,17 @@ h1 { color: var(--blueprint-blue); margin: 0; font-size: 1.8rem; }
     .sticky-wrapper { position: relative; top: 0; height: auto; overflow: visible; }
     .input-grid { grid-template-columns: 1fr; }
 }
+
+/* Add this to your existing style.css */
+.sub-header-text {
+    font-size: 0.8rem;
+    color: #7a8c9f;
+    font-weight: 400;
+    margin-left: 8px;
+    font-family: 'Roboto Mono', monospace;
+}
+
+.tt-trigger {
+    cursor: help;
+}
+
