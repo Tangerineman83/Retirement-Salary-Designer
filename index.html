@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Salary Designer | V4</title>
+    <title>Retirement Salary Designer | V5</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -21,45 +21,46 @@
     <div class="main-layout">
         <main class="controls-section">
             
-            <section class="pillar-section" id="pillar-foundations">
+            <section class="pillar-section" id="pillar-essentials">
                 <div class="pillar-header">
-                    <h2>1. Foundations</h2>
-                    <span class="live-price" id="val-foundations">£0</span>
+                    <h2>1. Essentials</h2>
+                    <span class="live-price" id="val-essentials">£0</span>
                 </div>
                 
                 <div class="slider-container">
-                    <input type="range" class="blender-slider snap-slider" id="slider-foundations" min="0" max="100" value="50">
+                    <input type="range" class="blender-slider snap-slider" id="slider-essentials" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
-                        <div class="label-group" title="Reliable basics, mostly supermarket own-brands. Minimum socially acceptable standard."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
+                        <div class="label-group" title="Reliable basics, mostly supermarket own-brands."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
                         <div class="label-group" title="50% branded goods, comfortable energy usage, and upgraded tech."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
                         <div class="label-group" title="Premium goods, unrestricted energy, and frictionless living."><strong>Designer</strong><span>The Premium Edit ⓘ</span></div>
                     </div>
                 </div>
                 
-                <div class="personalize-panel visible" id="pers-foundations">
+                <button class="text-btn" onclick="togglePersonalize('essentials')">⚙️ Personalise Breakdown</button>
+                <div class="personalize-panel" id="pers-essentials">
                     <div class="panel-header">
                         <span class="panel-desc">Define your spend to auto-adjust the blend:</span>
-                        <select class="freq-select" id="freq-foundations" onchange="extrapolate('foundations')">
+                        <select class="freq-select" id="freq-essentials" onchange="extrapolate('essentials')">
                             <option value="52">Weekly</option>
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
                         </select>
                     </div>
                     <div class="input-grid">
-                        <label>Food & Groceries: <input type="number" class="pers-input" data-cat="food" data-pillar="foundations" placeholder="£"></label>
-                        <label>Domestic Energy: <input type="number" class="pers-input" data-cat="energy" data-pillar="foundations" placeholder="£"></label>
-                        <label>Water Rates: <input type="number" class="pers-input" data-cat="water" data-pillar="foundations" placeholder="£"></label>
-                        <label>Clothing/Footwear: <input type="number" class="pers-input" data-cat="clothing" data-pillar="foundations" placeholder="£"></label>
-                        <label>Household Goods: <input type="number" class="pers-input" data-cat="household" data-pillar="foundations" placeholder="£"></label>
-                        <label>Personal (Hair/Care): <input type="number" class="pers-input" data-cat="personal" data-pillar="foundations" placeholder="£"></label>
+                        <label>Food & Groceries: <input type="number" class="pers-input" data-cat="food" data-pillar="essentials" placeholder="£"></label>
+                        <label>Domestic Energy: <input type="number" class="pers-input" data-cat="energy" data-pillar="essentials" placeholder="£"></label>
+                        <label>Water Rates: <input type="number" class="pers-input" data-cat="water" data-pillar="essentials" placeholder="£"></label>
+                        <label>Clothing/Footwear: <input type="number" class="pers-input" data-cat="clothing" data-pillar="essentials" placeholder="£"></label>
+                        <label>Household Goods: <input type="number" class="pers-input" data-cat="household" data-pillar="essentials" placeholder="£"></label>
+                        <label>Personal (Hair/Care): <input type="number" class="pers-input" data-cat="personal" data-pillar="essentials" placeholder="£"></label>
                     </div>
                 </div>
             </section>
 
             <section class="pillar-section" id="pillar-home">
                 <div class="pillar-header">
-                    <h2>2. Structure</h2>
+                    <h2>2. Home</h2>
                     <span class="live-price" id="val-home">£0</span>
                 </div>
                 <div class="tenure-toggle">
@@ -78,7 +79,8 @@
                     </div>
                 </div>
 
-                <div class="personalize-panel visible" id="pers-home">
+                <button class="text-btn" onclick="togglePersonalize('home')">⚙️ Personalise Breakdown</button>
+                <div class="personalize-panel" id="pers-home">
                     <div class="panel-header">
                         <span class="panel-desc">Define your structure costs:</span>
                         <select class="freq-select" id="freq-home" onchange="extrapolate('home')">
@@ -95,14 +97,14 @@
                 </div>
             </section>
 
-            <section class="pillar-section" id="pillar-wellness">
+            <section class="pillar-section" id="pillar-living">
                 <div class="pillar-header">
-                    <h2>3. Wellness</h2>
-                    <span class="live-price" id="val-wellness">£0</span>
+                    <h2>3. Living</h2>
+                    <span class="live-price" id="val-living">£0</span>
                 </div>
                 
                 <div class="slider-container">
-                    <input type="range" class="blender-slider snap-slider" id="slider-wellness" min="0" max="100" value="50">
+                    <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
                         <div class="label-group" title="Local leisure, free bus pass, 1 UK coach holiday, reliant on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
@@ -111,19 +113,20 @@
                     </div>
                 </div>
 
-                <div class="personalize-panel visible" id="pers-wellness">
+                <button class="text-btn" onclick="togglePersonalize('living')">⚙️ Personalise Breakdown</button>
+                <div class="personalize-panel" id="pers-living">
                      <div class="panel-header">
                         <span class="panel-desc">Define your lifestyle details:</span>
-                        <select class="freq-select" id="freq-wellness" onchange="extrapolate('wellness')">
+                        <select class="freq-select" id="freq-living" onchange="extrapolate('living')">
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
                         </select>
                     </div>
                     <div class="input-grid">
-                        <label>Social & Leisure: <input type="number" class="pers-input" data-cat="social" data-pillar="wellness" placeholder="£"></label>
-                        <label>Dining & Alcohol: <input type="number" class="pers-input" data-cat="alcohol" data-pillar="wellness" placeholder="£"></label>
-                        <label>Travel & Motoring: <input type="number" class="pers-input" data-cat="travel" data-pillar="wellness" placeholder="£"></label>
-                        <label>Private Healthcare: <input type="number" class="pers-input" data-cat="health" data-pillar="wellness" placeholder="£"></label>
+                        <label>Social & Leisure: <input type="number" class="pers-input" data-cat="social" data-pillar="living" placeholder="£"></label>
+                        <label>Dining & Alcohol: <input type="number" class="pers-input" data-cat="alcohol" data-pillar="living" placeholder="£"></label>
+                        <label>Travel & Motoring: <input type="number" class="pers-input" data-cat="travel" data-pillar="living" placeholder="£"></label>
+                        <label>Private Healthcare: <input type="number" class="pers-input" data-cat="health" data-pillar="living" placeholder="£"></label>
                     </div>
                 </div>
             </section>
