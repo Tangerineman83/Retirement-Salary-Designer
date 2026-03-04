@@ -9,10 +9,11 @@ body { font-family: 'Inter', sans-serif; background: var(--bg-light); color: var
 .designer-header { border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 30px; }
 h1 { color: var(--blueprint-blue); margin: 0; font-size: 1.8rem; }
 .subtitle { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: #00a3cc; }
+.sub-header-text { font-size: 0.8rem; color: #7a8c9f; font-weight: 400; margin-left: 8px; font-family: 'Roboto Mono', monospace; }
 
 /* Sticky Layout Core */
 .main-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: start; }
-.sticky-wrapper { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 20px; height: calc(100vh - 40px); overflow-y: auto; padding-right: 10px;}
+.sticky-wrapper { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 20px; height: calc(100vh - 40px); overflow-y: auto; padding-right: 10px; padding-bottom: 20px;}
 
 /* Pillars & Controls */
 .pillar-section { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 25px; }
@@ -29,9 +30,48 @@ h1 { color: var(--blueprint-blue); margin: 0; font-size: 1.8rem; }
 .blender-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--blueprint-blue); cursor: pointer; border: 3px solid var(--accent-teal); transition: transform 0.1s; }
 .slider-ticks { display: flex; justify-content: space-between; position: absolute; top: 0; width: 100%; padding: 0 5px; box-sizing: border-box; color: #b0c4df; font-size: 0.6rem; pointer-events: none; z-index: 1; margin-top: -2px; }
 .slider-labels { display: flex; justify-content: space-between; margin-top: 10px; }
-.label-group { display: flex; flex-direction: column; align-items: center; text-align: center; width: 33%; cursor: help; }
-.label-group strong { font-size: 0.85rem; color: var(--blueprint-blue); }
-.label-group span { font-size: 0.65rem; color: #7a8c9f; font-family: 'Roboto Mono', monospace; margin-top: 3px; }
+
+/* 1. Pure CSS Tooltips (For the Slider Labels) */
+.tt-css { position: relative; cursor: help; display: flex; flex-direction: column; align-items: center; text-align: center; width: 33%; }
+.tt-css strong { font-size: 0.85rem; color: var(--blueprint-blue); }
+.tt-css span { font-size: 0.65rem; color: #7a8c9f; font-family: 'Roboto Mono', monospace; margin-top: 3px; }
+
+.tt-css::before {
+    content: attr(data-desc);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--blueprint-blue);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.4;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.tt-css::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: var(--blueprint-blue) transparent transparent transparent;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    z-index: 9999;
+}
+.tt-css:hover::before, .tt-css:hover::after { opacity: 1; bottom: calc(100% + 5px); }
 
 /* Personalize Grids */
 .text-btn { background: none; border: none; color: var(--accent-teal); font-weight: 600; cursor: pointer; padding: 10px 0 0 0; font-size: 0.85rem; }
@@ -44,37 +84,29 @@ h1 { color: var(--blueprint-blue); margin: 0; font-size: 1.8rem; }
 .input-grid input { padding: 8px; border: 1px solid var(--border); border-radius: 4px; margin-top: 5px; font-family: 'Roboto Mono', monospace; transition: border 0.2s; }
 .input-grid input:focus { border-color: var(--accent-teal); outline: none; }
 
-/* Smart Tooltip */
+/* 2. JS Smart Tooltip (Only for input fields now) */
 .smart-tooltip { position: absolute; background: var(--blueprint-blue); color: white; padding: 10px 15px; border-radius: 8px; font-size: 0.75rem; font-family: 'Roboto Mono', monospace; box-shadow: 0 10px 20px rgba(0,0,0,0.15); pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 1000; transform: translateY(-10px); }
 .smart-tooltip.show { opacity: 1; transform: translateY(0); }
 .tt-title { display: block; color: var(--accent-teal); margin-bottom: 5px; font-weight: 600; text-transform: uppercase; font-family: 'Inter', sans-serif;}
 
 /* Outputs & Charts */
 .chart-card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-.chart-card h3 { margin: 0 0 15px 0; font-size: 1rem; color: var(--blueprint-blue); }
-.donut-container { position: relative; width: 100%; max-width: 320px; margin: 0 auto; }
-.donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; text-align: center; pointer-events: none; }
-.center-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #7a8c9f; }
-.center-gross { font-family: 'Roboto Mono', monospace; font-size: 1.8rem; font-weight: 600; color: var(--accent-teal); margin: 5px 0; }
-.center-net-tax { font-size: 0.8rem; color: var(--blueprint-blue); font-family: 'Roboto Mono', monospace; line-height: 1.4; }
-.tax-text { color: #ffab00; }
+.chart-card h3 { margin: 0 0 5px 0; font-size: 1rem; color: var(--blueprint-blue); }
+.chart-desc { font-size: 0.75rem; color: #7a8c9f; margin-top: 0; margin-bottom: 15px;}
+.polar-container { position: relative; width: 100%; max-width: 320px; margin: 0 auto; }
+
+/* New Salary Dashboard Panel */
+.salary-dashboard { background: var(--blueprint-blue); color: white; padding: 20px 25px; border-radius: 12px; box-shadow: 0 8px 15px rgba(10, 37, 64, 0.15); display: flex; justify-content: space-between; align-items: center;}
+.salary-total { display: flex; flex-direction: column; }
+.sd-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255,255,255,0.7); }
+.sd-gross { font-family: 'Roboto Mono', monospace; font-size: 2.2rem; font-weight: 600; color: var(--accent-teal); margin-top: 5px; }
+.salary-breakdown { text-align: right; font-family: 'Roboto Mono', monospace; font-size: 0.9rem; line-height: 1.6;}
+.sd-tax { color: #ffab00; }
 
 @media (max-width: 900px) {
     .main-layout { grid-template-columns: 1fr; }
     .sticky-wrapper { position: relative; top: 0; height: auto; overflow: visible; }
     .input-grid { grid-template-columns: 1fr; }
+    .salary-dashboard { flex-direction: column; text-align: center; gap: 15px; }
+    .salary-breakdown { text-align: center; }
 }
-
-/* Add this to your existing style.css */
-.sub-header-text {
-    font-size: 0.8rem;
-    color: #7a8c9f;
-    font-weight: 400;
-    margin-left: 8px;
-    font-family: 'Roboto Mono', monospace;
-}
-
-.tt-trigger {
-    cursor: help;
-}
-
