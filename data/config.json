@@ -20,8 +20,8 @@
         "home": {
             "shelter": { 
                 "owner": { "staples": 0, "signature": 0, "designer": 0 },
-                "private": { "staples": 18000, "signature": 22000, "designer": 35000 },
-                "social": { "staples": 12000, "signature": 12000, "designer": 12000 },
+                "mortgage": { "staples": 12000, "signature": 22000, "designer": 35000 },
+                "rent": { "staples": 12000, "signature": 22000, "designer": 35000 },
                 "inflation": 0.03, "shape": "linear", "name": "Shelter (Rent/Mortgage)" 
             },
             "tax": { "staples": 1112, "signature": 1507, "designer": 1507, "inflation": 0.03, "shape": "linear", "name": "Property Tax" },
