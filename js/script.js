@@ -1,8 +1,11 @@
+// Register the datalabels plugin with Chart.js
+Chart.register(ChartDataLabels);
+
 let rldConfig = null;
 let state = { tenure: 'owner', essentials: 50, home: 50, living: 50 };
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
-let charts = { polar: null, stacked: null }; // Switched to Polar
+let charts = { polar: null, stacked: null }; 
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -41,14 +44,20 @@ function setupListeners() {
         });
     });
 
-    // JS Tooltips reserved ONLY for dynamic input fields
+    /* --- BULLETPROOF GLOBAL TOOLTIP ENGINE --- */
     const tooltip = document.getElementById('smart-tooltip');
-    const hideTooltip = () => tooltip.classList.remove('show');
+    let tooltipTimeout;
 
+    const hideTooltip = () => {
+        tooltip.classList.remove('show');
+    };
+
+    // 1. Tooltips for Input Fields
     document.querySelectorAll('.pers-input').forEach(input => {
         input.addEventListener('input', (e) => extrapolate(e.target.dataset.pillar));
         
         const showInputTooltip = (e) => {
+            clearTimeout(tooltipTimeout);
             const cat = e.target.dataset.cat;
             const pillar = e.target.dataset.pillar;
             const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
@@ -65,15 +74,39 @@ function setupListeners() {
             tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
             
             const rect = e.target.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 50}px`;
+            // Centered above the element
+            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
+            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
             tooltip.classList.add('show');
         };
 
-        input.addEventListener('focus', showInputTooltip);
         input.addEventListener('mouseenter', showInputTooltip);
-        input.addEventListener('blur', hideTooltip);
+        input.addEventListener('focus', showInputTooltip);
         input.addEventListener('mouseleave', hideTooltip);
+        input.addEventListener('blur', hideTooltip);
+    });
+
+    // 2. Tooltips for Staples/Signature/Designer Labels
+    document.querySelectorAll('.tt-trigger').forEach(label => {
+        const showLabelTooltip = (e) => {
+            clearTimeout(tooltipTimeout);
+            const desc = e.currentTarget.dataset.desc;
+            tooltip.innerHTML = `<span style="color:white; font-family:'Inter', sans-serif; font-weight:400;">${desc}</span>`;
+            
+            const rect = e.currentTarget.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
+            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
+            tooltip.classList.add('show');
+        };
+
+        label.addEventListener('mouseenter', showLabelTooltip);
+        label.addEventListener('touchstart', showLabelTooltip, {passive: true});
+        
+        label.addEventListener('mouseleave', hideTooltip);
+        label.addEventListener('touchend', () => {
+            // Delay hiding on touch so the user can actually read it
+            tooltipTimeout = setTimeout(hideTooltip, 2500);
+        });
     });
 }
 
@@ -176,13 +209,13 @@ function calculateAll() {
 function setupCharts() {
     const ctxPolar = document.getElementById('polarChart').getContext('2d');
     
-    // SUNBURST / POLAR AREA Implementation
+    // Polar Area Chart with Internal Datalabels
     charts.polar = new Chart(ctxPolar, {
         type: 'polarArea',
         data: { 
             labels: ['Essentials', 'Home', 'Living'], 
             datasets: [{ 
-                data: [50, 50, 50], // Initialized with slider scores
+                data: [50, 50, 50], // Radius driven by Slider Score
                 backgroundColor: ['rgba(0, 212, 255, 0.7)', 'rgba(10, 37, 64, 0.7)', 'rgba(0, 163, 204, 0.7)'],
                 borderColor: ['#00d4ff', '#0a2540', '#00a3cc'],
                 borderWidth: 2
@@ -190,9 +223,10 @@ function setupCharts() {
         },
         options: { 
             responsive: true,
+            layout: { padding: 20 },
             scales: {
                 r: {
-                    min: -20, // Prevents the 0-score (Staples) from entirely vanishing
+                    min: -20, // Prevents tiny scores from disappearing entirely
                     max: 100,
                     ticks: { display: false },
                     grid: { color: 'rgba(0,0,0,0.05)' }
@@ -200,18 +234,22 @@ function setupCharts() {
             },
             plugins: { 
                 legend: { display: false }, 
-                tooltip: { 
-                    callbacks: { 
-                        // Tooltip shows actual cash value, not the 0-100 shape score
-                        label: function(c) { 
-                            let val = 0;
-                            if(c.label === 'Essentials') val = currentValues.essentials;
-                            if(c.label === 'Home') val = currentValues.home;
-                            if(c.label === 'Living') val = currentValues.living;
-                            return ' £' + Math.round(val).toLocaleString(); 
-                        } 
-                    } 
-                } 
+                tooltip: { enabled: false }, // Disabled native tooltip since we have internal labels now
+                datalabels: {
+                    color: '#ffffff',
+                    font: { family: 'Inter', weight: 'bold', size: 12 },
+                    textAlign: 'center',
+                    formatter: function(value, context) {
+                        // value here is the 0-100 shape score. We want to display the £ amount.
+                        const labelName = context.chart.data.labels[context.dataIndex];
+                        let cashVal = 0;
+                        if(labelName === 'Essentials') cashVal = currentValues.essentials;
+                        if(labelName === 'Home') cashVal = currentValues.home;
+                        if(labelName === 'Living') cashVal = currentValues.living;
+                        
+                        return labelName + '\n£' + Math.round(cashVal).toLocaleString();
+                    }
+                }
             } 
         }
     });
@@ -227,12 +265,18 @@ function setupCharts() {
                 { label: 'Living', backgroundColor: '#00a3cc', data: [] }
             ] 
         },
-        options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+        options: { 
+            responsive: true, 
+            scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, 
+            plugins: { 
+                legend: { position: 'bottom', labels: { boxWidth: 12 } },
+                datalabels: { display: false } // Turn off datalabels for the stacked chart
+            } 
+        }
     });
 }
 
 function updateCharts() {
-    // Polar Area charts the "Intensity" shape (0-100 scale)
     charts.polar.data.datasets[0].data = [state.essentials, state.home, state.living];
     charts.polar.update();
 
