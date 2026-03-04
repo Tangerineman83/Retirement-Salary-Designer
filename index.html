@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Salary Designer | V3</title>
+    <title>Retirement Salary Designer | V4</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,31 +24,35 @@
             <section class="pillar-section" id="pillar-foundations">
                 <div class="pillar-header">
                     <h2>1. Foundations</h2>
-                    <span class="live-price" id="val-foundations">£18,200</span>
+                    <span class="live-price" id="val-foundations">£0</span>
                 </div>
                 
                 <div class="slider-container">
                     <input type="range" class="blender-slider snap-slider" id="slider-foundations" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
-                        <div class="label-group"><strong>Staples</strong><span>The Value Basket</span></div>
-                        <div class="label-group"><strong>Signature</strong><span>The Comfort Standard</span></div>
-                        <div class="label-group"><strong>Designer</strong><span>The Premium Edit</span></div>
+                        <div class="label-group" title="Reliable basics, mostly supermarket own-brands. Minimum socially acceptable standard."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
+                        <div class="label-group" title="50% branded goods, comfortable energy usage, and upgraded tech."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
+                        <div class="label-group" title="Premium goods, unrestricted energy, and frictionless living."><strong>Designer</strong><span>The Premium Edit ⓘ</span></div>
                     </div>
                 </div>
                 
-                <button class="text-btn" onclick="togglePersonalize('foundations')">⚙️ Personalise Breakdown</button>
-                <div class="personalize-panel" id="pers-foundations">
-                    <p class="panel-desc">Input your expected spend to adjust the blend:</p>
-                    <div class="input-grid">
-                        <label>Food/Groceries: <input type="number" id="input-f-food" placeholder="£" onchange="extrapolate('foundations')"></label>
-                        <label>Energy/Gas: <input type="number" id="input-f-energy" placeholder="£" onchange="extrapolate('foundations')"></label>
-                        <label>Comms/Tech: <input type="number" id="input-f-comms" placeholder="£" onchange="extrapolate('foundations')"></label>
-                        <select id="freq-foundations" onchange="extrapolate('foundations')">
+                <div class="personalize-panel visible" id="pers-foundations">
+                    <div class="panel-header">
+                        <span class="panel-desc">Define your spend to auto-adjust the blend:</span>
+                        <select class="freq-select" id="freq-foundations" onchange="extrapolate('foundations')">
                             <option value="52">Weekly</option>
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
                         </select>
+                    </div>
+                    <div class="input-grid">
+                        <label>Food & Groceries: <input type="number" class="pers-input" data-cat="food" data-pillar="foundations" placeholder="£"></label>
+                        <label>Domestic Energy: <input type="number" class="pers-input" data-cat="energy" data-pillar="foundations" placeholder="£"></label>
+                        <label>Water Rates: <input type="number" class="pers-input" data-cat="water" data-pillar="foundations" placeholder="£"></label>
+                        <label>Clothing/Footwear: <input type="number" class="pers-input" data-cat="clothing" data-pillar="foundations" placeholder="£"></label>
+                        <label>Household Goods: <input type="number" class="pers-input" data-cat="household" data-pillar="foundations" placeholder="£"></label>
+                        <label>Personal (Hair/Care): <input type="number" class="pers-input" data-cat="personal" data-pillar="foundations" placeholder="£"></label>
                     </div>
                 </div>
             </section>
@@ -56,7 +60,7 @@
             <section class="pillar-section" id="pillar-home">
                 <div class="pillar-header">
                     <h2>2. Structure</h2>
-                    <span class="live-price" id="val-home">£9,100</span>
+                    <span class="live-price" id="val-home">£0</span>
                 </div>
                 <div class="tenure-toggle">
                     <button class="toggle-btn active" data-tenure="owner">Homeowner</button>
@@ -68,22 +72,25 @@
                     <input type="range" class="blender-slider snap-slider" id="slider-home" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
-                        <div class="label-group"><strong>Staples</strong><span>Essential Upkeep</span></div>
-                        <div class="label-group"><strong>Signature</strong><span>Modern Maintenance</span></div>
-                        <div class="label-group"><strong>Designer</strong><span>Full Estate Care</span></div>
+                        <div class="label-group" title="Basic insurance and a £200/yr DIY repair budget."><strong>Staples</strong><span>Essential Upkeep ⓘ</span></div>
+                        <div class="label-group" title="Full boiler cover and £500/yr for decorating/tradesmen."><strong>Signature</strong><span>Modern Maintenance ⓘ</span></div>
+                        <div class="label-group" title="Extensive cover, high-band council tax, and estate management."><strong>Designer</strong><span>Full Estate Care ⓘ</span></div>
                     </div>
                 </div>
 
-                <button class="text-btn" onclick="togglePersonalize('home')">⚙️ Personalise Breakdown</button>
-                <div class="personalize-panel" id="pers-home">
-                    <div class="input-grid">
-                        <label>Rent/Mortgage: <input type="number" id="input-h-base" placeholder="£" onchange="extrapolate('home')"></label>
-                        <label>Council Tax: <input type="number" id="input-h-counciltax" placeholder="£" onchange="extrapolate('home')"></label>
-                        <label>Maintenance: <input type="number" id="input-h-maint" placeholder="£" onchange="extrapolate('home')"></label>
-                        <select id="freq-home" onchange="extrapolate('home')">
+                <div class="personalize-panel visible" id="pers-home">
+                    <div class="panel-header">
+                        <span class="panel-desc">Define your structure costs:</span>
+                        <select class="freq-select" id="freq-home" onchange="extrapolate('home')">
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
                         </select>
+                    </div>
+                    <div class="input-grid">
+                        <label>Rent/Mortgage: <input type="number" class="pers-input" data-cat="rent" data-pillar="home" placeholder="£"></label>
+                        <label>Council Tax: <input type="number" class="pers-input" data-cat="counciltax" data-pillar="home" placeholder="£"></label>
+                        <label>Insurances: <input type="number" class="pers-input" data-cat="insurance" data-pillar="home" placeholder="£"></label>
+                        <label>Maintenance: <input type="number" class="pers-input" data-cat="maintenance" data-pillar="home" placeholder="£"></label>
                     </div>
                 </div>
             </section>
@@ -91,56 +98,63 @@
             <section class="pillar-section" id="pillar-wellness">
                 <div class="pillar-header">
                     <h2>3. Wellness</h2>
-                    <span class="live-price" id="val-wellness">£16,000</span>
+                    <span class="live-price" id="val-wellness">£0</span>
                 </div>
                 
                 <div class="slider-container">
                     <input type="range" class="blender-slider snap-slider" id="slider-wellness" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
-                        <div class="label-group"><strong>Staples</strong><span>Local & NHS Core</span></div>
-                        <div class="label-group"><strong>Signature</strong><span>Private Health Buffer</span></div>
-                        <div class="label-group"><strong>Designer</strong><span>Global & Comprehensive</span></div>
+                        <div class="label-group" title="Local leisure, free bus pass, 1 UK coach holiday, reliant on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
+                        <div class="label-group" title="3-year-old car, 1 Med holiday, and a £3.5k private diagnostics buffer."><strong>Signature</strong><span>Private Health Buffer ⓘ</span></div>
+                        <div class="label-group" title="Premium car replacement, long-haul travel, and full private medical cover."><strong>Designer</strong><span>Global & Comprehensive ⓘ</span></div>
                     </div>
                 </div>
 
-                <button class="text-btn" onclick="togglePersonalize('wellness')">⚙️ Personalise Breakdown</button>
-                <div class="personalize-panel" id="pers-wellness">
-                    <div class="input-grid">
-                        <label>Private Health: <input type="number" id="input-w-health" placeholder="£" onchange="extrapolate('wellness')"></label>
-                        <label>Travel/Holidays: <input type="number" id="input-w-travel" placeholder="£" onchange="extrapolate('wellness')"></label>
-                        <label>Leisure/Hobbies: <input type="number" id="input-w-leisure" placeholder="£" onchange="extrapolate('wellness')"></label>
-                        <select id="freq-wellness" onchange="extrapolate('wellness')">
+                <div class="personalize-panel visible" id="pers-wellness">
+                     <div class="panel-header">
+                        <span class="panel-desc">Define your lifestyle details:</span>
+                        <select class="freq-select" id="freq-wellness" onchange="extrapolate('wellness')">
                             <option value="12" selected>Monthly</option>
                             <option value="1">Annually</option>
                         </select>
+                    </div>
+                    <div class="input-grid">
+                        <label>Social & Leisure: <input type="number" class="pers-input" data-cat="social" data-pillar="wellness" placeholder="£"></label>
+                        <label>Dining & Alcohol: <input type="number" class="pers-input" data-cat="alcohol" data-pillar="wellness" placeholder="£"></label>
+                        <label>Travel & Motoring: <input type="number" class="pers-input" data-cat="travel" data-pillar="wellness" placeholder="£"></label>
+                        <label>Private Healthcare: <input type="number" class="pers-input" data-cat="health" data-pillar="wellness" placeholder="£"></label>
                     </div>
                 </div>
             </section>
         </main>
 
         <aside class="outputs-section">
-            <div class="chart-card donut-wrapper">
-                <h3>Your Retirement Salary</h3>
-                <div class="donut-container">
-                    <canvas id="donutChart"></canvas>
-                    <div class="donut-center">
-                        <span class="center-label">Gross Required</span>
-                        <span class="center-gross" id="display-salary">£0</span>
-                        <div class="center-net-tax">
-                            Net: <span id="display-net">£0</span><br>
-                            Tax: <span id="display-tax" class="tax-text">+£0</span>
+            <div class="sticky-wrapper">
+                <div class="chart-card donut-wrapper">
+                    <h3>Your Retirement Salary</h3>
+                    <div class="donut-container">
+                        <canvas id="donutChart"></canvas>
+                        <div class="donut-center">
+                            <span class="center-label">Gross Required</span>
+                            <span class="center-gross" id="display-salary">£0</span>
+                            <div class="center-net-tax">
+                                Net: <span id="display-net">£0</span><br>
+                                Tax: <span id="display-tax" class="tax-text">+£0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="chart-card">
-                <h3>Projected Evolution (Stacked)</h3>
-                <canvas id="stackedChart"></canvas>
+                <div class="chart-card">
+                    <h3>Projected Evolution (Stacked)</h3>
+                    <canvas id="stackedChart"></canvas>
+                </div>
             </div>
         </aside>
     </div>
 </div>
+
+<div id="smart-tooltip" class="smart-tooltip"></div>
 
 <script src="js/script.js"></script>
 </body>
