@@ -4,9 +4,8 @@ let rldConfig = null;
 let state = { tenure: 'owner', essentials: 50, home: 50, living: 50 };
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
-let charts = { polar: null, spline: null }; // Switched to Spline Area
+let charts = { polar: null, spline: null }; 
 
-// Editorial Palette
 const palette = {
     sage: '#A3C6C4',
     sageFill: 'rgba(163, 198, 196, 0.4)',
@@ -28,10 +27,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initApp() {
     setupCharts();
     setupListeners();
+    handleTenureUI();
     calculateAll();
 }
 
 function setupListeners() {
+    // Current Age Input Listener
+    document.getElementById('user-age').addEventListener('change', () => {
+        calculateAll(); // Redraws charts based on new age
+    });
+
     ['essentials', 'home', 'living'].forEach(pillar => {
         const slider = document.getElementById(`slider-${pillar}`);
         slider.addEventListener('input', (e) => {
@@ -50,13 +55,13 @@ function setupListeners() {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             state.tenure = e.target.dataset.tenure;
+            handleTenureUI();
             calculateAll();
         });
     });
 
     const tooltip = document.getElementById('smart-tooltip');
     let tooltipTimeout;
-
     const hideTooltip = () => tooltip.classList.remove('show');
 
     document.querySelectorAll('.pers-input').forEach(input => {
@@ -66,8 +71,11 @@ function setupListeners() {
             clearTimeout(tooltipTimeout);
             const cat = e.target.dataset.cat;
             const pillar = e.target.dataset.pillar;
-            const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
             
+            // Do not show tooltip if disabled (e.g., owner shelter)
+            if(e.target.disabled) return;
+
+            const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
             let b = pillar === 'home' && cat === 'shelter' 
                 ? rldConfig.benchmarks.home.shelter[state.tenure] 
                 : rldConfig.benchmarks[pillar][cat];
@@ -110,6 +118,16 @@ function setupListeners() {
     });
 }
 
+function handleTenureUI() {
+    const shelterInput = document.getElementById('input-shelter');
+    if (state.tenure === 'owner') {
+        shelterInput.value = '';
+        shelterInput.disabled = true;
+    } else {
+        shelterInput.disabled = false;
+    }
+}
+
 function togglePersonalize(id) {
     const panel = document.getElementById(`pers-${id}`);
     panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
@@ -123,7 +141,7 @@ function extrapolate(pillar) {
     let inputCount = 0;
 
     inputs.forEach(input => {
-        if (input.value && parseFloat(input.value) > 0) {
+        if (!input.disabled && input.value && parseFloat(input.value) > 0) {
             const cat = input.dataset.cat;
             let b = (pillar === 'home' && cat === 'shelter') ? rldConfig.benchmarks.home.shelter[state.tenure] : rldConfig.benchmarks[pillar][cat];
             const annualVal = parseFloat(input.value) * (52 / (52/freq));
@@ -153,6 +171,7 @@ function extrapolate(pillar) {
 
 function calculateAll() {
     currentValues.essentials = 0; currentValues.home = 0; currentValues.living = 0;
+    const currentAge = parseInt(document.getElementById('user-age').value) || 67;
     
     for (const pillar of ['essentials', 'home', 'living']) {
         const sliderVal = state[pillar];
@@ -164,6 +183,11 @@ function calculateAll() {
             if (sliderVal <= 50) val = b.staples + ((b.signature - b.staples) * (sliderVal / 50));
             else val = b.signature + ((b.designer - b.signature) * ((sliderVal - 50) / 50));
             
+            // Instant Dashboard rule: if user is >= 75 and has a mortgage, the dashboard shouldn't charge them for it anymore
+            if (pillar === 'home' && key === 'shelter' && state.tenure === 'mortgage' && currentAge >= 75) {
+                val = 0;
+            }
+
             categoryData[`${pillar}_${key}`] = { value: val, shape: catData.shape, inf: catData.inflation };
             currentValues[pillar] += val;
         }
@@ -198,7 +222,6 @@ function calculateAll() {
 function setupCharts() {
     const ctxPolar = document.getElementById('polarChart').getContext('2d');
     
-    // Polar Area Chart (Sunburst equivalent)
     charts.polar = new Chart(ctxPolar, {
         type: 'polarArea',
         data: { 
@@ -236,11 +259,10 @@ function setupCharts() {
 
     const ctxSpline = document.getElementById('splineChart').getContext('2d');
     
-    // Smooth Area Spline Chart (Replacing the rigid bar chart)
     charts.spline = new Chart(ctxSpline, {
         type: 'line',
         data: { 
-            labels: ['67 (Active)', '70', '75 (Comfort)', '80', '85 (Legacy)', '90'], 
+            labels: [], // Populated dynamically
             datasets: [
                 { label: 'Essentials', backgroundColor: palette.sageFill, borderColor: palette.sage, fill: true, tension: 0.4, data: [] },
                 { label: 'Home', backgroundColor: palette.stoneFill, borderColor: palette.stone, fill: true, tension: 0.4, data: [] },
@@ -249,7 +271,10 @@ function setupCharts() {
         },
         options: { 
             responsive: true, 
-            scales: { x: { grid: { display: false } }, y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } }, 
+            scales: { 
+                x: { grid: { display: false } }, 
+                y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } 
+            }, 
             plugins: { 
                 legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Space Grotesk'} } },
                 datalabels: { display: false },
@@ -271,22 +296,45 @@ function updateCharts() {
     charts.polar.data.datasets[0].data = [state.essentials, state.home, state.living];
     charts.polar.update();
 
-    const dataE = [0,0,0,0,0,0]; const dataH = [0,0,0,0,0,0]; const dataL = [0,0,0,0,0,0];
-    const yearsArr = [0, 3, 8, 13, 18, 23]; 
+    const startAge = parseInt(document.getElementById('user-age').value) || 67;
+    const endAge = 90;
+    
+    const labels = [];
+    const dataE = []; const dataH = []; const dataL = [];
 
-    for (const [key, data] of Object.entries(categoryData)) {
-        const pillar = key.split('_')[0];
-        yearsArr.forEach((years, index) => {
-            let projectedVal = data.value * Math.pow(1 + data.inf, years);
-            if (data.shape === 'taper' && years >= 13) projectedVal *= 0.5; 
-            if (data.shape === 'spike' && years >= 13) projectedVal *= 1.5; 
+    // Calculate dynamic timeline starting from the user's age
+    for (let age = startAge; age <= endAge; age++) {
+        labels.push(age);
+        const yearsPassed = age - startAge;
+        
+        let eSum = 0; let hSum = 0; let lSum = 0;
 
-            if (pillar === 'essentials') dataE[index] += projectedVal;
-            if (pillar === 'home') dataH[index] += projectedVal;
-            if (pillar === 'living') dataL[index] += projectedVal;
-        });
+        for (const [key, data] of Object.entries(categoryData)) {
+            const pillar = key.split('_')[0];
+            const cat = key.split('_')[1];
+
+            let projectedVal = data.value * Math.pow(1 + data.inf, yearsPassed);
+            
+            // Age-based modifiers
+            if (data.shape === 'taper' && age >= 80) projectedVal *= 0.5; 
+            if (data.shape === 'spike' && age >= 80) projectedVal *= 1.5; 
+            
+            // Dynamic Mortgage Drop-off (terminates entirely at age 75)
+            if (pillar === 'home' && cat === 'shelter' && state.tenure === 'mortgage' && age >= 75) {
+                projectedVal = 0;
+            }
+
+            if (pillar === 'essentials') eSum += projectedVal;
+            if (pillar === 'home') hSum += projectedVal;
+            if (pillar === 'living') lSum += projectedVal;
+        }
+
+        dataE.push(eSum);
+        dataH.push(hSum);
+        dataL.push(lSum);
     }
 
+    charts.spline.data.labels = labels;
     charts.spline.data.datasets[0].data = dataE;
     charts.spline.data.datasets[1].data = dataH;
     charts.spline.data.datasets[2].data = dataL;
