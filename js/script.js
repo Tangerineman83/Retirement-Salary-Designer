@@ -2,7 +2,7 @@ let rldConfig = null;
 let state = { tenure: 'owner', essentials: 50, home: 50, living: 50 };
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
-let charts = { donut: null, stacked: null };
+let charts = { polar: null, stacked: null }; // Switched to Polar
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -41,11 +41,10 @@ function setupListeners() {
         });
     });
 
-    // Unified Smart Tooltip Engine (Handles both Inputs AND Slider Labels)
+    // JS Tooltips reserved ONLY for dynamic input fields
     const tooltip = document.getElementById('smart-tooltip');
     const hideTooltip = () => tooltip.classList.remove('show');
 
-    // 1. Tooltips for Input Fields
     document.querySelectorAll('.pers-input').forEach(input => {
         input.addEventListener('input', (e) => extrapolate(e.target.dataset.pillar));
         
@@ -75,20 +74,6 @@ function setupListeners() {
         input.addEventListener('mouseenter', showInputTooltip);
         input.addEventListener('blur', hideTooltip);
         input.addEventListener('mouseleave', hideTooltip);
-    });
-
-    // 2. Tooltips for Staples/Signature/Designer Labels
-    document.querySelectorAll('.tt-trigger').forEach(label => {
-        label.addEventListener('mouseenter', (e) => {
-            const desc = e.currentTarget.dataset.desc;
-            tooltip.innerHTML = `<span class="tt-title" style="color:white; text-transform:none; font-family:'Inter', sans-serif; font-weight:400;">${desc}</span>`;
-            
-            const rect = e.currentTarget.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + window.scrollX - 20}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 60}px`;
-            tooltip.classList.add('show');
-        });
-        label.addEventListener('mouseleave', hideTooltip);
     });
 }
 
@@ -189,11 +174,46 @@ function calculateAll() {
 }
 
 function setupCharts() {
-    const ctxDonut = document.getElementById('donutChart').getContext('2d');
-    charts.donut = new Chart(ctxDonut, {
-        type: 'doughnut',
-        data: { labels: ['Essentials', 'Home', 'Living'], datasets: [{ data: [0,0,0], backgroundColor: ['#00d4ff', '#0a2540', '#00a3cc'], borderWidth: 0 }] },
-        options: { responsive: true, cutout: '82%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { return ' £' + Math.round(c.raw).toLocaleString(); } } } } }
+    const ctxPolar = document.getElementById('polarChart').getContext('2d');
+    
+    // SUNBURST / POLAR AREA Implementation
+    charts.polar = new Chart(ctxPolar, {
+        type: 'polarArea',
+        data: { 
+            labels: ['Essentials', 'Home', 'Living'], 
+            datasets: [{ 
+                data: [50, 50, 50], // Initialized with slider scores
+                backgroundColor: ['rgba(0, 212, 255, 0.7)', 'rgba(10, 37, 64, 0.7)', 'rgba(0, 163, 204, 0.7)'],
+                borderColor: ['#00d4ff', '#0a2540', '#00a3cc'],
+                borderWidth: 2
+            }] 
+        },
+        options: { 
+            responsive: true,
+            scales: {
+                r: {
+                    min: -20, // Prevents the 0-score (Staples) from entirely vanishing
+                    max: 100,
+                    ticks: { display: false },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                }
+            },
+            plugins: { 
+                legend: { display: false }, 
+                tooltip: { 
+                    callbacks: { 
+                        // Tooltip shows actual cash value, not the 0-100 shape score
+                        label: function(c) { 
+                            let val = 0;
+                            if(c.label === 'Essentials') val = currentValues.essentials;
+                            if(c.label === 'Home') val = currentValues.home;
+                            if(c.label === 'Living') val = currentValues.living;
+                            return ' £' + Math.round(val).toLocaleString(); 
+                        } 
+                    } 
+                } 
+            } 
+        }
     });
 
     const ctxStacked = document.getElementById('stackedChart').getContext('2d');
@@ -212,8 +232,9 @@ function setupCharts() {
 }
 
 function updateCharts() {
-    charts.donut.data.datasets[0].data = [currentValues.essentials, currentValues.home, currentValues.living];
-    charts.donut.update();
+    // Polar Area charts the "Intensity" shape (0-100 scale)
+    charts.polar.data.datasets[0].data = [state.essentials, state.home, state.living];
+    charts.polar.update();
 
     const dataE = [0,0,0,0,0,0]; const dataH = [0,0,0,0,0,0]; const dataL = [0,0,0,0,0,0];
     const yearsArr = [0, 3, 8, 13, 18, 23]; 
