@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Salary Designer | V6</title>
+    <title>Retirement Salary Designer | V7</title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -31,9 +31,9 @@
                     <input type="range" class="blender-slider snap-slider" id="slider-essentials" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
-                        <div class="label-group tt-trigger" data-desc="Reliable basics, mostly supermarket own-brands. The minimum socially acceptable standard."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="50% branded goods, comfortable energy usage, and upgraded tech subscriptions."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Premium organic goods, unrestricted energy, and frictionless living."><strong>Designer</strong><span>The Premium Edit ⓘ</span></div>
+                        <div class="label-group tt-css" data-desc="Reliable basics, mostly supermarket own-brands. The minimum socially acceptable standard."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
+                        <div class="label-group tt-css" data-desc="50% branded goods, comfortable energy usage, and upgraded tech subscriptions."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
+                        <div class="label-group tt-css" data-desc="Premium organic goods, unrestricted energy, and frictionless living."><strong>Designer</strong><span>The Premium Edit ⓘ</span></div>
                     </div>
                 </div>
                 
@@ -71,9 +71,9 @@
                     <input type="range" class="blender-slider snap-slider" id="slider-home" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
-                        <div class="label-group tt-trigger" data-desc="Basic insurance and a modest DIY sinking fund for repairs."><strong>Staples</strong><span>Essential Upkeep ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Full boiler cover, standard council tax, and budget for tradesmen."><strong>Signature</strong><span>Modern Maintenance ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Extensive cover, high-band council tax, and full estate/garden management."><strong>Designer</strong><span>Full Estate Care ⓘ</span></div>
+                        <div class="label-group tt-css" data-desc="Basic insurance and a modest DIY sinking fund for repairs."><strong>Staples</strong><span>Essential Upkeep ⓘ</span></div>
+                        <div class="label-group tt-css" data-desc="Full boiler cover, standard council tax, and budget for tradesmen."><strong>Signature</strong><span>Modern Maintenance ⓘ</span></div>
+                        <div class="label-group tt-css" data-desc="Extensive cover, high-band council tax, and full estate/garden management."><strong>Designer</strong><span>Full Estate Care ⓘ</span></div>
                     </div>
                 </div>
 
@@ -106,9 +106,9 @@
                     <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50">
                     <div class="slider-ticks"><span>|</span><span>|</span><span>|</span></div>
                     <div class="slider-labels">
-                        <div class="label-group tt-trigger" data-desc="Local leisure, free bus pass, 1 UK holiday, reliant entirely on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Car ownership, European holidays, and a private healthcare diagnostic buffer."><strong>Signature</strong><span>Private Health Buffer ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Premium car, long-haul travel, full PMI, and charitable giving."><strong>Designer</strong><span>Global & Comprehensive ⓘ</span></div>
+                        <div class="label-group tt-css" data-desc="Local leisure, free bus pass, 1 UK holiday, reliant entirely on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
+                        <div class="label-group tt-css" data-desc="Car ownership, European holidays, and a private healthcare diagnostic buffer."><strong>Signature</strong><span>Private Health Buffer ⓘ</span></div>
+                        <div class="label-group tt-css" data-desc="Premium car, long-haul travel, full PMI, and charitable giving."><strong>Designer</strong><span>Global & Comprehensive ⓘ</span></div>
                     </div>
                 </div>
 
@@ -134,20 +134,26 @@
 
         <aside class="outputs-section">
             <div class="sticky-wrapper">
-                <div class="chart-card donut-wrapper">
-                    <h3>Your Retirement Salary</h3>
-                    <div class="donut-container">
-                        <canvas id="donutChart"></canvas>
-                        <div class="donut-center">
-                            <span class="center-label">Gross Required</span>
-                            <span class="center-gross" id="display-salary">£0</span>
-                            <div class="center-net-tax">
-                                Net: <span id="display-net">£0</span><br>
-                                Tax: <span id="display-tax" class="tax-text">+£0</span>
-                            </div>
-                        </div>
+                
+                <div class="chart-card polar-wrapper">
+                    <h3>Your Lifestyle Shape</h3>
+                    <p class="chart-desc">Radius visualizes intensity: Staples (Core) to Designer (Outer).</p>
+                    <div class="polar-container">
+                        <canvas id="polarChart"></canvas>
                     </div>
                 </div>
+
+                <div class="salary-dashboard">
+                    <div class="salary-total">
+                        <span class="sd-label">Target Gross Salary</span>
+                        <span class="sd-gross" id="display-salary">£0</span>
+                    </div>
+                    <div class="salary-breakdown">
+                        <div class="sd-net">Net Target: <span id="display-net">£0</span></div>
+                        <div class="sd-tax">Tax Tailoring: <span id="display-tax">+£0</span></div>
+                    </div>
+                </div>
+
                 <div class="chart-card">
                     <h3>Projected Evolution (Stacked)</h3>
                     <canvas id="stackedChart"></canvas>
