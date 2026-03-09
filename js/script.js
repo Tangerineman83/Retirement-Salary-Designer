@@ -6,6 +6,9 @@ let state = {
     dbPension: 0,
     pensionPot: 0,
     otherSavings: 0,
+    homeValue: 0,
+    mortgagePmt: 0,
+    rentPmt: 0,
     tenure: 'owner', 
     mortgageEndAge: 75,
     essentials: 50, 
@@ -47,6 +50,23 @@ function setupListeners() {
     document.getElementById('meas-db').addEventListener('input', (e) => { state.dbPension = parseFloat(e.target.value) || 0; });
     document.getElementById('meas-pots').addEventListener('input', (e) => { state.pensionPot = parseFloat(e.target.value) || 0; });
     document.getElementById('meas-savings').addEventListener('input', (e) => { state.otherSavings = parseFloat(e.target.value) || 0; });
+    
+    document.getElementById('meas-home-value').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
+    document.getElementById('meas-home-value-mortgage').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
+    
+    // Explicit fixed costs that sync with the disabled Pillar II field
+    document.getElementById('meas-mortgage-pmt').addEventListener('input', (e) => { 
+        state.mortgagePmt = parseFloat(e.target.value) || 0; 
+        document.getElementById('input-shelter').value = state.mortgagePmt || '';
+        calculateAll(); 
+    });
+    
+    document.getElementById('meas-rent-pmt').addEventListener('input', (e) => { 
+        state.rentPmt = parseFloat(e.target.value) || 0; 
+        document.getElementById('input-shelter').value = state.rentPmt || '';
+        calculateAll(); 
+    });
+
     document.getElementById('meas-mortgage-age').addEventListener('change', (e) => { state.mortgageEndAge = parseInt(e.target.value) || 75; calculateAll(); });
 
     // Tenure Toggle
@@ -84,18 +104,22 @@ function setupListeners() {
         
         const showInputTooltip = (e) => {
             clearTimeout(tooltipTimeout);
-            if(e.target.disabled) return;
+            if(e.target.disabled || e.target.closest('.hidden')) return;
 
             const cat = e.target.dataset.cat;
             const pillar = e.target.dataset.pillar;
-            const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
             
-            let b = pillar === 'home' && cat === 'shelter' ? rldConfig.benchmarks.home.shelter[state.tenure] : rldConfig.benchmarks[pillar][cat];
+            // Handle unique frequencies (e.g. rent is monthly by default in measurements)
+            const freq = parseInt(e.target.dataset.freq) || parseInt(document.getElementById(`freq-${pillar}`).value);
+            
+            let b = pillar === 'home' && cat === 'shelter' 
+                ? rldConfig.benchmarks.home.shelter[state.tenure] 
+                : rldConfig.benchmarks[pillar][cat];
 
             const name = rldConfig.benchmarks[pillar][cat].name;
-            const st = Math.round(b.staples / (52/ (52/freq))); 
-            const si = Math.round(b.signature / (52/ (52/freq)));
-            const de = Math.round(b.designer / (52/ (52/freq)));
+            const st = Math.round(b.staples / freq); 
+            const si = Math.round(b.signature / freq);
+            const de = Math.round(b.designer / freq);
 
             tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
             
@@ -132,24 +156,32 @@ function setupListeners() {
 }
 
 function handleTenureUI() {
-    const shelterInput = document.getElementById('input-shelter');
-    const mortgageContainer = document.getElementById('mortgage-end-container');
+    const ownerInputs = document.getElementById('tenure-owner-inputs');
+    const mortgageInputs = document.getElementById('tenure-mortgage-inputs');
+    const rentInputs = document.getElementById('tenure-rent-inputs');
     const displayReadout = document.getElementById('p2-tenure-display');
+    const shelterInput = document.getElementById('input-shelter');
 
-    // Handle Output texts & Mortgage Input
+    // Reset visibility
+    ownerInputs.classList.add('hidden');
+    mortgageInputs.classList.add('hidden');
+    rentInputs.classList.add('hidden');
+    
+    // The Pillar II Shelter input is now permanently disabled
+    shelterInput.disabled = true;
+
     if (state.tenure === 'owner') {
-        shelterInput.value = '';
-        shelterInput.disabled = true;
-        mortgageContainer.classList.add('hidden');
+        ownerInputs.classList.remove('hidden');
         displayReadout.innerHTML = `Your structure is mapped as a <strong>Homeowner (Outright)</strong> based on your measurements.`;
+        shelterInput.value = '';
     } else if (state.tenure === 'mortgage') {
-        shelterInput.disabled = false;
-        mortgageContainer.classList.remove('hidden');
+        mortgageInputs.classList.remove('hidden');
         displayReadout.innerHTML = `Your structure is mapped as a <strong>Homeowner (Mortgage)</strong> based on your measurements.`;
+        shelterInput.value = state.mortgagePmt || '';
     } else {
-        shelterInput.disabled = false;
-        mortgageContainer.classList.add('hidden');
+        rentInputs.classList.remove('hidden');
         displayReadout.innerHTML = `Your structure is mapped as a <strong>Renter</strong> based on your measurements.`;
+        shelterInput.value = state.rentPmt || '';
     }
 }
 
@@ -159,17 +191,22 @@ function togglePersonalize(id) {
 }
 
 function extrapolate(pillar) {
-    const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
-    const inputs = document.querySelectorAll(`#pers-${pillar} .pers-input`);
+    const defaultFreq = parseInt(document.getElementById(`freq-${pillar}`).value);
+    
+    // Look for all active personal inputs mapped to this pillar (works globally)
+    const inputs = document.querySelectorAll(`.pers-input[data-pillar="${pillar}"]`);
     
     let totalSliderScore = 0;
     let inputCount = 0;
 
     inputs.forEach(input => {
-        if (!input.disabled && input.value && parseFloat(input.value) > 0) {
+        // Exclude disabled inputs and hidden tenure inputs
+        if (!input.disabled && !input.closest('.hidden') && input.value && parseFloat(input.value) > 0) {
             const cat = input.dataset.cat;
+            const freq = parseInt(input.dataset.freq) || defaultFreq;
             let b = (pillar === 'home' && cat === 'shelter') ? rldConfig.benchmarks.home.shelter[state.tenure] : rldConfig.benchmarks[pillar][cat];
-            const annualVal = parseFloat(input.value) * (52 / (52/freq));
+            
+            const annualVal = parseFloat(input.value) * freq;
 
             let score = 50;
             if (b.staples === b.designer) score = 50; 
@@ -204,10 +241,19 @@ function calculateAll() {
             if(b.staples === undefined) continue;
 
             let val = 0;
-            if (sliderVal <= 50) val = b.staples + ((b.signature - b.staples) * (sliderVal / 50));
-            else val = b.signature + ((b.designer - b.signature) * ((sliderVal - 50) / 50));
             
-            // Baseline Mortgage Logic (Drops out exactly at user's defined age)
+            // EXPLICIT OVERRIDE: Actual figures drive the Home cost, bypassing the slider math for Shelter
+            if (pillar === 'home' && key === 'shelter') {
+                if (state.tenure === 'owner') val = 0;
+                else if (state.tenure === 'mortgage') val = state.mortgagePmt * 12;
+                else if (state.tenure === 'rent') val = state.rentPmt * 12;
+            } else {
+                // Slider Interpolation for standard lifestyle elements
+                if (sliderVal <= 50) val = b.staples + ((b.signature - b.staples) * (sliderVal / 50));
+                else val = b.signature + ((b.designer - b.signature) * ((sliderVal - 50) / 50));
+            }
+            
+            // Apply Dynamic User-Defined Mortgage Drop-off for current calculated year
             if (pillar === 'home' && key === 'shelter' && state.tenure === 'mortgage' && state.age >= state.mortgageEndAge) {
                 val = 0;
             }
@@ -338,7 +384,7 @@ function updateCharts() {
             if (data.shape === 'taper' && age >= 80) projectedVal *= 0.5; 
             if (data.shape === 'spike' && age >= 80) projectedVal *= 1.5; 
             
-            // Apply Dynamic User-Defined Mortgage End Date
+            // Apply Dynamic User-Defined Mortgage End Date to chart future trajectory
             if (pillar === 'home' && cat === 'shelter' && state.tenure === 'mortgage' && age >= state.mortgageEndAge) {
                 projectedVal = 0;
             }
