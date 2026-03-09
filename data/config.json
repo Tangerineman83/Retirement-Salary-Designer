@@ -1,4 +1,8 @@
 {
+    "assumptions": {
+        "statePension": 11500,
+        "drawdownRate": 0.06
+    },
     "tax": {
         "personalAllowance": 12570,
         "basicRate": 0.20,
