@@ -45,10 +45,24 @@
                         <button class="toggle-btn" data-tenure="mortgage">Homeowner (Mortgage)</button>
                         <button class="toggle-btn" data-tenure="rent">Renter</button>
                     </div>
-                </div>
 
-                <div class="input-grid hidden" id="mortgage-end-container">
-                    <label>Mortgage Payoff Age: <input type="number" id="meas-mortgage-age" class="seamless-input" value="75" min="50" max="100"></label>
+                    <div id="tenure-dynamic-inputs" style="margin-top: 20px;">
+                        
+                        <div id="tenure-owner-inputs" class="input-grid hidden">
+                            <label>Current Home Value (£): <input type="number" id="meas-home-value" class="seamless-input" placeholder="£0"></label>
+                        </div>
+                        
+                        <div id="tenure-mortgage-inputs" class="input-grid hidden">
+                            <label>Current Home Value (£): <input type="number" id="meas-home-value-mortgage" class="seamless-input" placeholder="£0"></label>
+                            <label>Monthly Mortgage (£): <input type="number" id="meas-mortgage-pmt" class="pers-input seamless-input" data-cat="shelter" data-pillar="home" data-freq="12" placeholder="£0"></label>
+                            <label>Mortgage Payoff Age: <input type="number" id="meas-mortgage-age" class="seamless-input" value="75" min="50" max="100"></label>
+                        </div>
+                        
+                        <div id="tenure-rent-inputs" class="input-grid hidden">
+                            <label>Monthly Rent (£): <input type="number" id="meas-rent-pmt" class="pers-input seamless-input" data-cat="shelter" data-pillar="home" data-freq="12" placeholder="£0"></label>
+                        </div>
+
+                    </div>
                 </div>
             </section>
 
@@ -115,7 +129,7 @@
                         </select>
                     </div>
                     <div class="input-grid">
-                        <label>Shelter (Rent/Mortgage): <input type="number" class="pers-input seamless-input" id="input-shelter" data-cat="shelter" data-pillar="home" placeholder="£"></label>
+                        <label>Shelter (Rent/Mortgage): <input type="number" class="pers-input seamless-input" id="input-shelter" data-cat="shelter" data-pillar="home" placeholder="Driven by Measurements" disabled></label>
                         <label>Property Tax: <input type="number" class="pers-input seamless-input" data-cat="tax" data-pillar="home" placeholder="£"></label>
                         <label>Water & Sewerage: <input type="number" class="pers-input seamless-input" data-cat="water" data-pillar="home" placeholder="£"></label>
                         <label>Home Protection: <input type="number" class="pers-input seamless-input" data-cat="protection" data-pillar="home" placeholder="£"></label>
