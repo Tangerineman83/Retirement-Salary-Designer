@@ -47,14 +47,13 @@ function initApp() {
 function setupListeners() {
     // Measurements Inputs
     document.getElementById('meas-age').addEventListener('change', (e) => { state.age = parseInt(e.target.value) || 67; calculateAll(); });
-    document.getElementById('meas-db').addEventListener('input', (e) => { state.dbPension = parseFloat(e.target.value) || 0; });
-    document.getElementById('meas-pots').addEventListener('input', (e) => { state.pensionPot = parseFloat(e.target.value) || 0; });
-    document.getElementById('meas-savings').addEventListener('input', (e) => { state.otherSavings = parseFloat(e.target.value) || 0; });
+    document.getElementById('meas-db').addEventListener('input', (e) => { state.dbPension = parseFloat(e.target.value) || 0; calculateAll(); });
+    document.getElementById('meas-pots').addEventListener('input', (e) => { state.pensionPot = parseFloat(e.target.value) || 0; calculateAll(); });
+    document.getElementById('meas-savings').addEventListener('input', (e) => { state.otherSavings = parseFloat(e.target.value) || 0; calculateAll(); });
     
     document.getElementById('meas-home-value').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
     document.getElementById('meas-home-value-mortgage').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
     
-    // Explicit fixed costs that sync with the disabled Pillar II field
     document.getElementById('meas-mortgage-pmt').addEventListener('input', (e) => { 
         state.mortgagePmt = parseFloat(e.target.value) || 0; 
         document.getElementById('input-shelter').value = state.mortgagePmt || '';
@@ -80,8 +79,8 @@ function setupListeners() {
         });
     });
 
-    // Sliders
-    ['essentials', 'home', 'living'].forEach(pillar => {
+    // Active Sliders (Living is disabled so it doesn't need an event listener)
+    ['essentials', 'home'].forEach(pillar => {
         const slider = document.getElementById(`slider-${pillar}`);
         slider.addEventListener('input', (e) => {
             let val = parseInt(e.target.value);
@@ -108,8 +107,6 @@ function setupListeners() {
 
             const cat = e.target.dataset.cat;
             const pillar = e.target.dataset.pillar;
-            
-            // Handle unique frequencies (e.g. rent is monthly by default in measurements)
             const freq = parseInt(e.target.dataset.freq) || parseInt(document.getElementById(`freq-${pillar}`).value);
             
             let b = pillar === 'home' && cat === 'shelter' 
@@ -162,12 +159,10 @@ function handleTenureUI() {
     const displayReadout = document.getElementById('p2-tenure-display');
     const shelterInput = document.getElementById('input-shelter');
 
-    // Reset visibility
     ownerInputs.classList.add('hidden');
     mortgageInputs.classList.add('hidden');
     rentInputs.classList.add('hidden');
     
-    // The Pillar II Shelter input is now permanently disabled
     shelterInput.disabled = true;
 
     if (state.tenure === 'owner') {
@@ -191,16 +186,16 @@ function togglePersonalize(id) {
 }
 
 function extrapolate(pillar) {
+    // Note: Extrapolation only applies to manual inputs. Since Living is auto-calculated, we only care about Essentials/Home.
+    if (pillar === 'living') return; 
+
     const defaultFreq = parseInt(document.getElementById(`freq-${pillar}`).value);
-    
-    // Look for all active personal inputs mapped to this pillar (works globally)
     const inputs = document.querySelectorAll(`.pers-input[data-pillar="${pillar}"]`);
     
     let totalSliderScore = 0;
     let inputCount = 0;
 
     inputs.forEach(input => {
-        // Exclude disabled inputs and hidden tenure inputs
         if (!input.disabled && !input.closest('.hidden') && input.value && parseFloat(input.value) > 0) {
             const cat = input.dataset.cat;
             const freq = parseInt(input.dataset.freq) || defaultFreq;
@@ -234,26 +229,23 @@ function extrapolate(pillar) {
 function calculateAll() {
     currentValues.essentials = 0; currentValues.home = 0; currentValues.living = 0;
     
-    for (const pillar of ['essentials', 'home', 'living']) {
+    // 1. Calculate P1 & P2 directly from sliders/inputs
+    for (const pillar of ['essentials', 'home']) {
         const sliderVal = state[pillar];
         for (const [key, catData] of Object.entries(rldConfig.benchmarks[pillar])) {
             let b = (pillar === 'home' && key === 'shelter') ? catData[state.tenure] : catData;
             if(b.staples === undefined) continue;
 
             let val = 0;
-            
-            // EXPLICIT OVERRIDE: Actual figures drive the Home cost, bypassing the slider math for Shelter
             if (pillar === 'home' && key === 'shelter') {
                 if (state.tenure === 'owner') val = 0;
                 else if (state.tenure === 'mortgage') val = state.mortgagePmt * 12;
                 else if (state.tenure === 'rent') val = state.rentPmt * 12;
             } else {
-                // Slider Interpolation for standard lifestyle elements
                 if (sliderVal <= 50) val = b.staples + ((b.signature - b.staples) * (sliderVal / 50));
                 else val = b.signature + ((b.designer - b.signature) * ((sliderVal - 50) / 50));
             }
             
-            // Apply Dynamic User-Defined Mortgage Drop-off for current calculated year
             if (pillar === 'home' && key === 'shelter' && state.tenure === 'mortgage' && state.age >= state.mortgageEndAge) {
                 val = 0;
             }
@@ -263,6 +255,50 @@ function calculateAll() {
         }
     }
 
+    // 2. Waterfall Logic for Auto-populating Pillar III (Living)
+    const assumptionSP = rldConfig.assumptions.statePension;
+    const assumptionDR = rldConfig.assumptions.drawdownRate;
+    
+    const totalRegIncome = assumptionSP + state.dbPension;
+    const drawdownIncome = (state.pensionPot + state.otherSavings) * assumptionDR;
+    const totalAvailableIncome = totalRegIncome + drawdownIncome;
+    
+    const remainingForLiving = Math.max(0, totalAvailableIncome - currentValues.essentials - currentValues.home);
+
+    // Get Living Benchmarks to reverse-calculate the score
+    let lStaples = 0, lSig = 0, lDes = 0;
+    for (const [key, catData] of Object.entries(rldConfig.benchmarks.living)) {
+        lStaples += catData.staples;
+        lSig += catData.signature;
+        lDes += catData.designer;
+    }
+
+    let livingScore = 0;
+    if (remainingForLiving <= lStaples) {
+        livingScore = 0;
+    } else if (remainingForLiving >= lDes) {
+        livingScore = 100;
+    } else if (remainingForLiving <= lSig) {
+        livingScore = ((remainingForLiving - lStaples) / (lSig - lStaples)) * 50;
+    } else {
+        livingScore = 50 + (((remainingForLiving - lSig) / (lDes - lSig)) * 50);
+    }
+    
+    // Auto-update state and UI slider for P3
+    state.living = Math.max(0, Math.min(100, Math.round(livingScore)));
+    document.getElementById('slider-living').value = state.living;
+
+    // 3. Calculate Exact Living Value based on auto-populated score
+    for (const [key, catData] of Object.entries(rldConfig.benchmarks.living)) {
+        let val = 0;
+        if (state.living <= 50) val = catData.staples + ((catData.signature - catData.staples) * (state.living / 50));
+        else val = catData.signature + ((catData.designer - catData.signature) * ((state.living - 50) / 50));
+        
+        categoryData[`living_${key}`] = { value: val, shape: catData.shape, inf: catData.inflation };
+        currentValues.living += val;
+    }
+
+    // 4. Global Tax Tailoring
     const gross = currentValues.essentials + currentValues.home + currentValues.living;
     let tax = 0;
     const pa = rldConfig.tax.personalAllowance;
@@ -279,6 +315,7 @@ function calculateAll() {
     currentValues.net = gross - tax;
     currentValues.tax = tax;
 
+    // Update UI Elements
     ['essentials', 'home', 'living'].forEach(p => {
         document.getElementById(`val-${p}`).innerText = `£${Math.round(currentValues[p]).toLocaleString()}`;
     });
@@ -286,7 +323,59 @@ function calculateAll() {
     document.getElementById('display-net').innerText = `£${Math.round(currentValues.net).toLocaleString()}`;
     document.getElementById('display-tax').innerText = `+£${Math.round(tax).toLocaleString()}`;
 
+    // Trigger Designer Tips Update
+    updateDesignerTips(totalRegIncome, drawdownIncome, remainingForLiving);
+
     updateCharts();
+}
+
+function updateDesignerTips(regIncome, drawdownIncome, remainingLivingBudget) {
+    // Pillar 1: Essentials Tip
+    const p1Text = document.getElementById('tips-p1-text');
+    const annuityCard = document.getElementById('partner-annuity');
+    const strRegInc = `£${Math.round(regIncome).toLocaleString()}`;
+    const strEss = `£${Math.round(currentValues.essentials).toLocaleString()}`;
+
+    if (regIncome >= currentValues.essentials) {
+        p1Text.innerHTML = `Your guaranteed regular income (State + DB Pension) totals <strong>${strRegInc}</strong> annually, which comfortably covers your <strong>${strEss}</strong> Essentials need. This provides a highly secure foundation for your retirement.`;
+        annuityCard.classList.add('hidden');
+    } else {
+        const shortfall = currentValues.essentials - regIncome;
+        p1Text.innerHTML = `Your guaranteed regular income totals <strong>${strRegInc}</strong> annually, falling short of your <strong>${strEss}</strong> Essentials need by <strong>£${Math.round(shortfall).toLocaleString()}</strong> per year. <br><br><strong>You may wish to consider</strong> converting a portion of your savings into an annuity to guarantee your baseline and cover this gap.`;
+        annuityCard.classList.remove('hidden');
+    }
+
+    // Pillar 2: Home Tip
+    const p2Text = document.getElementById('tips-p2-text');
+    const propertyCard = document.getElementById('partner-property');
+    const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
+    
+    let p2Prefix = '';
+    if (state.tenure === 'mortgage' || state.tenure === 'rent') {
+        p2Prefix = `As a ${state.tenure === 'rent' ? 'renter' : 'mortgage holder'}, your Home Style is heavily driven by your actual current payments. `;
+    }
+
+    if (remainingRegAfterEss >= currentValues.home && currentValues.home > 0) {
+        p2Text.innerHTML = `${p2Prefix}After covering your Essentials, your remaining regular income fully absorbs your Home costs.`;
+    } else if (remainingRegAfterEss > 0 && currentValues.home > 0) {
+        const homeShortfall = currentValues.home - remainingRegAfterEss;
+        const pctCovered = Math.round((remainingRegAfterEss / currentValues.home) * 100);
+        p2Text.innerHTML = `${p2Prefix}After meeting Essentials, you have <strong>£${Math.round(remainingRegAfterEss).toLocaleString()}</strong> of regular income left, covering ${pctCovered}% of your Home costs. You will need to draw <strong>£${Math.round(homeShortfall).toLocaleString()}</strong> annually from your pots and savings to cover the balance.`;
+    } else {
+        p2Text.innerHTML = `${p2Prefix}Since your regular income is fully absorbed by your Essentials, you will need to draw <strong>£${Math.round(currentValues.home).toLocaleString()}</strong> annually from your pots and savings to fund your Home costs.`;
+    }
+
+    if (state.tenure === 'owner' || state.tenure === 'mortgage') {
+        propertyCard.classList.remove('hidden');
+    } else {
+        propertyCard.classList.add('hidden');
+    }
+
+    // Pillar 3: Living Tip
+    const p3Text = document.getElementById('tips-p3-text');
+    const strLiv = remainingLivingBudget > 0 ? `£${Math.round(remainingLivingBudget).toLocaleString()}` : '£0';
+    
+    p3Text.innerHTML = `We have auto-populated your Lifestyle based on your available resources. After funding your Essentials and Home, and assuming a sustainable ${Math.round(rldConfig.assumptions.drawdownRate * 100)}% drawdown from your savings, you have <strong>${strLiv}</strong> annually to fund your Living costs.<br><br><strong>To boost your lifestyle:</strong> Consider delaying retirement to build further capital, reviewing your Home curation, or exploring equity release options.`;
 }
 
 function setupCharts() {
@@ -368,7 +457,6 @@ function updateCharts() {
     const labels = [];
     const dataE = []; const dataH = []; const dataL = [];
 
-    // Dynamically chart from User's Current Age to Age 90
     for (let age = state.age; age <= endAge; age++) {
         labels.push(age);
         const yearsPassed = age - state.age;
@@ -384,7 +472,6 @@ function updateCharts() {
             if (data.shape === 'taper' && age >= 80) projectedVal *= 0.5; 
             if (data.shape === 'spike' && age >= 80) projectedVal *= 1.5; 
             
-            // Apply Dynamic User-Defined Mortgage End Date to chart future trajectory
             if (pillar === 'home' && cat === 'shelter' && state.tenure === 'mortgage' && age >= state.mortgageEndAge) {
                 projectedVal = 0;
             }
