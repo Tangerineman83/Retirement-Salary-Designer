@@ -1,7 +1,17 @@
 Chart.register(ChartDataLabels);
 
 let rldConfig = null;
-let state = { tenure: 'owner', essentials: 50, home: 50, living: 50 };
+let state = { 
+    age: 67,
+    dbPension: 0,
+    pensionPot: 0,
+    otherSavings: 0,
+    tenure: 'owner', 
+    mortgageEndAge: 75,
+    essentials: 50, 
+    home: 50, 
+    living: 50 
+};
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
 let charts = { polar: null, spline: null }; 
@@ -32,11 +42,25 @@ function initApp() {
 }
 
 function setupListeners() {
-    // Current Age Input Listener
-    document.getElementById('user-age').addEventListener('change', () => {
-        calculateAll(); // Redraws charts based on new age
+    // Measurements Inputs
+    document.getElementById('meas-age').addEventListener('change', (e) => { state.age = parseInt(e.target.value) || 67; calculateAll(); });
+    document.getElementById('meas-db').addEventListener('input', (e) => { state.dbPension = parseFloat(e.target.value) || 0; });
+    document.getElementById('meas-pots').addEventListener('input', (e) => { state.pensionPot = parseFloat(e.target.value) || 0; });
+    document.getElementById('meas-savings').addEventListener('input', (e) => { state.otherSavings = parseFloat(e.target.value) || 0; });
+    document.getElementById('meas-mortgage-age').addEventListener('change', (e) => { state.mortgageEndAge = parseInt(e.target.value) || 75; calculateAll(); });
+
+    // Tenure Toggle
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            state.tenure = e.target.dataset.tenure;
+            handleTenureUI();
+            calculateAll();
+        });
     });
 
+    // Sliders
     ['essentials', 'home', 'living'].forEach(pillar => {
         const slider = document.getElementById(`slider-${pillar}`);
         slider.addEventListener('input', (e) => {
@@ -50,35 +74,23 @@ function setupListeners() {
         });
     });
 
-    document.querySelectorAll('.toggle-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-            state.tenure = e.target.dataset.tenure;
-            handleTenureUI();
-            calculateAll();
-        });
-    });
-
     const tooltip = document.getElementById('smart-tooltip');
     let tooltipTimeout;
     const hideTooltip = () => tooltip.classList.remove('show');
 
+    // Input Tooltips
     document.querySelectorAll('.pers-input').forEach(input => {
         input.addEventListener('input', (e) => extrapolate(e.target.dataset.pillar));
         
         const showInputTooltip = (e) => {
             clearTimeout(tooltipTimeout);
-            const cat = e.target.dataset.cat;
-            const pillar = e.target.dataset.pillar;
-            
-            // Do not show tooltip if disabled (e.g., owner shelter)
             if(e.target.disabled) return;
 
+            const cat = e.target.dataset.cat;
+            const pillar = e.target.dataset.pillar;
             const freq = parseInt(document.getElementById(`freq-${pillar}`).value);
-            let b = pillar === 'home' && cat === 'shelter' 
-                ? rldConfig.benchmarks.home.shelter[state.tenure] 
-                : rldConfig.benchmarks[pillar][cat];
+            
+            let b = pillar === 'home' && cat === 'shelter' ? rldConfig.benchmarks.home.shelter[state.tenure] : rldConfig.benchmarks[pillar][cat];
 
             const name = rldConfig.benchmarks[pillar][cat].name;
             const st = Math.round(b.staples / (52/ (52/freq))); 
@@ -99,6 +111,7 @@ function setupListeners() {
         input.addEventListener('blur', hideTooltip);
     });
 
+    // Label Tooltips
     document.querySelectorAll('.tt-trigger').forEach(label => {
         const showLabelTooltip = (e) => {
             clearTimeout(tooltipTimeout);
@@ -120,11 +133,23 @@ function setupListeners() {
 
 function handleTenureUI() {
     const shelterInput = document.getElementById('input-shelter');
+    const mortgageContainer = document.getElementById('mortgage-end-container');
+    const displayReadout = document.getElementById('p2-tenure-display');
+
+    // Handle Output texts & Mortgage Input
     if (state.tenure === 'owner') {
         shelterInput.value = '';
         shelterInput.disabled = true;
+        mortgageContainer.classList.add('hidden');
+        displayReadout.innerHTML = `Your structure is mapped as a <strong>Homeowner (Outright)</strong> based on your measurements.`;
+    } else if (state.tenure === 'mortgage') {
+        shelterInput.disabled = false;
+        mortgageContainer.classList.remove('hidden');
+        displayReadout.innerHTML = `Your structure is mapped as a <strong>Homeowner (Mortgage)</strong> based on your measurements.`;
     } else {
         shelterInput.disabled = false;
+        mortgageContainer.classList.add('hidden');
+        displayReadout.innerHTML = `Your structure is mapped as a <strong>Renter</strong> based on your measurements.`;
     }
 }
 
@@ -171,7 +196,6 @@ function extrapolate(pillar) {
 
 function calculateAll() {
     currentValues.essentials = 0; currentValues.home = 0; currentValues.living = 0;
-    const currentAge = parseInt(document.getElementById('user-age').value) || 67;
     
     for (const pillar of ['essentials', 'home', 'living']) {
         const sliderVal = state[pillar];
@@ -183,8 +207,8 @@ function calculateAll() {
             if (sliderVal <= 50) val = b.staples + ((b.signature - b.staples) * (sliderVal / 50));
             else val = b.signature + ((b.designer - b.signature) * ((sliderVal - 50) / 50));
             
-            // Instant Dashboard rule: if user is >= 75 and has a mortgage, the dashboard shouldn't charge them for it anymore
-            if (pillar === 'home' && key === 'shelter' && state.tenure === 'mortgage' && currentAge >= 75) {
+            // Baseline Mortgage Logic (Drops out exactly at user's defined age)
+            if (pillar === 'home' && key === 'shelter' && state.tenure === 'mortgage' && state.age >= state.mortgageEndAge) {
                 val = 0;
             }
 
@@ -221,7 +245,6 @@ function calculateAll() {
 
 function setupCharts() {
     const ctxPolar = document.getElementById('polarChart').getContext('2d');
-    
     charts.polar = new Chart(ctxPolar, {
         type: 'polarArea',
         data: { 
@@ -258,11 +281,10 @@ function setupCharts() {
     });
 
     const ctxSpline = document.getElementById('splineChart').getContext('2d');
-    
     charts.spline = new Chart(ctxSpline, {
         type: 'line',
         data: { 
-            labels: [], // Populated dynamically
+            labels: [], 
             datasets: [
                 { label: 'Essentials', backgroundColor: palette.sageFill, borderColor: palette.sage, fill: true, tension: 0.4, data: [] },
                 { label: 'Home', backgroundColor: palette.stoneFill, borderColor: palette.stone, fill: true, tension: 0.4, data: [] },
@@ -296,16 +318,14 @@ function updateCharts() {
     charts.polar.data.datasets[0].data = [state.essentials, state.home, state.living];
     charts.polar.update();
 
-    const startAge = parseInt(document.getElementById('user-age').value) || 67;
     const endAge = 90;
-    
     const labels = [];
     const dataE = []; const dataH = []; const dataL = [];
 
-    // Calculate dynamic timeline starting from the user's age
-    for (let age = startAge; age <= endAge; age++) {
+    // Dynamically chart from User's Current Age to Age 90
+    for (let age = state.age; age <= endAge; age++) {
         labels.push(age);
-        const yearsPassed = age - startAge;
+        const yearsPassed = age - state.age;
         
         let eSum = 0; let hSum = 0; let lSum = 0;
 
@@ -315,12 +335,11 @@ function updateCharts() {
 
             let projectedVal = data.value * Math.pow(1 + data.inf, yearsPassed);
             
-            // Age-based modifiers
             if (data.shape === 'taper' && age >= 80) projectedVal *= 0.5; 
             if (data.shape === 'spike' && age >= 80) projectedVal *= 1.5; 
             
-            // Dynamic Mortgage Drop-off (terminates entirely at age 75)
-            if (pillar === 'home' && cat === 'shelter' && state.tenure === 'mortgage' && age >= 75) {
+            // Apply Dynamic User-Defined Mortgage End Date
+            if (pillar === 'home' && cat === 'shelter' && state.tenure === 'mortgage' && age >= state.mortgageEndAge) {
                 projectedVal = 0;
             }
 
