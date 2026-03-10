@@ -1,4 +1,5 @@
 Chart.register(ChartDataLabels);
+Chart.register(window['chartjs-plugin-annotation']);
 
 let rldConfig = null;
 let state = { 
@@ -19,9 +20,10 @@ let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 
 let categoryData = {}; 
 let charts = { polar: null, mainBar: null, p1: null, p2: null, p3: null }; 
 
+// NEW: Introduced "Dusk" to give Pillar 2 proper visual weight
 const palette = {
     sage: '#A3C6C4', sageFaded: 'rgba(163, 198, 196, 0.15)',
-    stone: '#E8E6E1', stoneFaded: 'rgba(232, 230, 225, 0.15)',
+    dusk: '#6B7A8F', duskFaded: 'rgba(107, 122, 143, 0.15)', // Replaces the washed-out Stone
     orange: '#FF5A36', orangeFaded: 'rgba(255, 90, 54, 0.15)',
     espresso: '#2B2625'
 };
@@ -80,7 +82,6 @@ function setupListeners() {
         });
     });
 
-    // ALL sliders active
     ['essentials', 'home', 'living'].forEach(pillar => {
         const slider = document.getElementById(`slider-${pillar}`);
         slider.addEventListener('input', (e) => {
@@ -277,13 +278,13 @@ function createBarChart(ctxId, displayLegend) {
             labels: [], 
             datasets: [
                 { label: 'Core', backgroundColor: palette.sage, data: [] },
-                { label: 'Home', backgroundColor: palette.stone, data: [] },
+                { label: 'Home', backgroundColor: palette.dusk, data: [] }, // Updated to Dusk
                 { label: 'Lifestyle', backgroundColor: palette.orange, data: [] }
             ] 
         },
         options: { 
             responsive: true, 
-            maintainAspectRatio: false, // CRITICAL FIX: Stops infinite height bug
+            maintainAspectRatio: false, 
             scales: { 
                 x: { stacked: true, grid: { display: false } }, 
                 y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } 
@@ -308,14 +309,14 @@ function setupCharts() {
             labels: ['Core', 'Home', 'Lifestyle'], 
             datasets: [{ 
                 data: [50, 50, 50],
-                backgroundColor: [palette.sage, palette.stone, palette.orange],
-                borderColor: [palette.sage, palette.stone, palette.orange],
+                backgroundColor: [palette.sage, palette.dusk, palette.orange], // Updated to Dusk
+                borderColor: [palette.sage, palette.dusk, palette.orange], // Updated to Dusk
                 borderWidth: 1
             }] 
         },
         options: { 
             responsive: true, 
-            maintainAspectRatio: false, // CRITICAL FIX
+            maintainAspectRatio: false, 
             layout: { padding: 0 },
             scales: { r: { min: -20, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
             plugins: { 
@@ -361,7 +362,6 @@ function updateCharts() {
 
             let projectedVal = data.value * Math.pow(1 + data.inf, yearsPassed);
             
-            // Apply Toggles to Trajectory
             if (pillar === 'living') {
                 if (data.shape === 'taper' && age >= 75 && doTravelTaper) projectedVal *= 0.5; 
                 if (data.shape === 'spike' && age >= 80 && doCareSpike) projectedVal *= 3.0; 
@@ -395,34 +395,32 @@ function updateCharts() {
         dataL.push(lSum);
     }
 
-    // Call Designer Tips with Pot Data
     updateDesignerTips(exhaustionAge);
 
-    // Main Chart
     charts.mainBar.data.labels = labels;
     charts.mainBar.data.datasets[0].data = dataE;
     charts.mainBar.data.datasets[1].data = dataH;
     charts.mainBar.data.datasets[2].data = dataL;
     charts.mainBar.update();
 
-    // Local P1 Focus (Highlight Core, Fade Rest)
+    // Local P1 Focus (Fade Home and Lifestyle)
     charts.p1.data.labels = labels;
     charts.p1.data.datasets[0] = { label: 'Core', backgroundColor: palette.sage, data: dataE };
-    charts.p1.data.datasets[1] = { label: 'Home', backgroundColor: palette.stoneFaded, data: dataH };
+    charts.p1.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH }; // Updated
     charts.p1.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p1.update();
 
-    // Local P2 Focus (Highlight Home, Fade Rest)
+    // Local P2 Focus (Fade Core and Lifestyle, Highlight Home)
     charts.p2.data.labels = labels;
     charts.p2.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
-    charts.p2.data.datasets[1] = { label: 'Home', backgroundColor: palette.stone, data: dataH };
+    charts.p2.data.datasets[1] = { label: 'Home', backgroundColor: palette.dusk, data: dataH }; // Updated
     charts.p2.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p2.update();
 
-    // Local P3 Focus (Highlight Lifestyle, Fade Rest)
+    // Local P3 Focus (Fade Core and Home)
     charts.p3.data.labels = labels;
     charts.p3.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
-    charts.p3.data.datasets[1] = { label: 'Home', backgroundColor: palette.stoneFaded, data: dataH };
+    charts.p3.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH }; // Updated
     charts.p3.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orange, data: dataL };
     charts.p3.update();
 }
@@ -430,7 +428,6 @@ function updateCharts() {
 function updateDesignerTips(exhaustionAge) {
     const regIncome = rldConfig.assumptions.statePension + state.dbPension;
     
-    // Pillar 1: Core Tip
     const p1Text = document.getElementById('tips-p1-text');
     const annuityCard = document.getElementById('partner-annuity');
     if (regIncome >= currentValues.essentials) {
@@ -442,7 +439,6 @@ function updateDesignerTips(exhaustionAge) {
         annuityCard.classList.remove('hidden');
     }
 
-    // Pillar 2: Home Tip
     const p2Text = document.getElementById('tips-p2-text');
     const portfolioCard = document.getElementById('partner-portfolio');
     const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
@@ -455,7 +451,6 @@ function updateDesignerTips(exhaustionAge) {
         portfolioCard.classList.remove('hidden');
     }
 
-    // Pillar 3: Lifestyle Tip (Driven by Pot Exhaustion)
     const p3Text = document.getElementById('tips-p3-text');
     const equityCard = document.getElementById('partner-equity');
     const healthCard = document.getElementById('partner-health');
