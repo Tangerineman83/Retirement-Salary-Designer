@@ -5,7 +5,7 @@ let rldConfig = null;
 let locationBenchmarks = null;
 
 let state = { 
-    age: 55, // Set to 55 to match new HTML default
+    age: 55, 
     postcode: '',
     dbPension: 0,
     pensionPot: 0,
@@ -53,17 +53,15 @@ function toggleSection(bodyId, headerElement) {
     headerElement.classList.toggle('collapsed');
 }
 
-// Visual Pulse Animation for Live Updates
 function triggerPulse(elementId) {
     const el = document.getElementById(elementId);
     if(el) {
         el.classList.remove('value-updated');
-        void el.offsetWidth; // Trigger reflow
+        void el.offsetWidth; 
         el.classList.add('value-updated');
     }
 }
 
-// STEP 1 & 2: Onboarding & Reveal
 function updatePostcodeReadout() {
     const pcInput = document.getElementById('meas-postcode').value.trim();
     const hint = document.getElementById('postcode-hint');
@@ -72,7 +70,6 @@ function updatePostcodeReadout() {
     const alphaMatch = pcInput.match(/^[A-Z]+/i);
     
     if (alphaMatch && locationBenchmarks) {
-        // REVEAL THE PLAYLIST!
         document.getElementById('main-journey-flow').classList.add('revealed-flow');
         document.getElementById('main-journey-flow').classList.remove('hidden-flow');
 
@@ -84,8 +81,7 @@ function updatePostcodeReadout() {
             const localAvg = districtData.avg_disposable_income;
             hint.innerHTML = `Est. local income (${districtData.region}): <br><strong>£${localAvg.toLocaleString()}</strong> (UK Avg: £${natAvg.toLocaleString()})`;
             
-            // "People Like You" Implied Tenure & Property Price calculation
-            const avgPropPrice = localAvg * 8.5; // Rule of thumb metric
+            const avgPropPrice = localAvg * 8.5; 
             let impliedTenure = 'owner';
             if (state.age < 55) impliedTenure = 'mortgage';
             else if (districtData.imd_decile <= 4) impliedTenure = 'rent';
@@ -97,7 +93,6 @@ function updatePostcodeReadout() {
             const displayReadout = document.getElementById('p2-tenure-display');
             displayReadout.innerHTML = `<strong>Curated for you:</strong> Based on <strong>${districtData.region}</strong> and your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>. The average property price in this area is estimated at <strong>£${Math.round(avgPropPrice).toLocaleString()}</strong>. We've styled your Home baseline using this data.`;
 
-            // Auto-Snap Sliders to Local Demographics
             state.essentials = districtData.slider_positions.core;
             state.home = districtData.slider_positions.home;
             state.living = districtData.slider_positions.lifestyle;
@@ -106,7 +101,7 @@ function updatePostcodeReadout() {
             document.getElementById('slider-home').value = state.home;
             document.getElementById('slider-living').value = state.living;
             
-            handleTenureUI(false); // Update UI without overriding the custom text above
+            handleTenureUI(false); 
             calculateAll(); 
 
         } else {
@@ -127,12 +122,10 @@ function setupListeners() {
     
     document.getElementById('meas-postcode').addEventListener('input', updatePostcodeReadout);
 
-    // Wealth Wallet Inputs
     document.getElementById('meas-db').addEventListener('input', (e) => { state.dbPension = parseFloat(e.target.value) || 0; calculateAll(); });
     document.getElementById('meas-pots').addEventListener('input', (e) => { state.pensionPot = parseFloat(e.target.value) || 0; calculateAll(); });
     document.getElementById('meas-savings').addEventListener('input', (e) => { state.otherSavings = parseFloat(e.target.value) || 0; calculateAll(); });
     
-    // Dynamic Tenure Inputs
     document.getElementById('meas-home-value').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
     document.getElementById('meas-home-value-mortgage').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
     document.getElementById('meas-mortgage-pmt').addEventListener('input', (e) => { state.mortgagePmt = parseFloat(e.target.value) || 0; document.getElementById('input-shelter').value = state.mortgagePmt || ''; calculateAll(); });
@@ -159,7 +152,7 @@ function setupListeners() {
             slider.value = val;
             state[pillar] = val;
             calculateAll();
-            triggerPulse(`val-${pillar}`); // Trigger animation on slide
+            triggerPulse(`val-${pillar}`); 
         });
     });
 
@@ -260,17 +253,14 @@ function updateChartsAndJourney() {
     const doTravelTaper = document.getElementById('toggle-travel').checked;
     const doCareSpike = document.getElementById('toggle-care').checked;
 
-    // STEP 2: State Pension Calc (2.5% Inflation to target age)
-    const spAge = 67; // Assuming current standard
-    const yearsToSp = Math.max(0, spAge - state.age);
-    const spBase = rldConfig.assumptions.statePension || 11500;
-    const spInflation = rldConfig.assumptions.statePensionInflation || 0.025;
-    const projectedSp = spBase * Math.pow((1 + spInflation), yearsToSp);
+    // NO INFLATION: State pension remains strictly in today's terms
+    const spAge = 67; 
+    const spBase = rldConfig.assumptions.statePension || 11973; // Based on 25/26 figures
+    const projectedSp = spBase; 
 
     document.getElementById('sp-amount-val').innerText = `£${Math.round(projectedSp).toLocaleString()}`;
     document.getElementById('sp-age-val').innerText = spAge;
 
-    // Evaluate Waterfall
     let incSP = projectedSp;
     let incDB = state.dbPension;
     let combinedPots = state.pensionPot + state.otherSavings;
@@ -286,7 +276,6 @@ function updateChartsAndJourney() {
     
     let coreMsg = '';
     
-    // Core Coverage Logic
     if (incSP >= coreCost) {
         coreMsg = `Your State Pension of <strong>£${Math.round(incSP).toLocaleString()}</strong> fully covers your <strong>£${Math.round(coreCost).toLocaleString()}</strong> Core needs.`;
         incSP -= coreCost;
@@ -321,7 +310,6 @@ function updateChartsAndJourney() {
     }
     document.getElementById('tips-p1-text').innerHTML = coreMsg;
 
-    // Home Coverage Logic
     let homeMsg = '';
     let availableReg = incSP + incDB; 
     
@@ -349,7 +337,6 @@ function updateChartsAndJourney() {
     }
     document.getElementById('tips-p2-text').innerHTML = homeMsg;
 
-    // Lifestyle Coverage Logic
     let livingMsg = '';
     let totalRemaining = availableReg + incPots;
     
@@ -365,14 +352,12 @@ function updateChartsAndJourney() {
     }
     document.getElementById('tips-p3-text').innerHTML = livingMsg;
 
-    // DYNAMIC WALLET PLACEMENT (Only place once to prevent losing focus while typing)
     const wallet = document.getElementById('wealth-wallet');
     if (walletTarget && !wallet.classList.contains('placed')) {
         document.getElementById(walletTarget).appendChild(wallet);
         wallet.classList.add('placed');
         wallet.classList.remove('hidden');
     } else if (!walletTarget) {
-        // If no shortfall, place it at bottom just in case they want to boost surplus
         document.getElementById('lifestyle-wallet-slot').appendChild(wallet);
         wallet.classList.remove('hidden'); 
         showDb = true; showPots = true;
@@ -381,7 +366,6 @@ function updateChartsAndJourney() {
     if (showDb) document.getElementById('db-box').classList.remove('hidden');
     if (showPots) document.getElementById('pots-box').classList.remove('hidden');
 
-    // Partner Logic
     const equityCard = document.getElementById('partner-equity');
     const healthCard = document.getElementById('partner-health');
 
@@ -391,20 +375,20 @@ function updateChartsAndJourney() {
     if (state.living >= 50 || document.getElementById('toggle-care').checked) healthCard.classList.remove('hidden');
     else healthCard.classList.add('hidden');
 
-    // Chart Trajectory Logic & Pot Exhaustion Math
     let runningPot = combinedPots;
     let exhaustionAge = -1;
 
     for (let age = state.age; age <= endAge; age++) {
         labels.push(age);
-        const yearsPassed = age - state.age;
+        
         let eSum = 0; let hSum = 0; let lSum = 0;
 
         for (const [key, data] of Object.entries(categoryData)) {
             const pillar = key.split('_')[0];
             const cat = key.split('_')[1];
 
-            let projectedVal = data.value * Math.pow(1 + data.inf, yearsPassed);
+            // NO INFLATION (Today's Terms mapping ensures accurate math against flat drawdown)
+            let projectedVal = data.value; 
             
             if (pillar === 'living') {
                 if (data.shape === 'taper' && age >= 75 && doTravelTaper) projectedVal *= 0.5; 
@@ -436,7 +420,6 @@ function updateChartsAndJourney() {
         dataL.push(lSum);
     }
 
-    // Auto-Play Feature: Pulse the card if exhaustion detected
     if (exhaustionAge !== -1 && exhaustionAge <= 90) {
         document.getElementById('tips-p3-text').innerHTML += `<br><br><strong style="color:var(--accent-orange);">End of Credits Warning:</strong> Based on this shape, your wealth pots will fully deplete by <strong>Age ${exhaustionAge}</strong>.`;
         if(state.tenure === 'owner' || state.tenure === 'mortgage') equityCard.classList.add('pulse-alert');
@@ -444,7 +427,6 @@ function updateChartsAndJourney() {
         equityCard.classList.remove('pulse-alert');
     }
 
-    // Update charts
     charts.mainBar.data.labels = labels;
     charts.mainBar.data.datasets[0].data = dataE;
     charts.mainBar.data.datasets[1].data = dataH;
