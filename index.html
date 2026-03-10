@@ -27,178 +27,211 @@
         <main class="controls-section">
             
             <section class="pillar-section" id="section-measurements">
-                <div class="pillar-header">
+                <div class="pillar-header" onclick="toggleSection('body-measurements', this)">
                     <h2>Your Measurements</h2>
+                    <button class="collapse-icon">▼</button>
                 </div>
                 
-                <div class="input-grid">
-                    <label>Current Age: <input type="number" id="meas-age" class="seamless-input" value="67" min="50" max="95"></label>
-                    <label>DB Pension Earned (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
-                    <label>Pension Pots Built Up (£): <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
-                    <label>Other Savings (£): <input type="number" id="meas-savings" class="seamless-input" placeholder="£0"></label>
-                </div>
-
-                <div class="tenure-wrapper">
-                    <label class="meas-label">Where do you call home?</label>
-                    <div class="tenure-toggle" id="meas-tenure-toggle">
-                        <button class="toggle-btn active" data-tenure="owner">I own my home outright</button>
-                        <button class="toggle-btn" data-tenure="mortgage">I own my home, with a mortgage</button>
-                        <button class="toggle-btn" data-tenure="rent">I rent my home</button>
+                <div class="pillar-body" id="body-measurements">
+                    <div class="input-grid">
+                        <label>Current Age: <input type="number" id="meas-age" class="seamless-input" value="67" min="50" max="95"></label>
+                        <label>DB Pension Earned (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
+                        <label>Pension Pots Built Up (£): <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
+                        <label>Other Savings (£): <input type="number" id="meas-savings" class="seamless-input" placeholder="£0"></label>
                     </div>
 
-                    <div id="tenure-dynamic-inputs" style="margin-top: 20px;">
-                        <div id="tenure-owner-inputs" class="input-grid hidden">
-                            <label>Current Home Value (£): <input type="number" id="meas-home-value" class="seamless-input" placeholder="£0"></label>
+                    <div class="tenure-wrapper">
+                        <label class="meas-label">Where do you call home?</label>
+                        <div class="tenure-toggle" id="meas-tenure-toggle">
+                            <button class="toggle-btn active" data-tenure="owner">I own my home outright</button>
+                            <button class="toggle-btn" data-tenure="mortgage">I own my home, with a mortgage</button>
+                            <button class="toggle-btn" data-tenure="rent">I rent my home</button>
                         </div>
-                        <div id="tenure-mortgage-inputs" class="input-grid hidden">
-                            <label>Current Home Value (£): <input type="number" id="meas-home-value-mortgage" class="seamless-input" placeholder="£0"></label>
-                            <label>Monthly Mortgage (£): <input type="number" id="meas-mortgage-pmt" class="pers-input seamless-input" data-cat="shelter" data-pillar="home" data-freq="12" placeholder="£0"></label>
-                            <label>Mortgage Payoff Age: <input type="number" id="meas-mortgage-age" class="seamless-input" value="75" min="50" max="100"></label>
-                        </div>
-                        <div id="tenure-rent-inputs" class="input-grid hidden">
-                            <label>Monthly Rent (£): <input type="number" id="meas-rent-pmt" class="pers-input seamless-input" data-cat="shelter" data-pillar="home" data-freq="12" placeholder="£0"></label>
+
+                        <div id="tenure-dynamic-inputs" style="margin-top: 20px;">
+                            <div id="tenure-owner-inputs" class="input-grid hidden">
+                                <label>Current Home Value (£): <input type="number" id="meas-home-value" class="seamless-input" placeholder="£0"></label>
+                            </div>
+                            <div id="tenure-mortgage-inputs" class="input-grid hidden">
+                                <label>Current Home Value (£): <input type="number" id="meas-home-value-mortgage" class="seamless-input" placeholder="£0"></label>
+                                <label>Monthly Mortgage (£): <input type="number" id="meas-mortgage-pmt" class="pers-input seamless-input" data-cat="shelter" data-pillar="home" data-freq="12" placeholder="£0"></label>
+                                <label>Mortgage Payoff Age: <input type="number" id="meas-mortgage-age" class="seamless-input" value="75" min="50" max="100"></label>
+                            </div>
+                            <div id="tenure-rent-inputs" class="input-grid hidden">
+                                <label>Monthly Rent (£): <input type="number" id="meas-rent-pmt" class="pers-input seamless-input" data-cat="shelter" data-pillar="home" data-freq="12" placeholder="£0"></label>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
             <section class="pillar-section" id="pillar-essentials">
-                <div class="pillar-header">
+                <div class="pillar-header" onclick="toggleSection('body-essentials', this)">
                     <h2>I. Core <span class="sub-header-text">(The Daily Edit)</span></h2>
-                    <span class="live-price" id="val-essentials">£0</span>
-                </div>
-                
-                <div class="slider-container">
-                    <input type="range" class="blender-slider snap-slider" id="slider-essentials" min="0" max="100" value="50">
-                    <div class="slider-labels">
-                        <div class="label-group tt-trigger" data-desc="Reliable basics, mostly supermarket own-brands. The minimum socially acceptable standard."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="50% branded goods, comfortable energy usage, and upgraded tech subscriptions."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Premium organic goods, unrestricted energy, and frictionless living."><strong>Designer</strong><span>The Premium Edit ⓘ</span></div>
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <span class="live-price" id="val-essentials">£0</span>
+                        <button class="collapse-icon">▼</button>
                     </div>
                 </div>
                 
-                <button class="text-btn" onclick="togglePersonalize('essentials')">Curate this pillar +</button>
-                <div class="personalize-panel" id="pers-essentials">
-                    <div class="panel-header">
-                        <span class="panel-desc">Enter known spending needs and we’ll work out the rest:</span>
-                        <select class="freq-select" id="freq-essentials" onchange="extrapolate('essentials')">
-                            <option value="52">Weekly</option>
-                            <option value="12" selected>Monthly</option>
-                            <option value="1">Annually</option>
-                        </select>
-                    </div>
-                    <div class="input-grid">
-                        <label>Groceries & Household: <input type="number" class="pers-input seamless-input" data-cat="groceries" data-pillar="essentials" placeholder="£"></label>
-                        <label>Domestic Energy: <input type="number" class="pers-input seamless-input" data-cat="energy" data-pillar="essentials" placeholder="£"></label>
-                        <label>Connectivity & Media: <input type="number" class="pers-input seamless-input" data-cat="connectivity" data-pillar="essentials" placeholder="£"></label>
-                        <label>Other Utilities: <input type="number" class="pers-input seamless-input" data-cat="utilities" data-pillar="essentials" placeholder="£"></label>
-                    </div>
-                </div>
-
-                <div class="designer-tips">
-                    <h4 class="tips-title">Designer Insights</h4>
-                    <p class="tips-text" id="tips-p1-text"></p>
-                    
-                    <div class="partner-card-tip hidden" id="partner-annuity">
-                        <div class="pct-content">
-                            <strong>Secure Your Foundation</strong>
-                            <span>Explore guaranteed lifetime income options with our partner to bridge your Core gap.</span>
+                <div class="pillar-body" id="body-essentials">
+                    <div class="slider-container">
+                        <input type="range" class="blender-slider snap-slider" id="slider-essentials" min="0" max="100" value="50">
+                        <div class="slider-labels">
+                            <div class="label-group tt-trigger" data-desc="Reliable basics, mostly supermarket own-brands."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
+                            <div class="label-group tt-trigger" data-desc="50% branded goods, comfortable energy usage."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
+                            <div class="label-group tt-trigger" data-desc="Premium organic goods, unrestricted energy."><strong>Designer</strong><span>The Premium Edit ⓘ</span></div>
                         </div>
-                        <button class="pct-btn">Explore Annuities</button>
+                    </div>
+                    
+                    <button class="text-btn" onclick="togglePersonalize('essentials')">Curate this pillar +</button>
+                    <div class="personalize-panel" id="pers-essentials">
+                        <div class="panel-header">
+                            <span class="panel-desc">Enter known spending needs and we’ll work out the rest:</span>
+                            <select class="freq-select" id="freq-essentials" onchange="extrapolate('essentials')">
+                                <option value="52">Weekly</option>
+                                <option value="12" selected>Monthly</option>
+                                <option value="1">Annually</option>
+                            </select>
+                        </div>
+                        <div class="input-grid">
+                            <label>Groceries & Household: <input type="number" class="pers-input seamless-input" data-cat="groceries" data-pillar="essentials" placeholder="£"></label>
+                            <label>Domestic Energy: <input type="number" class="pers-input seamless-input" data-cat="energy" data-pillar="essentials" placeholder="£"></label>
+                            <label>Connectivity & Media: <input type="number" class="pers-input seamless-input" data-cat="connectivity" data-pillar="essentials" placeholder="£"></label>
+                            <label>Other Utilities: <input type="number" class="pers-input seamless-input" data-cat="utilities" data-pillar="essentials" placeholder="£"></label>
+                        </div>
+                    </div>
+
+                    <div class="designer-tips">
+                        <h4 class="tips-title">Designer Insights</h4>
+                        <p class="tips-text" id="tips-p1-text"></p>
+                        
+                        <div class="partner-card-tip hidden" id="partner-annuity">
+                            <div class="pct-content">
+                                <strong>Secure Your Foundation</strong>
+                                <span>Explore guaranteed lifetime income options with our partner to bridge your Core gap.</span>
+                            </div>
+                            <button class="pct-btn">Explore Annuities</button>
+                        </div>
+                    </div>
+
+                    <div class="local-chart-wrapper">
+                        <h4 class="local-chart-title">Core Impact</h4>
+                        <canvas id="chart-p1"></canvas>
                     </div>
                 </div>
             </section>
 
             <section class="pillar-section" id="pillar-home">
-                <div class="pillar-header">
+                <div class="pillar-header" onclick="toggleSection('body-home', this)">
                     <h2>II. Home <span class="sub-header-text">(Running the building)</span></h2>
-                    <span class="live-price" id="val-home">£0</span>
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <span class="live-price" id="val-home">£0</span>
+                        <button class="collapse-icon">▼</button>
+                    </div>
                 </div>
                 
-                <div class="dynamic-status-readout" id="p2-tenure-display">
-                    <strong>Curated for you:</strong> We've styled your Home baseline using the details you provided above.
-                </div>
-                
-                <div class="slider-container">
-                    <input type="range" class="blender-slider snap-slider" id="slider-home" min="0" max="100" value="50">
-                    <div class="slider-labels">
-                        <div class="label-group tt-trigger" data-desc="Basic insurance and a modest DIY sinking fund for repairs."><strong>Staples</strong><span>Essential Upkeep ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Full boiler cover, standard council tax, and budget for tradesmen."><strong>Signature</strong><span>Modern Maintenance ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Extensive cover, high-band council tax, and full estate management."><strong>Designer</strong><span>Full Estate Care ⓘ</span></div>
+                <div class="pillar-body" id="body-home">
+                    <div class="dynamic-status-readout" id="p2-tenure-display">
+                        <strong>Curated for you:</strong> We've styled your Home baseline using the details you provided above.
                     </div>
-                </div>
-
-                <button class="text-btn" onclick="togglePersonalize('home')">Curate this pillar +</button>
-                <div class="personalize-panel" id="pers-home">
-                    <div class="panel-header">
-                        <span class="panel-desc">Enter known spending needs and we’ll work out the rest:</span>
-                        <select class="freq-select" id="freq-home" onchange="extrapolate('home')">
-                            <option value="12" selected>Monthly</option>
-                            <option value="1">Annually</option>
-                        </select>
-                    </div>
-                    <div class="input-grid">
-                        <label>Shelter (Rent/Mortgage): <input type="number" class="pers-input seamless-input" id="input-shelter" data-cat="shelter" data-pillar="home" placeholder="Mapped from above" disabled></label>
-                        <label>Property Tax: <input type="number" class="pers-input seamless-input" data-cat="tax" data-pillar="home" placeholder="£"></label>
-                        <label>Water & Sewerage: <input type="number" class="pers-input seamless-input" data-cat="water" data-pillar="home" placeholder="£"></label>
-                        <label>Home Protection: <input type="number" class="pers-input seamless-input" data-cat="protection" data-pillar="home" placeholder="£"></label>
-                        <label>Maintenance Fund: <input type="number" class="pers-input seamless-input" data-cat="maintenance" data-pillar="home" placeholder="£"></label>
-                    </div>
-                </div>
-
-                <div class="designer-tips">
-                    <h4 class="tips-title">Designer Insights</h4>
-                    <p class="tips-text" id="tips-p2-text"></p>
                     
-                    <div class="partner-card-tip hidden" id="partner-portfolio">
-                        <div class="pct-content">
-                            <strong>Generate Reliable Income</strong>
-                            <span>Connect with a partner to build an income-generating portfolio that funds your Home costs without eroding your capital.</span>
+                    <div class="slider-container">
+                        <input type="range" class="blender-slider snap-slider" id="slider-home" min="0" max="100" value="50">
+                        <div class="slider-labels">
+                            <div class="label-group tt-trigger" data-desc="Basic insurance and a modest DIY sinking fund for repairs."><strong>Staples</strong><span>Essential Upkeep ⓘ</span></div>
+                            <div class="label-group tt-trigger" data-desc="Full boiler cover, standard council tax, and budget for tradesmen."><strong>Signature</strong><span>Modern Maintenance ⓘ</span></div>
+                            <div class="label-group tt-trigger" data-desc="Extensive cover, high-band council tax, and full estate management."><strong>Designer</strong><span>Full Estate Care ⓘ</span></div>
                         </div>
-                        <button class="pct-btn">Explore Portfolios</button>
+                    </div>
+
+                    <button class="text-btn" onclick="togglePersonalize('home')">Curate this pillar +</button>
+                    <div class="personalize-panel" id="pers-home">
+                        <div class="panel-header">
+                            <span class="panel-desc">Enter known spending needs and we’ll work out the rest:</span>
+                            <select class="freq-select" id="freq-home" onchange="extrapolate('home')">
+                                <option value="12" selected>Monthly</option>
+                                <option value="1">Annually</option>
+                            </select>
+                        </div>
+                        <div class="input-grid">
+                            <label>Shelter (Rent/Mortgage): <input type="number" class="pers-input seamless-input" id="input-shelter" data-cat="shelter" data-pillar="home" placeholder="Mapped from above" disabled></label>
+                            <label>Property Tax: <input type="number" class="pers-input seamless-input" data-cat="tax" data-pillar="home" placeholder="£"></label>
+                            <label>Water & Sewerage: <input type="number" class="pers-input seamless-input" data-cat="water" data-pillar="home" placeholder="£"></label>
+                            <label>Home Protection: <input type="number" class="pers-input seamless-input" data-cat="protection" data-pillar="home" placeholder="£"></label>
+                            <label>Maintenance Fund: <input type="number" class="pers-input seamless-input" data-cat="maintenance" data-pillar="home" placeholder="£"></label>
+                        </div>
+                    </div>
+
+                    <div class="designer-tips">
+                        <h4 class="tips-title">Designer Insights</h4>
+                        <p class="tips-text" id="tips-p2-text"></p>
+                        
+                        <div class="partner-card-tip hidden" id="partner-portfolio">
+                            <div class="pct-content">
+                                <strong>Generate Reliable Income</strong>
+                                <span>Connect with a partner to build an income-generating portfolio that funds your Home costs.</span>
+                            </div>
+                            <button class="pct-btn">Explore Portfolios</button>
+                        </div>
+                    </div>
+
+                    <div class="local-chart-wrapper">
+                        <h4 class="local-chart-title">Home Impact</h4>
+                        <canvas id="chart-p2"></canvas>
                     </div>
                 </div>
             </section>
 
             <section class="pillar-section" id="pillar-living">
-                <div class="pillar-header">
+                <div class="pillar-header" onclick="toggleSection('body-living', this)">
                     <h2>III. Lifestyle <span class="sub-header-text">(Enjoying the years)</span></h2>
-                    <span class="live-price" id="val-living">£0</span>
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <span class="live-price" id="val-living">£0</span>
+                        <button class="collapse-icon">▼</button>
+                    </div>
                 </div>
                 
-                <div class="slider-container">
-                    <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50" disabled style="opacity: 0.7; cursor: not-allowed;">
-                    <div class="slider-labels">
-                        <div class="label-group tt-trigger" data-desc="Local leisure, free bus pass, 1 UK holiday, reliant entirely on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Car ownership, European holidays, and a private healthcare diagnostic buffer."><strong>Signature</strong><span>Private Health Buffer ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Premium car, long-haul travel, full PMI, and charitable giving."><strong>Designer</strong><span>Global & Comprehensive ⓘ</span></div>
-                    </div>
-                </div>
-
-                <div class="chapter-toggles" style="margin-top: 30px;">
-                    <span class="panel-desc" style="display:block; margin-bottom:10px;">Curate your chapter transitions:</span>
-                    <label class="toggle-row"><input type="checkbox" id="toggle-travel" checked> Scale back international travel after age 75</label>
-                    <label class="toggle-row"><input type="checkbox" id="toggle-care"> Ring-fence a private later-life care fund (Age 80+)</label>
-                </div>
-
-                <div class="designer-tips">
-                    <h4 class="tips-title">Designer Insights</h4>
-                    <p class="tips-text" id="tips-p3-text"></p>
-                    
-                    <div class="partner-card-tip hidden" id="partner-equity" style="margin-top: 15px;">
-                        <div class="pct-content">
-                            <strong>Boost via Property Wealth</strong>
-                            <span>Unlock equity from your home to dramatically elevate your Lifestyle spending power.</span>
+                <div class="pillar-body" id="body-living">
+                    <div class="slider-container">
+                        <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50" disabled style="opacity: 0.7; cursor: not-allowed;">
+                        <div class="slider-labels">
+                            <div class="label-group tt-trigger" data-desc="Local leisure, free bus pass, 1 UK holiday, reliant entirely on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
+                            <div class="label-group tt-trigger" data-desc="Car ownership, European holidays, and a private healthcare diagnostic buffer."><strong>Signature</strong><span>Private Health Buffer ⓘ</span></div>
+                            <div class="label-group tt-trigger" data-desc="Premium car, long-haul travel, full PMI, and charitable giving."><strong>Designer</strong><span>Global & Comprehensive ⓘ</span></div>
                         </div>
-                        <button class="pct-btn">Explore Equity Release</button>
                     </div>
 
-                    <div class="partner-card-tip hidden" id="partner-health" style="margin-top: 15px;">
-                        <div class="pct-content">
-                            <strong>Protect Your Lifestyle</strong>
-                            <span>Explore premium healthcare and later-life protection plans to secure your independence.</span>
+                    <div class="chapter-toggles" style="margin-top: 30px;">
+                        <span class="panel-desc" style="display:block; margin-bottom:10px;">Curate your chapter transitions (The U-Shape):</span>
+                        <label class="toggle-row"><input type="checkbox" id="toggle-travel" checked> Scale back international travel after age 75</label>
+                        <label class="toggle-row"><input type="checkbox" id="toggle-care" checked> Ring-fence a private later-life care fund (Spikes at Age 80+)</label>
+                    </div>
+
+                    <div class="designer-tips">
+                        <h4 class="tips-title">Designer Insights</h4>
+                        <p class="tips-text" id="tips-p3-text"></p>
+                        
+                        <div class="partner-card-tip hidden" id="partner-equity" style="margin-top: 15px;">
+                            <div class="pct-content">
+                                <strong>Boost via Property Wealth</strong>
+                                <span>Unlock equity from your home to dramatically elevate your Lifestyle spending power.</span>
+                            </div>
+                            <button class="pct-btn">Explore Equity Release</button>
                         </div>
-                        <button class="pct-btn">Explore Healthcare</button>
+
+                        <div class="partner-card-tip hidden" id="partner-health" style="margin-top: 15px;">
+                            <div class="pct-content">
+                                <strong>Protect Your Lifestyle</strong>
+                                <span>Explore premium healthcare and later-life protection plans to secure your independence.</span>
+                            </div>
+                            <button class="pct-btn">Explore Healthcare</button>
+                        </div>
+                    </div>
+
+                    <div class="local-chart-wrapper">
+                        <h4 class="local-chart-title">Lifestyle Trajectory</h4>
+                        <canvas id="chart-p3"></canvas>
                     </div>
                 </div>
             </section>
@@ -227,8 +260,8 @@
 
             <div class="chart-card spline-wrapper">
                 <h3>Life Chapters</h3>
-                <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
-                <canvas id="splineChart"></canvas>
+                <p class="chart-desc">Your overall projected needs spanning the Active, Comfort, and Legacy eras.</p>
+                <canvas id="mainStackedChart"></canvas>
             </div>
             
         </aside>
