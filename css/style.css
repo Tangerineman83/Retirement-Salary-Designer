@@ -64,7 +64,7 @@ h1 { font-size: 2.2rem; }
 .input-hint { font-size: 0.75rem; color: var(--accent-sage); margin-top: 8px; display: block; font-weight: 400; line-height: 1.4;}
 .input-hint strong { color: var(--accent-orange); font-weight: 600; }
 
-.tenure-wrapper { margin-top: 25px; }
+.tenure-wrapper { margin-top: 35px; border-top: 1px dashed var(--border-stone); padding-top: 25px;}
 .meas-label { font-size: 0.85rem; font-weight: 600; color: var(--text-espresso); display: block; margin-bottom: 15px;}
 .tenure-toggle { display: flex; gap: 10px; flex-wrap: wrap; }
 .toggle-btn { padding: 8px 18px; border: 1px solid var(--border-stone); background: transparent; color: var(--text-muted); cursor: pointer; border-radius: 30px; font-size: 0.85rem; transition: all 0.3s ease; }
@@ -96,11 +96,8 @@ h1 { font-size: 2.2rem; }
 
 /* The Floating Wealth Wallet Card */
 @keyframes slideDownCard { from { opacity: 0; transform: translateY(-15px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-.wealth-wallet { background: var(--bg-card); border: 1px solid var(--border-stone); border-top: 5px solid var(--accent-sage); padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 15px 35px rgba(43, 38, 37, 0.05); animation: slideDownCard 0.4s ease-out; }
-
-/* Bridge the Gap Action Button */
-.bridge-gap-btn { background: var(--accent-orange); color: var(--bg-card); font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; font-weight: 600; border: none; padding: 12px 28px; border-radius: 30px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(255, 90, 54, 0.2); display: inline-flex; align-items: center; gap: 8px;}
-.bridge-gap-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(255, 90, 54, 0.3); background: #e04a29; }
+.wealth-wallet { background: var(--bg-card); border: 1px solid var(--accent-orange); border-left: 5px solid var(--accent-orange); padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 15px 35px rgba(255, 90, 54, 0.15); animation: slideDownCard 0.4s ease-out; }
+.wallet-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; margin-top: 0; line-height: 1.4;}
 
 /* Designer Tips & Partner Cards */
 .designer-tips { background: var(--bg-oatmilk); border: 1px solid var(--border-stone); border-radius: 12px; padding: 25px; margin-top: 35px; }
@@ -118,11 +115,8 @@ h1 { font-size: 2.2rem; }
 .pct-btn { background: var(--accent-orange); color: var(--bg-card); border: none; padding: 10px 20px; border-radius: 30px; font-family: 'Space Grotesk', sans-serif; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.3s; white-space: nowrap; flex-shrink: 0;}
 .pct-btn:hover { background: #e04a29; }
 
-.chapter-toggles { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-stone);}
-.toggle-row { display: flex; align-items: flex-start; gap: 12px; font-size: 0.85rem; color: var(--text-espresso); margin-top: 10px; cursor: pointer; transition: opacity 0.3s;}
-.toggle-row input { margin-top: 4px; }
-.action-toggle:hover { opacity: 0.7; }
-.action-toggle span { line-height: 1.4; font-weight: 500;}
+.chapter-toggles { background: var(--bg-oatmilk); padding: 20px; border-radius: 12px; border: 1px solid var(--border-stone);}
+.toggle-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-espresso); margin-top: 10px; cursor: pointer;}
 
 /* Editorial Tooltip */
 .smart-tooltip { position: absolute; background: var(--text-espresso); color: var(--bg-oatmilk); padding: 15px 20px; border-radius: 4px; font-size: 0.8rem; font-family: 'Space Grotesk', sans-serif; box-shadow: 0 15px 35px rgba(43, 38, 37, 0.2); pointer-events: none; opacity: 0; transition: opacity 0.15s ease-in-out; z-index: 999999; width: max-content; max-width: 280px; text-align: center; line-height: 1.5; transform: translate(-50%, -10px); }
