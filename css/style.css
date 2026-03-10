@@ -52,11 +52,7 @@ h1 { font-size: 2.2rem; }
 .pillar-header.collapsed .collapse-icon { transform: rotate(-90deg); }
 
 /* Pulse Animation for Live Price Updates */
-@keyframes pulsePrice {
-    0% { transform: scale(1); color: var(--accent-orange); }
-    50% { transform: scale(1.05); color: #ff7b5c; }
-    100% { transform: scale(1); color: var(--accent-orange); }
-}
+@keyframes pulsePrice { 0% { transform: scale(1); color: var(--accent-orange); } 50% { transform: scale(1.05); color: #ff7b5c; } 100% { transform: scale(1); color: var(--accent-orange); } }
 .value-updated { animation: pulsePrice 0.3s ease-out; }
 
 /* Inputs */
@@ -90,10 +86,18 @@ h1 { font-size: 2.2rem; }
 .tt-trigger strong { font-size: 0.85rem; color: var(--text-espresso); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
 .tt-trigger span { font-size: 0.7rem; color: var(--text-muted); margin-top: 5px; line-height: 1.2;}
 
-/* Progressive Wealth Wallet */
-@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-.wealth-wallet { background: var(--bg-card); border: 2px dashed var(--accent-sage); padding: 25px; border-radius: 12px; margin-top: 20px; animation: slideDown 0.4s ease-out; }
-.wallet-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; margin-top: 0;}
+/* Personalize Grids */
+.text-btn { background: none; border: none; color: var(--accent-sage); font-weight: 600; cursor: pointer; padding: 10px 0 0 0; font-size: 0.9rem; transition: color 0.3s;}
+.text-btn:hover { color: var(--text-espresso); }
+.personalize-panel { display: none; margin-top: 20px; padding-top: 25px; border-top: 1px solid var(--border-stone); }
+.panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; gap: 20px;}
+.panel-desc { font-size: 0.9rem; font-weight: 400; color: var(--text-espresso); line-height: 1.4;}
+.freq-select { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-stone); font-size: 0.8rem; background: transparent; color: var(--text-espresso); outline: none;}
+
+/* NEW: The Floating Wealth Wallet Card */
+@keyframes slideDownCard { from { opacity: 0; transform: translateY(-15px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.wealth-wallet { background: var(--bg-card); border: 1px solid var(--accent-orange); border-left: 5px solid var(--accent-orange); padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 15px 35px rgba(255, 90, 54, 0.15); animation: slideDownCard 0.4s ease-out; }
+.wallet-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; margin-top: 0; line-height: 1.4;}
 
 /* Designer Tips & Partner Cards */
 .designer-tips { background: var(--bg-oatmilk); border: 1px solid var(--border-stone); border-radius: 12px; padding: 25px; margin-top: 35px; }
@@ -114,9 +118,10 @@ h1 { font-size: 2.2rem; }
 .chapter-toggles { background: var(--bg-oatmilk); padding: 20px; border-radius: 12px; border: 1px solid var(--border-stone);}
 .toggle-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-espresso); margin-top: 10px; cursor: pointer;}
 
-/* Localized Focus Charts */
-.local-chart-wrapper { margin-top: 35px; padding-top: 25px; border-top: 1px dashed var(--border-stone); height: 220px; position: relative; }
-.local-chart-title { font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;}
+/* Editorial Tooltip */
+.smart-tooltip { position: absolute; background: var(--text-espresso); color: var(--bg-oatmilk); padding: 15px 20px; border-radius: 4px; font-size: 0.8rem; font-family: 'Space Grotesk', sans-serif; box-shadow: 0 15px 35px rgba(43, 38, 37, 0.2); pointer-events: none; opacity: 0; transition: opacity 0.15s ease-in-out; z-index: 999999; width: max-content; max-width: 280px; text-align: center; line-height: 1.5; transform: translate(-50%, -10px); }
+.smart-tooltip.show { opacity: 1; transform: translate(-50%, 0); }
+.tt-title { display: block; color: var(--accent-sage); margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;}
 
 /* Outputs & Charts */
 .chart-card { background: var(--bg-card); padding: 30px; border-radius: 16px; border: 1px solid var(--border-stone); box-shadow: 0 10px 30px rgba(43, 38, 37, 0.03); }
