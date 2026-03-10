@@ -21,12 +21,12 @@ let state = {
 };
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
-let charts = { polar: null, mainBar: null, p1: null, p2: null, p3: null }; 
+let charts = { polar: null, mainBar: null }; 
 
 const palette = {
-    sage: '#A3C6C4', sageFaded: 'rgba(163, 198, 196, 0.1)',
-    dusk: '#6B7A8F', duskFaded: 'rgba(107, 122, 143, 0.1)', 
-    orange: '#FF5A36', orangeFaded: 'rgba(255, 90, 54, 0.1)',
+    sage: '#A3C6C4',
+    dusk: '#6B7A8F', 
+    orange: '#FF5A36',
     espresso: '#2B2625'
 };
 
@@ -187,6 +187,40 @@ function handleTenureUI(updateText = true) {
     }
 }
 
+function extrapolate(pillar) {
+    const defaultFreq = parseInt(document.getElementById(`freq-${pillar}`).value);
+    const inputs = document.querySelectorAll(`.pers-input[data-pillar="${pillar}"]`);
+    
+    let totalSliderScore = 0;
+    let inputCount = 0;
+
+    inputs.forEach(input => {
+        if (!input.disabled && !input.closest('.hidden') && input.value && parseFloat(input.value) > 0) {
+            const cat = input.dataset.cat;
+            const freq = parseInt(input.dataset.freq) || defaultFreq;
+            let b = (pillar === 'home' && cat === 'shelter') ? rldConfig.benchmarks.home.shelter[state.tenure] : rldConfig.benchmarks[pillar][cat];
+            
+            const annualVal = parseFloat(input.value) * freq;
+            let score = 50;
+            if (b.staples === b.designer) score = 50; 
+            else if (annualVal <= b.staples) score = 0;
+            else if (annualVal >= b.designer) score = 100;
+            else if (annualVal <= b.signature) {
+                score = ((annualVal - b.staples) / (b.signature - b.staples)) * 50;
+            } else {
+                score = 50 + (((annualVal - b.signature) / (b.designer - b.signature)) * 50);
+            }
+            totalSliderScore += score;
+            inputCount++;
+        }
+    });
+
+    if (inputCount === 0) return;
+    state[pillar] = Math.round(totalSliderScore / inputCount);
+    document.getElementById(`slider-${pillar}`).value = state[pillar];
+    calculateAll();
+}
+
 function calculateAll() {
     currentValues.essentials = 0; currentValues.home = 0; currentValues.living = 0;
     
@@ -253,9 +287,8 @@ function updateChartsAndJourney() {
     const doTravelTaper = document.getElementById('toggle-travel').checked;
     const doCareSpike = document.getElementById('toggle-care').checked;
 
-    // NO INFLATION: State pension remains strictly in today's terms
     const spAge = 67; 
-    const spBase = rldConfig.assumptions.statePension || 11973; // Based on 25/26 figures
+    const spBase = rldConfig.assumptions.statePension || 11973; 
     const projectedSp = spBase; 
 
     document.getElementById('sp-amount-val').innerText = `£${Math.round(projectedSp).toLocaleString()}`;
@@ -266,7 +299,8 @@ function updateChartsAndJourney() {
     let combinedPots = state.pensionPot + state.otherSavings;
     let incPots = combinedPots * 0.06; 
 
-    let walletTarget = null;
+    let walletTitle = "";
+    let showWallet = false;
     let showDb = false;
     let showPots = false;
     
@@ -274,8 +308,8 @@ function updateChartsAndJourney() {
     const homeCost = currentValues.home;
     const livingCost = currentValues.living;
     
+    // Core Coverage Logic
     let coreMsg = '';
-    
     if (incSP >= coreCost) {
         coreMsg = `Your State Pension of <strong>£${Math.round(incSP).toLocaleString()}</strong> fully covers your <strong>£${Math.round(coreCost).toLocaleString()}</strong> Core needs.`;
         incSP -= coreCost;
@@ -285,13 +319,15 @@ function updateChartsAndJourney() {
         let shortfall = coreCost - incSP;
         incSP = 0;
         
-        walletTarget = walletTarget || 'core-wallet-slot';
+        walletTitle = "Bridge the Core Gap";
+        showWallet = true;
         showDb = true;
 
         if (incDB >= shortfall) {
             coreMsg += `<br><br>Your DB Pension bridges the gap perfectly.`;
             incDB -= shortfall;
             document.getElementById('partner-annuity').classList.add('hidden');
+            showWallet = false; // Resolved
         } else {
             shortfall -= incDB;
             incDB = 0;
@@ -310,6 +346,7 @@ function updateChartsAndJourney() {
     }
     document.getElementById('tips-p1-text').innerHTML = coreMsg;
 
+    // Home Coverage Logic
     let homeMsg = '';
     let availableReg = incSP + incDB; 
     
@@ -322,8 +359,11 @@ function updateChartsAndJourney() {
         availableReg = 0;
         homeMsg = `Your remaining regular income leaves a gap of <strong>£${Math.round(homeShortfall).toLocaleString()}</strong> for your Home costs.`;
         
-        walletTarget = walletTarget || 'home-wallet-slot';
-        showDb = true; showPots = true;
+        if(!showWallet) {
+            walletTitle = "Bridge the Home Gap";
+            showWallet = true;
+            showDb = true; showPots = true;
+        }
 
         if (incPots >= homeShortfall) {
             homeMsg += `<br><br>Your savings drawdown covers this. Since you are drawing heavily from savings, an income-generating portfolio could protect your capital.`;
@@ -337,6 +377,7 @@ function updateChartsAndJourney() {
     }
     document.getElementById('tips-p2-text').innerHTML = homeMsg;
 
+    // Lifestyle Coverage Logic
     let livingMsg = '';
     let totalRemaining = availableReg + incPots;
     
@@ -346,26 +387,27 @@ function updateChartsAndJourney() {
         document.getElementById('surplus-amount').innerText = `£${Math.round(totalRemaining - livingCost).toLocaleString()}`;
     } else {
         livingMsg = `Your preferred Lifestyle exceeds your available resources by <strong>£${Math.round(livingCost - totalRemaining).toLocaleString()}</strong>. <br><br>Consider reshaping your timeline above (e.g., tapering travel) to make your capital stretch further.`;
-        walletTarget = walletTarget || 'lifestyle-wallet-slot';
-        showDb = true; showPots = true;
+        if(!showWallet) {
+            walletTitle = "Fund Your Lifestyle";
+            showWallet = true;
+            showDb = true; showPots = true;
+        }
         document.getElementById('surplus-block').classList.add('hidden');
     }
     document.getElementById('tips-p3-text').innerHTML = livingMsg;
 
+    // Apply the Persistent Right-Hand Floating Wallet state
     const wallet = document.getElementById('wealth-wallet');
-    if (walletTarget && !wallet.classList.contains('placed')) {
-        document.getElementById(walletTarget).appendChild(wallet);
-        wallet.classList.add('placed');
+    if (showWallet) {
+        document.getElementById('wallet-dynamic-title').innerText = walletTitle;
+        if (showDb) document.getElementById('db-box').classList.remove('hidden');
+        if (showPots) document.getElementById('pots-box').classList.remove('hidden');
         wallet.classList.remove('hidden');
-    } else if (!walletTarget) {
-        document.getElementById('lifestyle-wallet-slot').appendChild(wallet);
-        wallet.classList.remove('hidden'); 
-        showDb = true; showPots = true;
+    } else {
+        wallet.classList.add('hidden');
     }
-    
-    if (showDb) document.getElementById('db-box').classList.remove('hidden');
-    if (showPots) document.getElementById('pots-box').classList.remove('hidden');
 
+    // Partner Card Display Math
     const equityCard = document.getElementById('partner-equity');
     const healthCard = document.getElementById('partner-health');
 
@@ -375,6 +417,7 @@ function updateChartsAndJourney() {
     if (state.living >= 50 || document.getElementById('toggle-care').checked) healthCard.classList.remove('hidden');
     else healthCard.classList.add('hidden');
 
+    // Generate Chart Data
     let runningPot = combinedPots;
     let exhaustionAge = -1;
 
@@ -387,7 +430,6 @@ function updateChartsAndJourney() {
             const pillar = key.split('_')[0];
             const cat = key.split('_')[1];
 
-            // NO INFLATION (Today's Terms mapping ensures accurate math against flat drawdown)
             let projectedVal = data.value; 
             
             if (pillar === 'living') {
@@ -439,24 +481,6 @@ function updateChartsAndJourney() {
         charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = false;
     }
     charts.mainBar.update();
-
-    charts.p1.data.labels = labels;
-    charts.p1.data.datasets[0] = { label: 'Core', backgroundColor: palette.sage, data: dataE };
-    charts.p1.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH };
-    charts.p1.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
-    charts.p1.update();
-
-    charts.p2.data.labels = labels;
-    charts.p2.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
-    charts.p2.data.datasets[1] = { label: 'Home', backgroundColor: palette.dusk, data: dataH };
-    charts.p2.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
-    charts.p2.update();
-
-    charts.p3.data.labels = labels;
-    charts.p3.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
-    charts.p3.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH };
-    charts.p3.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orange, data: dataL };
-    charts.p3.update();
 }
 
 function createBarChart(ctxId, displayLegend) {
@@ -489,7 +513,4 @@ function setupCharts() {
         }
     });
     charts.mainBar = createBarChart('mainStackedChart', true);
-    charts.p1 = createBarChart('chart-p1', false);
-    charts.p2 = createBarChart('chart-p2', false);
-    charts.p3 = createBarChart('chart-p3', false);
 }
