@@ -2,6 +2,8 @@ Chart.register(ChartDataLabels);
 Chart.register(window['chartjs-plugin-annotation']);
 
 let rldConfig = null;
+let locationBenchmarks = null; // NEW: Holds ONS Data
+
 let state = { 
     age: 67,
     postcode: '',
@@ -30,10 +32,17 @@ const palette = {
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const response = await fetch('data/config.json');
-        rldConfig = await response.json();
+        // NEW: Fetch both config and location data simultaneously
+        const [configRes, locRes] = await Promise.all([
+            fetch('data/config.json'),
+            fetch('data/location_benchmarks.json')
+        ]);
+        
+        rldConfig = await configRes.json();
+        locationBenchmarks = await locRes.json();
+        
         initApp();
-    } catch (e) { console.error("Config failed.", e); }
+    } catch (e) { console.error("Initialization failed.", e); }
 });
 
 function initApp() {
@@ -49,44 +58,40 @@ function toggleSection(bodyId, headerElement) {
     headerElement.classList.toggle('collapsed');
 }
 
+// NEW: True ONS JSON Lookup Logic
 function updatePostcodeReadout() {
-    const pc = document.getElementById('meas-postcode').value.trim().toUpperCase();
+    const pcInput = document.getElementById('meas-postcode').value.trim().toUpperCase();
     const hint = document.getElementById('postcode-hint');
-    state.postcode = pc;
+    state.postcode = pcInput;
     
-    if (pc.length >= 2) {
-        // Mock ONS Age-based income bands
-        let ageIncome = 21000;
-        if (state.age < 55) ageIncome = 38000;
-        else if (state.age < 60) ageIncome = 35000;
-        else if (state.age < 65) ageIncome = 31000;
-        else if (state.age < 70) ageIncome = 26000;
-        else if (state.age < 75) ageIncome = 23000;
+    if (pcInput.length >= 2 && locationBenchmarks) {
+        // Regex extracts just the District (e.g., turns "SW1A 1AA" into "SW1A")
+        const districtMatch = pcInput.match(/^[A-Z]{1,2}[0-9][A-Z0-9]?/);
+        const districtCode = districtMatch ? districtMatch[0] : pcInput;
         
-        // Dummy logic to create a geo-variance for testing (Simulates the future JSON lookup)
-        let geoMultiplier = 1.0;
-        if (pc.startsWith('SW') || pc.startsWith('W') || pc.startsWith('EC')) geoMultiplier = 1.35; // London Weighting
-        else if (pc.startsWith('M') || pc.startsWith('B')) geoMultiplier = 0.95; // Urban Regional
-        else geoMultiplier = 1.05; // Standard
-
-        const localAgeAvg = Math.round(ageIncome * geoMultiplier);
-        const natAvg = 34900; // Fixed UK National Average
+        const districtData = locationBenchmarks.districts[districtCode];
+        const natAvg = locationBenchmarks.metadata.national_average;
         
-        hint.innerHTML = `Est. local income (Age ${state.age}): <br><strong>£${localAgeAvg.toLocaleString()}</strong> (UK Avg: <strong>£${natAvg.toLocaleString()}</strong>)`;
+        if (districtData) {
+            const localAvg = districtData.avg_disposable_income;
+            hint.innerHTML = `Est. local income (${districtData.region}): <br><strong>£${localAvg.toLocaleString()}</strong> (UK Avg: <strong>£${natAvg.toLocaleString()}</strong>)`;
+            
+            // NOTE: districtData.recommended_tier and districtData.adjustments are now available 
+            // here in memory to drive auto-play slider adjustments in future iterations.
+            
+        } else {
+            // Fallback for postcodes not in our sample database
+            hint.innerHTML = `Area not mapped. Using UK Avg: <br><strong>£${natAvg.toLocaleString()}</strong>`;
+        }
     } else {
         hint.innerHTML = '';
     }
 }
 
 function setupListeners() {
-    // Measurements Inputs
-    document.getElementById('meas-age').addEventListener('change', (e) => { 
-        state.age = parseInt(e.target.value) || 67; 
-        updatePostcodeReadout(); 
-        calculateAll(); 
-    });
+    document.getElementById('meas-age').addEventListener('change', (e) => { state.age = parseInt(e.target.value) || 67; calculateAll(); });
     
-    // Postcode Listener
+    // Postcode Listener triggers the ONS lookup
     document.getElementById('meas-postcode').addEventListener('input', updatePostcodeReadout);
 
     document.getElementById('meas-db').addEventListener('input', (e) => { state.dbPension = parseFloat(e.target.value) || 0; calculateAll(); });
@@ -456,18 +461,21 @@ function updateCharts() {
     }
     charts.mainBar.update();
 
+    // Local P1 Focus 
     charts.p1.data.labels = labels;
     charts.p1.data.datasets[0] = { label: 'Core', backgroundColor: palette.sage, data: dataE };
     charts.p1.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH };
     charts.p1.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p1.update();
 
+    // Local P2 Focus 
     charts.p2.data.labels = labels;
     charts.p2.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
     charts.p2.data.datasets[1] = { label: 'Home', backgroundColor: palette.dusk, data: dataH };
     charts.p2.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p2.update();
 
+    // Local P3 Focus 
     charts.p3.data.labels = labels;
     charts.p3.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
     charts.p3.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH };
@@ -478,6 +486,7 @@ function updateCharts() {
 function updateDesignerTips(exhaustionAge) {
     const regIncome = rldConfig.assumptions.statePension + state.dbPension;
     
+    // Pillar 1: Core Tip
     const p1Text = document.getElementById('tips-p1-text');
     const annuityCard = document.getElementById('partner-annuity');
     if (regIncome >= currentValues.essentials) {
@@ -489,6 +498,7 @@ function updateDesignerTips(exhaustionAge) {
         annuityCard.classList.remove('hidden');
     }
 
+    // Pillar 2: Home Tip
     const p2Text = document.getElementById('tips-p2-text');
     const portfolioCard = document.getElementById('partner-portfolio');
     const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
@@ -501,6 +511,7 @@ function updateDesignerTips(exhaustionAge) {
         portfolioCard.classList.remove('hidden');
     }
 
+    // Pillar 3: Lifestyle Tip
     const p3Text = document.getElementById('tips-p3-text');
     const equityCard = document.getElementById('partner-equity');
     const healthCard = document.getElementById('partner-health');
