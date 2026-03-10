@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
 </head>
 <body>
 
@@ -116,7 +117,7 @@
                     </div>
 
                     <div class="local-chart-wrapper">
-                        <h4 class="local-chart-title">Core Impact</h4>
+                        <h4 class="local-chart-title">Core Impact Focus</h4>
                         <canvas id="chart-p1"></canvas>
                     </div>
                 </div>
@@ -177,7 +178,7 @@
                     </div>
 
                     <div class="local-chart-wrapper">
-                        <h4 class="local-chart-title">Home Impact</h4>
+                        <h4 class="local-chart-title">Home Impact Focus</h4>
                         <canvas id="chart-p2"></canvas>
                     </div>
                 </div>
@@ -194,7 +195,7 @@
                 
                 <div class="pillar-body" id="body-living">
                     <div class="slider-container">
-                        <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50" disabled style="opacity: 0.7; cursor: not-allowed;">
+                        <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50">
                         <div class="slider-labels">
                             <div class="label-group tt-trigger" data-desc="Local leisure, free bus pass, 1 UK holiday, reliant entirely on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
                             <div class="label-group tt-trigger" data-desc="Car ownership, European holidays, and a private healthcare diagnostic buffer."><strong>Signature</strong><span>Private Health Buffer ⓘ</span></div>
@@ -215,7 +216,7 @@
                         <div class="partner-card-tip hidden" id="partner-equity" style="margin-top: 15px;">
                             <div class="pct-content">
                                 <strong>Boost via Property Wealth</strong>
-                                <span>Unlock equity from your home to dramatically elevate your Lifestyle spending power.</span>
+                                <span>Unlock equity from your home to dramatically elevate your Lifestyle spending power in early retirement.</span>
                             </div>
                             <button class="pct-btn">Explore Equity Release</button>
                         </div>
@@ -230,7 +231,7 @@
                     </div>
 
                     <div class="local-chart-wrapper">
-                        <h4 class="local-chart-title">Lifestyle Trajectory</h4>
+                        <h4 class="local-chart-title">Lifestyle Trajectory Focus</h4>
                         <canvas id="chart-p3"></canvas>
                     </div>
                 </div>
@@ -240,27 +241,24 @@
         <aside class="outputs-section">
             
             <div class="salary-dashboard" style="margin-bottom: 25px;">
-                <div class="salary-total">
-                    <span class="sd-label">Target Gross Fit</span>
-                    <span class="sd-gross" id="display-salary">£0</span>
+                <div class="dash-left">
+                    <div class="salary-total">
+                        <span class="sd-label">Target Gross Fit</span>
+                        <span class="sd-gross" id="display-salary">£0</span>
+                    </div>
+                    <div class="salary-breakdown">
+                        <div class="sd-net">The Net Fit: <span id="display-net">£0</span></div>
+                        <div class="sd-tax">The Tax Fit: <span id="display-tax">+£0</span></div>
+                    </div>
                 </div>
-                <div class="salary-breakdown">
-                    <div class="sd-net">The Net Fit: <span id="display-net">£0</span></div>
-                    <div class="sd-tax">The Tax Fit: <span id="display-tax">+£0</span></div>
-                </div>
-            </div>
-
-            <div class="chart-card polar-wrapper" style="margin-bottom: 25px;">
-                <h3>Your Lifestyle Shape</h3>
-                <p class="chart-desc">Radius visualizes intensity across your personalized collection.</p>
-                <div class="polar-container">
-                    <canvas id="polarChart"></canvas>
+                <div class="dash-right">
+                    <canvas id="polarChart" width="140" height="140"></canvas>
                 </div>
             </div>
 
             <div class="chart-card spline-wrapper">
                 <h3>Life Chapters</h3>
-                <p class="chart-desc">Your overall projected needs spanning the Active, Comfort, and Legacy eras.</p>
+                <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
                 <canvas id="mainStackedChart"></canvas>
             </div>
             
