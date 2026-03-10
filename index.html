@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
 </head>
 <body>
 
@@ -103,6 +102,11 @@
                         </div>
                     </div>
 
+                    <div class="local-chart-wrapper">
+                        <h4 class="local-chart-title">Core Impact Focus</h4>
+                        <canvas id="chart-p1"></canvas>
+                    </div>
+
                     <div class="designer-tips">
                         <h4 class="tips-title">Designer Insights</h4>
                         <p class="tips-text" id="tips-p1-text"></p>
@@ -114,11 +118,6 @@
                             </div>
                             <button class="pct-btn">Explore Annuities</button>
                         </div>
-                    </div>
-
-                    <div class="local-chart-wrapper">
-                        <h4 class="local-chart-title">Core Impact Focus</h4>
-                        <canvas id="chart-p1"></canvas>
                     </div>
                 </div>
             </section>
@@ -164,6 +163,11 @@
                         </div>
                     </div>
 
+                    <div class="local-chart-wrapper">
+                        <h4 class="local-chart-title">Home Impact Focus</h4>
+                        <canvas id="chart-p2"></canvas>
+                    </div>
+
                     <div class="designer-tips">
                         <h4 class="tips-title">Designer Insights</h4>
                         <p class="tips-text" id="tips-p2-text"></p>
@@ -175,11 +179,6 @@
                             </div>
                             <button class="pct-btn">Explore Portfolios</button>
                         </div>
-                    </div>
-
-                    <div class="local-chart-wrapper">
-                        <h4 class="local-chart-title">Home Impact Focus</h4>
-                        <canvas id="chart-p2"></canvas>
                     </div>
                 </div>
             </section>
@@ -209,6 +208,11 @@
                         <label class="toggle-row"><input type="checkbox" id="toggle-care" checked> Ring-fence a private later-life care fund (Spikes at Age 80+)</label>
                     </div>
 
+                    <div class="local-chart-wrapper">
+                        <h4 class="local-chart-title">Lifestyle Trajectory Focus</h4>
+                        <canvas id="chart-p3"></canvas>
+                    </div>
+
                     <div class="designer-tips">
                         <h4 class="tips-title">Designer Insights</h4>
                         <p class="tips-text" id="tips-p3-text"></p>
@@ -229,11 +233,6 @@
                             <button class="pct-btn">Explore Healthcare</button>
                         </div>
                     </div>
-
-                    <div class="local-chart-wrapper">
-                        <h4 class="local-chart-title">Lifestyle Trajectory Focus</h4>
-                        <canvas id="chart-p3"></canvas>
-                    </div>
                 </div>
             </section>
         </main>
@@ -252,14 +251,16 @@
                     </div>
                 </div>
                 <div class="dash-right">
-                    <canvas id="polarChart" width="140" height="140"></canvas>
+                    <canvas id="polarChart"></canvas>
                 </div>
             </div>
 
-            <div class="chart-card spline-wrapper">
+            <div class="chart-card">
                 <h3>Life Chapters</h3>
                 <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
-                <canvas id="mainStackedChart"></canvas>
+                <div class="main-chart-wrapper">
+                    <canvas id="mainStackedChart"></canvas>
+                </div>
             </div>
             
         </aside>
