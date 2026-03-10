@@ -17,15 +17,14 @@ let state = {
 };
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
-let charts = { polar: null, spline: null }; 
+// Expanded chart registry
+let charts = { polar: null, mainBar: null, p1: null, p2: null, p3: null }; 
 
+// Updated Palette with faded versions for focus charts
 const palette = {
-    sage: '#A3C6C4',
-    sageFill: 'rgba(163, 198, 196, 0.4)',
-    stone: '#E8E6E1',
-    stoneFill: 'rgba(232, 230, 225, 0.6)',
-    orange: '#FF5A36',
-    orangeFill: 'rgba(255, 90, 54, 0.4)',
+    sage: '#A3C6C4', sageFaded: 'rgba(163, 198, 196, 0.2)',
+    stone: '#E8E6E1', stoneFaded: 'rgba(232, 230, 225, 0.2)',
+    orange: '#FF5A36', orangeFaded: 'rgba(255, 90, 54, 0.2)',
     espresso: '#2B2625'
 };
 
@@ -42,6 +41,13 @@ function initApp() {
     setupListeners();
     handleTenureUI();
     calculateAll();
+}
+
+// Collapsible Section Logic
+function toggleSection(bodyId, headerElement) {
+    const body = document.getElementById(bodyId);
+    body.classList.toggle('collapsed');
+    headerElement.classList.toggle('collapsed');
 }
 
 function setupListeners() {
@@ -77,7 +83,6 @@ function setupListeners() {
         });
     });
 
-    // P1 and P2 Sliders
     ['essentials', 'home'].forEach(pillar => {
         const slider = document.getElementById(`slider-${pillar}`);
         slider.addEventListener('input', (e) => {
@@ -91,13 +96,16 @@ function setupListeners() {
         });
     });
 
+    // U-Shape Toggles in P3
+    document.getElementById('toggle-travel').addEventListener('change', calculateAll);
+    document.getElementById('toggle-care').addEventListener('change', calculateAll);
+
     const tooltip = document.getElementById('smart-tooltip');
     let tooltipTimeout;
     const hideTooltip = () => tooltip.classList.remove('show');
 
     document.querySelectorAll('.pers-input').forEach(input => {
         input.addEventListener('input', (e) => extrapolate(e.target.dataset.pillar));
-        
         const showInputTooltip = (e) => {
             clearTimeout(tooltipTimeout);
             if(e.target.disabled || e.target.closest('.hidden')) return;
@@ -116,13 +124,11 @@ function setupListeners() {
             const de = Math.round(b.designer / freq);
 
             tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
-            
             const rect = e.target.getBoundingClientRect();
             tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
             tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
             tooltip.classList.add('show');
         };
-
         input.addEventListener('mouseenter', showInputTooltip);
         input.addEventListener('focus', showInputTooltip);
         input.addEventListener('mouseleave', hideTooltip);
@@ -134,13 +140,11 @@ function setupListeners() {
             clearTimeout(tooltipTimeout);
             const desc = e.currentTarget.dataset.desc;
             tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
-            
             const rect = e.currentTarget.getBoundingClientRect();
             tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
             tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
             tooltip.classList.add('show');
         };
-
         label.addEventListener('mouseenter', showLabelTooltip);
         label.addEventListener('touchstart', showLabelTooltip, {passive: true});
         label.addEventListener('mouseleave', hideTooltip);
@@ -160,23 +164,19 @@ function handleTenureUI() {
     rentInputs.classList.add('hidden');
     shelterInput.disabled = true;
 
-    let friendlyText = "";
-
     if (state.tenure === 'owner') {
         ownerInputs.classList.remove('hidden');
-        friendlyText = "you own your home outright.";
+        displayReadout.innerHTML = `<strong>Curated for you:</strong> You own your home outright. We've styled your Home baseline using the details provided above.`;
         shelterInput.value = '';
     } else if (state.tenure === 'mortgage') {
         mortgageInputs.classList.remove('hidden');
-        friendlyText = "you have a mortgage.";
+        displayReadout.innerHTML = `<strong>Curated for you:</strong> You have a mortgage. We've styled your Home baseline using the details provided above.`;
         shelterInput.value = state.mortgagePmt || '';
     } else {
         rentInputs.classList.remove('hidden');
-        friendlyText = "you are renting.";
+        displayReadout.innerHTML = `<strong>Curated for you:</strong> You are renting. We've styled your Home baseline using the details provided above.`;
         shelterInput.value = state.rentPmt || '';
     }
-    
-    displayReadout.innerHTML = `<strong>Curated for you:</strong> We've styled your Home baseline using the details you provided above. Adjust your standard of living below.`;
 }
 
 function togglePersonalize(id) {
@@ -185,7 +185,7 @@ function togglePersonalize(id) {
 }
 
 function extrapolate(pillar) {
-    if (pillar === 'living') return; // Disabled slider, no extrapolation needed
+    if (pillar === 'living') return; 
     
     const defaultFreq = parseInt(document.getElementById(`freq-${pillar}`).value);
     const inputs = document.querySelectorAll(`.pers-input[data-pillar="${pillar}"]`);
@@ -200,7 +200,6 @@ function extrapolate(pillar) {
             let b = (pillar === 'home' && cat === 'shelter') ? rldConfig.benchmarks.home.shelter[state.tenure] : rldConfig.benchmarks[pillar][cat];
             
             const annualVal = parseFloat(input.value) * freq;
-
             let score = 50;
             if (b.staples === b.designer) score = 50; 
             else if (annualVal <= b.staples) score = 0;
@@ -319,14 +318,13 @@ function calculateAll() {
 }
 
 function updateDesignerTips(regIncome, drawdownIncome, remainingLivingBudget) {
-    // Pillar 1: Core Tip
     const p1Text = document.getElementById('tips-p1-text');
     const annuityCard = document.getElementById('partner-annuity');
     const strRegInc = `£${Math.round(regIncome).toLocaleString()}`;
     const strEss = `£${Math.round(currentValues.essentials).toLocaleString()}`;
 
     if (regIncome >= currentValues.essentials) {
-        p1Text.innerHTML = `Your guaranteed regular income (State + DB Pension) totals <strong>${strRegInc}</strong> annually, which comfortably covers your <strong>${strEss}</strong> Core needs. This provides a highly secure foundation for your retirement.`;
+        p1Text.innerHTML = `Your guaranteed regular income (State + DB Pension) totals <strong>${strRegInc}</strong> annually, which comfortably covers your <strong>${strEss}</strong> Core needs. This provides a highly secure foundation.`;
         annuityCard.classList.add('hidden');
     } else {
         const shortfall = currentValues.essentials - regIncome;
@@ -334,7 +332,6 @@ function updateDesignerTips(regIncome, drawdownIncome, remainingLivingBudget) {
         annuityCard.classList.remove('hidden');
     }
 
-    // Pillar 2: Home Tip
     const p2Text = document.getElementById('tips-p2-text');
     const portfolioCard = document.getElementById('partner-portfolio');
     const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
@@ -345,14 +342,13 @@ function updateDesignerTips(regIncome, drawdownIncome, remainingLivingBudget) {
     } else if (remainingRegAfterEss > 0 && currentValues.home > 0) {
         const homeShortfall = currentValues.home - remainingRegAfterEss;
         const pctCovered = Math.round((remainingRegAfterEss / currentValues.home) * 100);
-        p2Text.innerHTML = `After meeting your Core needs, you have <strong>£${Math.round(remainingRegAfterEss).toLocaleString()}</strong> of regular income left, covering ${pctCovered}% of your Home costs. You will need to draw <strong>£${Math.round(homeShortfall).toLocaleString()}</strong> annually from your pots and savings to cover the balance.`;
+        p2Text.innerHTML = `After meeting your Core needs, you have <strong>£${Math.round(remainingRegAfterEss).toLocaleString()}</strong> of regular income left, covering ${pctCovered}% of your Home costs. You will need to draw <strong>£${Math.round(homeShortfall).toLocaleString()}</strong> annually from your pots/savings.`;
         portfolioCard.classList.remove('hidden');
     } else {
         p2Text.innerHTML = `Since your regular income is fully absorbed by your Core needs, you will need to draw <strong>£${Math.round(currentValues.home).toLocaleString()}</strong> annually from your pots and savings to fund your Home costs.`;
         portfolioCard.classList.remove('hidden');
     }
 
-    // Pillar 3: Lifestyle Tip
     const p3Text = document.getElementById('tips-p3-text');
     const equityCard = document.getElementById('partner-equity');
     const healthCard = document.getElementById('partner-health');
@@ -360,20 +356,52 @@ function updateDesignerTips(regIncome, drawdownIncome, remainingLivingBudget) {
     
     p3Text.innerHTML = `We have auto-populated your Lifestyle based on your available resources. After funding your Core and Home, and assuming a sustainable ${Math.round(rldConfig.assumptions.drawdownRate * 100)}% drawdown from your savings, you have <strong>${strLiv}</strong> annually to fund your Lifestyle costs.`;
 
-    // Equity Partner Logic
     if (state.tenure === 'owner' || state.tenure === 'mortgage') {
         equityCard.classList.remove('hidden');
     } else {
         equityCard.classList.add('hidden');
     }
 
-    // Health Partner Logic (Show if Lifestyle is high or care toggle is checked)
     const careChecked = document.getElementById('toggle-care').checked;
     if (state.living >= 50 || careChecked) {
         healthCard.classList.remove('hidden');
     } else {
         healthCard.classList.add('hidden');
     }
+}
+
+// Reusable Bar Chart Factory
+function createBarChart(ctxId, displayLegend) {
+    const ctx = document.getElementById(ctxId).getContext('2d');
+    return new Chart(ctx, {
+        type: 'bar',
+        data: { 
+            labels: [], 
+            datasets: [
+                { label: 'Core', backgroundColor: palette.sage, data: [] },
+                { label: 'Home', backgroundColor: palette.stone, data: [] },
+                { label: 'Lifestyle', backgroundColor: palette.orange, data: [] }
+            ] 
+        },
+        options: { 
+            responsive: true, 
+            scales: { 
+                x: { stacked: true, grid: { display: false } }, 
+                y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } 
+            }, 
+            plugins: { 
+                legend: { display: displayLegend, position: 'bottom', labels: { boxWidth: 12, font: { family: 'Space Grotesk'} } },
+                datalabels: { display: false },
+                tooltip: {
+                    backgroundColor: palette.espresso,
+                    titleFont: { family: 'Space Grotesk', size: 13 },
+                    bodyFont: { family: 'Space Grotesk', size: 12 },
+                    padding: 12,
+                    callbacks: { label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; } }
+                }
+            } 
+        }
+    });
 }
 
 function setupCharts() {
@@ -390,16 +418,12 @@ function setupCharts() {
             }] 
         },
         options: { 
-            responsive: true,
-            layout: { padding: 15 },
+            responsive: true, layout: { padding: 15 },
             scales: { r: { min: -20, max: 100, ticks: { display: false }, grid: { color: 'rgba(0,0,0,0.03)' } } },
             plugins: { 
-                legend: { display: false }, 
-                tooltip: { enabled: false }, 
+                legend: { display: false }, tooltip: { enabled: false }, 
                 datalabels: {
-                    color: palette.espresso,
-                    font: { family: 'Space Grotesk', weight: '600', size: 11 },
-                    textAlign: 'center',
+                    color: palette.espresso, font: { family: 'Space Grotesk', weight: '600', size: 11 }, textAlign: 'center',
                     formatter: function(value, context) {
                         const labelName = context.chart.data.labels[context.dataIndex];
                         let cashVal = 0;
@@ -413,38 +437,11 @@ function setupCharts() {
         }
     });
 
-    const ctxSpline = document.getElementById('splineChart').getContext('2d');
-    charts.spline = new Chart(ctxSpline, {
-        type: 'line',
-        data: { 
-            labels: [], 
-            datasets: [
-                { label: 'Core', backgroundColor: palette.sageFill, borderColor: palette.sage, fill: true, tension: 0.4, data: [] },
-                { label: 'Home', backgroundColor: palette.stoneFill, borderColor: palette.stone, fill: true, tension: 0.4, data: [] },
-                { label: 'Lifestyle', backgroundColor: palette.orangeFill, borderColor: palette.orange, fill: true, tension: 0.4, data: [] }
-            ] 
-        },
-        options: { 
-            responsive: true, 
-            scales: { 
-                x: { grid: { display: false } }, 
-                y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } 
-            }, 
-            plugins: { 
-                legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Space Grotesk'} } },
-                datalabels: { display: false },
-                tooltip: {
-                    backgroundColor: palette.espresso,
-                    titleFont: { family: 'Space Grotesk', size: 13 },
-                    bodyFont: { family: 'Space Grotesk', size: 12 },
-                    padding: 12,
-                    callbacks: {
-                        label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; }
-                    }
-                }
-            } 
-        }
-    });
+    // Initialize all 4 Bar Charts
+    charts.mainBar = createBarChart('mainStackedChart', true);
+    charts.p1 = createBarChart('chart-p1', false);
+    charts.p2 = createBarChart('chart-p2', false);
+    charts.p3 = createBarChart('chart-p3', false);
 }
 
 function updateCharts() {
@@ -454,6 +451,9 @@ function updateCharts() {
     const endAge = 90;
     const labels = [];
     const dataE = []; const dataH = []; const dataL = [];
+    
+    const doTravelTaper = document.getElementById('toggle-travel').checked;
+    const doCareSpike = document.getElementById('toggle-care').checked;
 
     for (let age = state.age; age <= endAge; age++) {
         labels.push(age);
@@ -467,8 +467,11 @@ function updateCharts() {
 
             let projectedVal = data.value * Math.pow(1 + data.inf, yearsPassed);
             
-            if (data.shape === 'taper' && age >= 80) projectedVal *= 0.5; 
-            if (data.shape === 'spike' && age >= 80) projectedVal *= 1.5; 
+            // U-Shape Logic implementation for Lifestyle
+            if (pillar === 'living') {
+                if (data.shape === 'taper' && age >= 75 && doTravelTaper) projectedVal *= 0.5; // Taper middle
+                if (data.shape === 'spike' && age >= 80 && doCareSpike) projectedVal *= 3.0;   // Spike end
+            }
             
             if (pillar === 'home' && cat === 'shelter' && state.tenure === 'mortgage' && age >= state.mortgageEndAge) {
                 projectedVal = 0;
@@ -484,9 +487,31 @@ function updateCharts() {
         dataL.push(lSum);
     }
 
-    charts.spline.data.labels = labels;
-    charts.spline.data.datasets[0].data = dataE;
-    charts.spline.data.datasets[1].data = dataH;
-    charts.spline.data.datasets[2].data = dataL;
-    charts.spline.update();
+    // Update Main Chart (All solid)
+    charts.mainBar.data.labels = labels;
+    charts.mainBar.data.datasets[0].data = dataE;
+    charts.mainBar.data.datasets[1].data = dataH;
+    charts.mainBar.data.datasets[2].data = dataL;
+    charts.mainBar.update();
+
+    // Update Local P1 Focus Chart (Fade H, L)
+    charts.p1.data.labels = labels;
+    charts.p1.data.datasets[0] = { label: 'Core', backgroundColor: palette.sage, data: dataE };
+    charts.p1.data.datasets[1] = { label: 'Home', backgroundColor: palette.stoneFaded, data: dataH };
+    charts.p1.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
+    charts.p1.update();
+
+    // Update Local P2 Focus Chart (Fade E, L)
+    charts.p2.data.labels = labels;
+    charts.p2.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
+    charts.p2.data.datasets[1] = { label: 'Home', backgroundColor: palette.stone, data: dataH };
+    charts.p2.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
+    charts.p2.update();
+
+    // Update Local P3 Focus Chart (Fade E, H)
+    charts.p3.data.labels = labels;
+    charts.p3.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
+    charts.p3.data.datasets[1] = { label: 'Home', backgroundColor: palette.stoneFaded, data: dataH };
+    charts.p3.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orange, data: dataL };
+    charts.p3.update();
 }
