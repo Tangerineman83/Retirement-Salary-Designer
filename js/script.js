@@ -2,7 +2,7 @@ Chart.register(ChartDataLabels);
 Chart.register(window['chartjs-plugin-annotation']);
 
 let rldConfig = null;
-let locationBenchmarks = null; // NEW: Holds ONS Data
+let locationBenchmarks = null;
 
 let state = { 
     age: 67,
@@ -32,7 +32,6 @@ const palette = {
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // NEW: Fetch both config and location data simultaneously
         const [configRes, locRes] = await Promise.all([
             fetch('data/config.json'),
             fetch('data/location_benchmarks.json')
@@ -58,29 +57,36 @@ function toggleSection(bodyId, headerElement) {
     headerElement.classList.toggle('collapsed');
 }
 
-// NEW: True ONS JSON Lookup Logic
+// NEW: ONS Mapping Logic & Auto-Slider Execution
 function updatePostcodeReadout() {
-    const pcInput = document.getElementById('meas-postcode').value.trim().toUpperCase();
+    const pcInput = document.getElementById('meas-postcode').value.trim();
     const hint = document.getElementById('postcode-hint');
     state.postcode = pcInput;
     
-    if (pcInput.length >= 2 && locationBenchmarks) {
-        // Regex extracts just the District (e.g., turns "SW1A 1AA" into "SW1A")
-        const districtMatch = pcInput.match(/^[A-Z]{1,2}[0-9][A-Z0-9]?/);
-        const districtCode = districtMatch ? districtMatch[0] : pcInput;
-        
-        const districtData = locationBenchmarks.districts[districtCode];
+    // Regex extracts just the leading alpha characters (e.g. "SW1A 1AA" -> "SW")
+    const alphaMatch = pcInput.match(/^[A-Z]+/i);
+    
+    if (alphaMatch && locationBenchmarks) {
+        const areaCode = alphaMatch[0].toUpperCase();
+        const districtData = locationBenchmarks.districts[areaCode];
         const natAvg = locationBenchmarks.metadata.national_average;
         
         if (districtData) {
             const localAvg = districtData.avg_disposable_income;
-            hint.innerHTML = `Est. local income (${districtData.region}): <br><strong>£${localAvg.toLocaleString()}</strong> (UK Avg: <strong>£${natAvg.toLocaleString()}</strong>)`;
+            hint.innerHTML = `Est. local income (${districtData.region}): <br><strong>£${localAvg.toLocaleString()}</strong> (UK Avg: £${natAvg.toLocaleString()})`;
             
-            // NOTE: districtData.recommended_tier and districtData.adjustments are now available 
-            // here in memory to drive auto-play slider adjustments in future iterations.
+            // Auto-Snap Sliders to Local Demographics
+            state.essentials = districtData.slider_positions.core;
+            state.home = districtData.slider_positions.home;
+            state.living = districtData.slider_positions.lifestyle;
             
+            document.getElementById('slider-essentials').value = state.essentials;
+            document.getElementById('slider-home').value = state.home;
+            document.getElementById('slider-living').value = state.living;
+            
+            calculateAll(); // Update the whole app based on new sliders
+
         } else {
-            // Fallback for postcodes not in our sample database
             hint.innerHTML = `Area not mapped. Using UK Avg: <br><strong>£${natAvg.toLocaleString()}</strong>`;
         }
     } else {
@@ -91,7 +97,7 @@ function updatePostcodeReadout() {
 function setupListeners() {
     document.getElementById('meas-age').addEventListener('change', (e) => { state.age = parseInt(e.target.value) || 67; calculateAll(); });
     
-    // Postcode Listener triggers the ONS lookup
+    // Connect the Postcode field
     document.getElementById('meas-postcode').addEventListener('input', updatePostcodeReadout);
 
     document.getElementById('meas-db').addEventListener('input', (e) => { state.dbPension = parseFloat(e.target.value) || 0; calculateAll(); });
@@ -461,21 +467,18 @@ function updateCharts() {
     }
     charts.mainBar.update();
 
-    // Local P1 Focus 
     charts.p1.data.labels = labels;
     charts.p1.data.datasets[0] = { label: 'Core', backgroundColor: palette.sage, data: dataE };
     charts.p1.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH };
     charts.p1.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p1.update();
 
-    // Local P2 Focus 
     charts.p2.data.labels = labels;
     charts.p2.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
     charts.p2.data.datasets[1] = { label: 'Home', backgroundColor: palette.dusk, data: dataH };
     charts.p2.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p2.update();
 
-    // Local P3 Focus 
     charts.p3.data.labels = labels;
     charts.p3.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
     charts.p3.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH };
@@ -486,7 +489,6 @@ function updateCharts() {
 function updateDesignerTips(exhaustionAge) {
     const regIncome = rldConfig.assumptions.statePension + state.dbPension;
     
-    // Pillar 1: Core Tip
     const p1Text = document.getElementById('tips-p1-text');
     const annuityCard = document.getElementById('partner-annuity');
     if (regIncome >= currentValues.essentials) {
@@ -498,7 +500,6 @@ function updateDesignerTips(exhaustionAge) {
         annuityCard.classList.remove('hidden');
     }
 
-    // Pillar 2: Home Tip
     const p2Text = document.getElementById('tips-p2-text');
     const portfolioCard = document.getElementById('partner-portfolio');
     const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
@@ -511,7 +512,6 @@ function updateDesignerTips(exhaustionAge) {
         portfolioCard.classList.remove('hidden');
     }
 
-    // Pillar 3: Lifestyle Tip
     const p3Text = document.getElementById('tips-p3-text');
     const equityCard = document.getElementById('partner-equity');
     const healthCard = document.getElementById('partner-health');
