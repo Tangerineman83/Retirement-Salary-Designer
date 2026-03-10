@@ -41,6 +41,10 @@ h1 { font-size: 2.2rem; }
 .seamless-input:focus { border-bottom-color: var(--accent-orange); }
 .seamless-input:disabled { opacity: 0.3; cursor: not-allowed; border-bottom-color: transparent; }
 
+/* NEW: Postcode Hint Styling */
+.input-hint { font-size: 0.75rem; color: var(--accent-sage); margin-top: 8px; display: block; font-weight: 400; line-height: 1.4;}
+.input-hint strong { color: var(--accent-orange); font-weight: 600; }
+
 .tenure-wrapper { margin-top: 35px; border-top: 1px dashed var(--border-stone); padding-top: 25px;}
 .meas-label { font-size: 0.85rem; font-weight: 600; color: var(--text-espresso); display: block; margin-bottom: 15px;}
 .tenure-toggle { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -101,11 +105,9 @@ h1 { font-size: 2.2rem; }
 .chart-card { background: var(--bg-card); padding: 30px; border-radius: 16px; border: 1px solid var(--border-stone); box-shadow: 0 10px 30px rgba(43, 38, 37, 0.03); }
 .chart-card h3 { font-size: 1.2rem; margin-bottom: 8px; }
 .chart-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0; margin-bottom: 20px; line-height: 1.4;}
-
-/* SCALE ADJUSTMENTS: SHORTER Horizon Chart */
 .main-chart-wrapper { position: relative; height: 260px; width: 100%; }
 
-/* SCALE ADJUSTMENTS: TALLER Dashboard, LARGER Polar Chart */
+/* Dashboard */
 .salary-dashboard { background: var(--text-espresso); color: var(--bg-oatmilk); padding: 35px 30px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 15px 35px rgba(43, 38, 37, 0.15);}
 .dash-left { display: flex; flex-direction: column; gap: 15px; }
 .salary-total { display: flex; flex-direction: column; }
@@ -113,8 +115,6 @@ h1 { font-size: 2.2rem; }
 .sd-gross { font-family: 'Playfair Display', serif; font-size: 2.8rem; font-weight: 400; color: var(--bg-oatmilk); margin-top: 5px; }
 .salary-breakdown { font-size: 0.95rem; line-height: 1.7; color: var(--border-stone); }
 .sd-tax { color: var(--accent-orange); }
-
-/* The Polar Chart Container */
 .dash-right { position: relative; width: 180px; height: 180px; flex-shrink: 0; }
 
 @media (max-width: 900px) {
