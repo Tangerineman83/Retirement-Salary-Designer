@@ -41,9 +41,9 @@
                 <div class="tenure-wrapper">
                     <label class="meas-label">Where do you call home?</label>
                     <div class="tenure-toggle" id="meas-tenure-toggle">
-                        <button class="toggle-btn active" data-tenure="owner">Homeowner</button>
-                        <button class="toggle-btn" data-tenure="mortgage">Homeowner (Mortgage)</button>
-                        <button class="toggle-btn" data-tenure="rent">Renter</button>
+                        <button class="toggle-btn active" data-tenure="owner">I own my home outright</button>
+                        <button class="toggle-btn" data-tenure="mortgage">I own my home, with a mortgage</button>
+                        <button class="toggle-btn" data-tenure="rent">I rent my home</button>
                     </div>
 
                     <div id="tenure-dynamic-inputs" style="margin-top: 20px;">
@@ -64,16 +64,16 @@
 
             <section class="pillar-section" id="pillar-essentials">
                 <div class="pillar-header">
-                    <h2>I. Essentials <span class="sub-header-text">(Running the person)</span></h2>
+                    <h2>I. Core <span class="sub-header-text">(The Daily Edit)</span></h2>
                     <span class="live-price" id="val-essentials">£0</span>
                 </div>
                 
                 <div class="slider-container">
                     <input type="range" class="blender-slider snap-slider" id="slider-essentials" min="0" max="100" value="50">
                     <div class="slider-labels">
-                        <div class="label-group tt-trigger" data-desc="Reliable basics, mostly supermarket own-brands."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="50% branded goods, comfortable energy usage, and upgraded tech."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
-                        <div class="label-group tt-trigger" data-desc="Premium organic goods, unrestricted energy."><strong>Designer</strong><span>The Premium Edit ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="Reliable basics, mostly supermarket own-brands. The minimum socially acceptable standard."><strong>Staples</strong><span>The Value Basket ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="50% branded goods, comfortable energy usage, and upgraded tech subscriptions."><strong>Signature</strong><span>The Comfort Standard ⓘ</span></div>
+                        <div class="label-group tt-trigger" data-desc="Premium organic goods, unrestricted energy, and frictionless living."><strong>Designer</strong><span>The Premium Edit ⓘ</span></div>
                     </div>
                 </div>
                 
@@ -102,7 +102,7 @@
                     <div class="partner-card-tip hidden" id="partner-annuity">
                         <div class="pct-content">
                             <strong>Secure Your Foundation</strong>
-                            <span>Explore guaranteed lifetime income options with our partner to bridge your essentials gap.</span>
+                            <span>Explore guaranteed lifetime income options with our partner to bridge your Core gap.</span>
                         </div>
                         <button class="pct-btn">Explore Annuities</button>
                     </div>
@@ -116,7 +116,7 @@
                 </div>
                 
                 <div class="dynamic-status-readout" id="p2-tenure-display">
-                    Your structure is mapped as a <strong>Homeowner</strong> based on your measurements.
+                    <strong>Curated for you:</strong> We've styled your Home baseline using the details you provided above.
                 </div>
                 
                 <div class="slider-container">
@@ -138,7 +138,7 @@
                         </select>
                     </div>
                     <div class="input-grid">
-                        <label>Shelter (Rent/Mortgage): <input type="number" class="pers-input seamless-input" id="input-shelter" data-cat="shelter" data-pillar="home" placeholder="Driven by Measurements" disabled></label>
+                        <label>Shelter (Rent/Mortgage): <input type="number" class="pers-input seamless-input" id="input-shelter" data-cat="shelter" data-pillar="home" placeholder="Mapped from above" disabled></label>
                         <label>Property Tax: <input type="number" class="pers-input seamless-input" data-cat="tax" data-pillar="home" placeholder="£"></label>
                         <label>Water & Sewerage: <input type="number" class="pers-input seamless-input" data-cat="water" data-pillar="home" placeholder="£"></label>
                         <label>Home Protection: <input type="number" class="pers-input seamless-input" data-cat="protection" data-pillar="home" placeholder="£"></label>
@@ -150,12 +150,12 @@
                     <h4 class="tips-title">Designer Insights</h4>
                     <p class="tips-text" id="tips-p2-text"></p>
                     
-                    <div class="partner-card-tip hidden" id="partner-property">
+                    <div class="partner-card-tip hidden" id="partner-portfolio">
                         <div class="pct-content">
-                            <strong>Unlock Your Property Wealth</strong>
-                            <span>Explore equity release and premium property management options to fund your lifestyle.</span>
+                            <strong>Generate Reliable Income</strong>
+                            <span>Connect with a partner to build an income-generating portfolio that funds your Home costs without eroding your capital.</span>
                         </div>
-                        <button class="pct-btn">Explore Property Partners</button>
+                        <button class="pct-btn">Explore Portfolios</button>
                     </div>
                 </div>
             </section>
@@ -184,38 +184,53 @@
                 <div class="designer-tips">
                     <h4 class="tips-title">Designer Insights</h4>
                     <p class="tips-text" id="tips-p3-text"></p>
+                    
+                    <div class="partner-card-tip hidden" id="partner-equity" style="margin-top: 15px;">
+                        <div class="pct-content">
+                            <strong>Boost via Property Wealth</strong>
+                            <span>Unlock equity from your home to dramatically elevate your Lifestyle spending power.</span>
+                        </div>
+                        <button class="pct-btn">Explore Equity Release</button>
+                    </div>
+
+                    <div class="partner-card-tip hidden" id="partner-health" style="margin-top: 15px;">
+                        <div class="pct-content">
+                            <strong>Protect Your Lifestyle</strong>
+                            <span>Explore premium healthcare and later-life protection plans to secure your independence.</span>
+                        </div>
+                        <button class="pct-btn">Explore Healthcare</button>
+                    </div>
                 </div>
             </section>
         </main>
 
         <aside class="outputs-section">
-            <div class="sticky-wrapper">
-                
-                <div class="salary-dashboard">
-                    <div class="salary-total">
-                        <span class="sd-label">Target Gross Fit</span>
-                        <span class="sd-gross" id="display-salary">£0</span>
-                    </div>
-                    <div class="salary-breakdown">
-                        <div class="sd-net">The Net Fit: <span id="display-net">£0</span></div>
-                        <div class="sd-tax">The Tax Fit: <span id="display-tax">+£0</span></div>
-                    </div>
+            
+            <div class="salary-dashboard" style="margin-bottom: 25px;">
+                <div class="salary-total">
+                    <span class="sd-label">Target Gross Fit</span>
+                    <span class="sd-gross" id="display-salary">£0</span>
                 </div>
-
-                <div class="chart-card polar-wrapper">
-                    <h3>Your Lifestyle Shape</h3>
-                    <p class="chart-desc">Radius visualizes intensity across your personalized collection.</p>
-                    <div class="polar-container">
-                        <canvas id="polarChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-card spline-wrapper">
-                    <h3>Life Chapters</h3>
-                    <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
-                    <canvas id="splineChart"></canvas>
+                <div class="salary-breakdown">
+                    <div class="sd-net">The Net Fit: <span id="display-net">£0</span></div>
+                    <div class="sd-tax">The Tax Fit: <span id="display-tax">+£0</span></div>
                 </div>
             </div>
+
+            <div class="chart-card polar-wrapper" style="margin-bottom: 25px;">
+                <h3>Your Lifestyle Shape</h3>
+                <p class="chart-desc">Radius visualizes intensity across your personalized collection.</p>
+                <div class="polar-container">
+                    <canvas id="polarChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card spline-wrapper">
+                <h3>Life Chapters</h3>
+                <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
+                <canvas id="splineChart"></canvas>
+            </div>
+            
         </aside>
     </div>
 </div>
