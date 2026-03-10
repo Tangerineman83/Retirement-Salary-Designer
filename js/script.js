@@ -79,7 +79,15 @@ function updatePostcodeReadout() {
         
         if (districtData) {
             const localAvg = districtData.avg_disposable_income;
-            hint.innerHTML = `Est. local income (${districtData.region}): <br><strong>£${localAvg.toLocaleString()}</strong> (UK Avg: £${natAvg.toLocaleString()})`;
+            
+            // Relative % Math as requested
+            const pct = Math.round(((localAvg / natAvg) - 1) * 100);
+            let relText = "";
+            if (pct > 0) relText = `is <strong>${pct}% above</strong>`;
+            else if (pct < 0) relText = `is <strong>${Math.abs(pct)}% below</strong>`;
+            else relText = `<strong>matches</strong>`;
+
+            hint.innerHTML = `Est. local income (${districtData.region}) ${relText} the national average.`;
             
             const avgPropPrice = localAvg * 8.5; 
             let impliedTenure = 'owner';
@@ -105,7 +113,7 @@ function updatePostcodeReadout() {
             calculateAll(); 
 
         } else {
-            hint.innerHTML = `Area not mapped. Using UK Avg: <br><strong>£${natAvg.toLocaleString()}</strong>`;
+            hint.innerHTML = `Area not mapped. We will use the National Average.`;
             calculateAll();
         }
     } else {
@@ -174,17 +182,23 @@ function handleTenureUI(updateText = true) {
 
     if (state.tenure === 'owner') {
         ownerInputs.classList.remove('hidden');
-        if(updateText) displayReadout.innerHTML = `<strong>Manual Update:</strong> You own your home outright. We've styled your Home baseline using the details provided above.`;
+        if(updateText) displayReadout.innerHTML = `You own your home outright. We've styled your Home baseline using the details provided above.`;
         shelterInput.value = '';
     } else if (state.tenure === 'mortgage') {
         mortgageInputs.classList.remove('hidden');
-        if(updateText) displayReadout.innerHTML = `<strong>Manual Update:</strong> You have a mortgage. We've styled your Home baseline using the details provided above.`;
+        if(updateText) displayReadout.innerHTML = `You have a mortgage. We've styled your Home baseline using the details provided above.`;
         shelterInput.value = state.mortgagePmt || '';
     } else {
         rentInputs.classList.remove('hidden');
-        if(updateText) displayReadout.innerHTML = `<strong>Manual Update:</strong> You are renting. We've styled your Home baseline using the details provided above.`;
+        if(updateText) displayReadout.innerHTML = `You are renting. We've styled your Home baseline using the details provided above.`;
         shelterInput.value = state.rentPmt || '';
     }
+}
+
+// Ensure this function is attached to the global scope for inline onclick usage
+window.togglePersonalize = function(id) {
+    const panel = document.getElementById(`pers-${id}`);
+    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
 }
 
 function extrapolate(pillar) {
@@ -338,7 +352,6 @@ function updateChartsAndJourney() {
                 incPots -= shortfall;
                 document.getElementById('partner-annuity').classList.add('hidden');
             } else {
-                coreMsg += `<br><br><strong>Action:</strong> You still have a critical shortfall. Consider securing an annuity.`;
                 incPots = 0;
                 document.getElementById('partner-annuity').classList.remove('hidden');
             }
@@ -370,7 +383,6 @@ function updateChartsAndJourney() {
             incPots -= homeShortfall;
             document.getElementById('partner-portfolio').classList.remove('hidden');
         } else {
-            homeMsg += `<br><br>Even with your savings withdrawal, you have a shortfall here.`;
             incPots = 0;
             document.getElementById('partner-portfolio').classList.remove('hidden');
         }
