@@ -94,7 +94,7 @@ h1 { font-size: 2.2rem; }
 .panel-desc { font-size: 0.9rem; font-weight: 400; color: var(--text-espresso); line-height: 1.4;}
 .freq-select { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-stone); font-size: 0.8rem; background: transparent; color: var(--text-espresso); outline: none;}
 
-/* NEW: The Floating Wealth Wallet Card */
+/* The Floating Wealth Wallet Card */
 @keyframes slideDownCard { from { opacity: 0; transform: translateY(-15px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .wealth-wallet { background: var(--bg-card); border: 1px solid var(--accent-orange); border-left: 5px solid var(--accent-orange); padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 15px 35px rgba(255, 90, 54, 0.15); animation: slideDownCard 0.4s ease-out; }
 .wallet-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; margin-top: 0; line-height: 1.4;}
@@ -115,7 +115,7 @@ h1 { font-size: 2.2rem; }
 .pct-btn { background: var(--accent-orange); color: var(--bg-card); border: none; padding: 10px 20px; border-radius: 30px; font-family: 'Space Grotesk', sans-serif; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.3s; white-space: nowrap; flex-shrink: 0;}
 .pct-btn:hover { background: #e04a29; }
 
-.chapter-toggles { background: var(--bg-oatmilk); padding: 20px; border-radius: 12px; border: 1px solid var(--border-stone);}
+.chapter-toggles { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-stone);}
 .toggle-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-espresso); margin-top: 10px; cursor: pointer;}
 
 /* Editorial Tooltip */
@@ -128,6 +128,7 @@ h1 { font-size: 2.2rem; }
 .chart-card h3 { font-size: 1.2rem; margin-bottom: 8px; }
 .chart-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0; margin-bottom: 20px; line-height: 1.4;}
 .main-chart-wrapper { position: relative; height: 260px; width: 100%; }
+
 /* Dashboard */
 .salary-dashboard { background: var(--text-espresso); color: var(--bg-oatmilk); padding: 35px 30px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 15px 35px rgba(43, 38, 37, 0.15);}
 .dash-left { display: flex; flex-direction: column; gap: 15px; }
@@ -148,5 +149,5 @@ h1 { font-size: 2.2rem; }
     .salary-breakdown { text-align: center; }
     .partner-card-tip { flex-direction: column; align-items: flex-start; gap: 15px; }
     .pct-btn { width: 100%; margin-left: 0; }
-    .slider-labels { display: none; }
+    /* REMOVED .slider-labels { display: none; } SO LABELS STAY VISIBLE */
 }
