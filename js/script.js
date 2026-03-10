@@ -20,11 +20,11 @@ let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 
 let categoryData = {}; 
 let charts = { polar: null, mainBar: null, p1: null, p2: null, p3: null }; 
 
-// NEW: Introduced "Dusk" to give Pillar 2 proper visual weight
+// The Extreme Contrast Palette (Featuring 'Dusk' for Pillar 2)
 const palette = {
-    sage: '#A3C6C4', sageFaded: 'rgba(163, 198, 196, 0.15)',
-    dusk: '#6B7A8F', duskFaded: 'rgba(107, 122, 143, 0.15)', // Replaces the washed-out Stone
-    orange: '#FF5A36', orangeFaded: 'rgba(255, 90, 54, 0.15)',
+    sage: '#A3C6C4', sageFaded: 'rgba(163, 198, 196, 0.1)',
+    dusk: '#6B7A8F', duskFaded: 'rgba(107, 122, 143, 0.1)', 
+    orange: '#FF5A36', orangeFaded: 'rgba(255, 90, 54, 0.1)',
     espresso: '#2B2625'
 };
 
@@ -278,7 +278,7 @@ function createBarChart(ctxId, displayLegend) {
             labels: [], 
             datasets: [
                 { label: 'Core', backgroundColor: palette.sage, data: [] },
-                { label: 'Home', backgroundColor: palette.dusk, data: [] }, // Updated to Dusk
+                { label: 'Home', backgroundColor: palette.dusk, data: [] },
                 { label: 'Lifestyle', backgroundColor: palette.orange, data: [] }
             ] 
         },
@@ -295,6 +295,14 @@ function createBarChart(ctxId, displayLegend) {
                 tooltip: {
                     backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 }, padding: 12,
                     callbacks: { label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; } }
+                },
+                annotation: {
+                    annotations: {
+                        emptyLine: {
+                            type: 'line', scaleID: 'x', value: 0, borderColor: palette.orange, borderWidth: 2, borderDash: [5, 5], display: false,
+                            label: { display: true, content: 'Pot Empty', position: 'start', backgroundColor: palette.orange, color: '#fff', font: { family: 'Space Grotesk', size: 11 } }
+                        }
+                    }
                 }
             } 
         }
@@ -309,8 +317,8 @@ function setupCharts() {
             labels: ['Core', 'Home', 'Lifestyle'], 
             datasets: [{ 
                 data: [50, 50, 50],
-                backgroundColor: [palette.sage, palette.dusk, palette.orange], // Updated to Dusk
-                borderColor: [palette.sage, palette.dusk, palette.orange], // Updated to Dusk
+                backgroundColor: [palette.sage, palette.dusk, palette.orange],
+                borderColor: [palette.sage, palette.dusk, palette.orange],
                 borderWidth: 1
             }] 
         },
@@ -401,26 +409,33 @@ function updateCharts() {
     charts.mainBar.data.datasets[0].data = dataE;
     charts.mainBar.data.datasets[1].data = dataH;
     charts.mainBar.data.datasets[2].data = dataL;
+    
+    if (exhaustionAge !== -1 && exhaustionAge <= 90) {
+        charts.mainBar.options.plugins.annotation.annotations.emptyLine.value = (exhaustionAge - state.age);
+        charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = true;
+    } else {
+        charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = false;
+    }
     charts.mainBar.update();
 
-    // Local P1 Focus (Fade Home and Lifestyle)
+    // Local P1 Focus 
     charts.p1.data.labels = labels;
     charts.p1.data.datasets[0] = { label: 'Core', backgroundColor: palette.sage, data: dataE };
-    charts.p1.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH }; // Updated
+    charts.p1.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH };
     charts.p1.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p1.update();
 
-    // Local P2 Focus (Fade Core and Lifestyle, Highlight Home)
+    // Local P2 Focus 
     charts.p2.data.labels = labels;
     charts.p2.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
-    charts.p2.data.datasets[1] = { label: 'Home', backgroundColor: palette.dusk, data: dataH }; // Updated
+    charts.p2.data.datasets[1] = { label: 'Home', backgroundColor: palette.dusk, data: dataH };
     charts.p2.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p2.update();
 
-    // Local P3 Focus (Fade Core and Home)
+    // Local P3 Focus 
     charts.p3.data.labels = labels;
     charts.p3.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
-    charts.p3.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH }; // Updated
+    charts.p3.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH };
     charts.p3.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orange, data: dataL };
     charts.p3.update();
 }
@@ -428,6 +443,7 @@ function updateCharts() {
 function updateDesignerTips(exhaustionAge) {
     const regIncome = rldConfig.assumptions.statePension + state.dbPension;
     
+    // Pillar 1: Core Tip
     const p1Text = document.getElementById('tips-p1-text');
     const annuityCard = document.getElementById('partner-annuity');
     if (regIncome >= currentValues.essentials) {
@@ -439,6 +455,7 @@ function updateDesignerTips(exhaustionAge) {
         annuityCard.classList.remove('hidden');
     }
 
+    // Pillar 2: Home Tip
     const p2Text = document.getElementById('tips-p2-text');
     const portfolioCard = document.getElementById('partner-portfolio');
     const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
@@ -451,6 +468,7 @@ function updateDesignerTips(exhaustionAge) {
         portfolioCard.classList.remove('hidden');
     }
 
+    // Pillar 3: Lifestyle Tip
     const p3Text = document.getElementById('tips-p3-text');
     const equityCard = document.getElementById('partner-equity');
     const healthCard = document.getElementById('partner-health');
@@ -461,9 +479,16 @@ function updateDesignerTips(exhaustionAge) {
         p3Text.innerHTML = `<strong>Sustainable:</strong> Based on your current wealth pots and your chosen chapter transitions, this Lifestyle shape appears financially sustainable past Age 90.`;
     }
 
-    if (state.tenure === 'owner' || state.tenure === 'mortgage') equityCard.classList.remove('hidden');
-    else equityCard.classList.add('hidden');
+    // Logic explicitly requested: Only show Equity Release to Non-Renters
+    if (state.tenure === 'owner' || state.tenure === 'mortgage') {
+        equityCard.classList.remove('hidden');
+    } else {
+        equityCard.classList.add('hidden');
+    }
 
-    if (state.living >= 50 || document.getElementById('toggle-care').checked) healthCard.classList.remove('hidden');
-    else healthCard.classList.add('hidden');
+    if (state.living >= 50 || document.getElementById('toggle-care').checked) {
+        healthCard.classList.remove('hidden');
+    } else {
+        healthCard.classList.add('hidden');
+    }
 }
