@@ -128,7 +128,6 @@ h1 { font-size: 2.2rem; }
 .chart-card h3 { font-size: 1.2rem; margin-bottom: 8px; }
 .chart-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 0; margin-bottom: 20px; line-height: 1.4;}
 .main-chart-wrapper { position: relative; height: 260px; width: 100%; }
-
 /* Dashboard */
 .salary-dashboard { background: var(--text-espresso); color: var(--bg-oatmilk); padding: 35px 30px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 15px 35px rgba(43, 38, 37, 0.15);}
 .dash-left { display: flex; flex-direction: column; gap: 15px; }
