@@ -1,5 +1,4 @@
 Chart.register(ChartDataLabels);
-Chart.register(window['chartjs-plugin-annotation']);
 
 let rldConfig = null;
 let state = { 
@@ -20,11 +19,10 @@ let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 
 let categoryData = {}; 
 let charts = { polar: null, mainBar: null, p1: null, p2: null, p3: null }; 
 
-// Extreme Contrast Palette for Focus Charts
 const palette = {
-    sage: '#A3C6C4', sageFaded: 'rgba(163, 198, 196, 0.1)',
-    stone: '#E8E6E1', stoneFaded: 'rgba(232, 230, 225, 0.1)',
-    orange: '#FF5A36', orangeFaded: 'rgba(255, 90, 54, 0.1)',
+    sage: '#A3C6C4', sageFaded: 'rgba(163, 198, 196, 0.15)',
+    stone: '#E8E6E1', stoneFaded: 'rgba(232, 230, 225, 0.15)',
+    orange: '#FF5A36', orangeFaded: 'rgba(255, 90, 54, 0.15)',
     espresso: '#2B2625'
 };
 
@@ -82,7 +80,7 @@ function setupListeners() {
         });
     });
 
-    // ALL Sliders active
+    // ALL sliders active
     ['essentials', 'home', 'living'].forEach(pillar => {
         const slider = document.getElementById(`slider-${pillar}`);
         slider.addEventListener('input', (e) => {
@@ -271,52 +269,6 @@ function calculateAll() {
     updateCharts();
 }
 
-function updateDesignerTips(exhaustionAge) {
-    const regIncome = rldConfig.assumptions.statePension + state.dbPension;
-    
-    // Pillar 1: Core Tip
-    const p1Text = document.getElementById('tips-p1-text');
-    const annuityCard = document.getElementById('partner-annuity');
-    if (regIncome >= currentValues.essentials) {
-        p1Text.innerHTML = `Your guaranteed regular income (State + DB Pension) totals <strong>£${Math.round(regIncome).toLocaleString()}</strong> annually, which comfortably covers your <strong>£${Math.round(currentValues.essentials).toLocaleString()}</strong> Core needs. This provides a highly secure foundation.`;
-        annuityCard.classList.add('hidden');
-    } else {
-        const shortfall = currentValues.essentials - regIncome;
-        p1Text.innerHTML = `Your guaranteed regular income falls short of your Core need by <strong>£${Math.round(shortfall).toLocaleString()}</strong> per year. <br><br><strong>Action to consider:</strong> Convert a portion of your savings into an annuity to guarantee your baseline and cover this gap.`;
-        annuityCard.classList.remove('hidden');
-    }
-
-    // Pillar 2: Home Tip
-    const p2Text = document.getElementById('tips-p2-text');
-    const portfolioCard = document.getElementById('partner-portfolio');
-    const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
-    
-    if (remainingRegAfterEss >= currentValues.home && currentValues.home > 0) {
-        p2Text.innerHTML = `After covering your Core needs, your remaining regular income fully absorbs your Home costs.`;
-        portfolioCard.classList.add('hidden');
-    } else {
-        p2Text.innerHTML = `You will need to draw steadily from your pots and savings to fund your Home costs.`;
-        portfolioCard.classList.remove('hidden');
-    }
-
-    // Pillar 3: Lifestyle Tip (Driven by Pot Exhaustion)
-    const p3Text = document.getElementById('tips-p3-text');
-    const equityCard = document.getElementById('partner-equity');
-    const healthCard = document.getElementById('partner-health');
-    
-    if (exhaustionAge !== -1 && exhaustionAge <= 90) {
-        p3Text.innerHTML = `<strong>Caution:</strong> Based on your chosen Lifestyle shape, your current wealth pots will deplete by <strong>Age ${exhaustionAge}</strong>. <br><br>Because you control the slider, you can choose to enjoy a higher lifestyle now by ensuring the "Scale back travel" toggle is active to offset early spending, or you can lower the Lifestyle slider to extend your wealth.`;
-    } else {
-        p3Text.innerHTML = `<strong>Sustainable:</strong> Based on your current wealth pots and your chosen chapter transitions, this Lifestyle shape appears financially sustainable past Age 90.`;
-    }
-
-    if (state.tenure === 'owner' || state.tenure === 'mortgage') equityCard.classList.remove('hidden');
-    else equityCard.classList.add('hidden');
-
-    if (state.living >= 50 || document.getElementById('toggle-care').checked) healthCard.classList.remove('hidden');
-    else healthCard.classList.add('hidden');
-}
-
 function createBarChart(ctxId, displayLegend) {
     const ctx = document.getElementById(ctxId).getContext('2d');
     return new Chart(ctx, {
@@ -331,6 +283,7 @@ function createBarChart(ctxId, displayLegend) {
         },
         options: { 
             responsive: true, 
+            maintainAspectRatio: false, // CRITICAL FIX: Stops infinite height bug
             scales: { 
                 x: { stacked: true, grid: { display: false } }, 
                 y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } 
@@ -339,19 +292,8 @@ function createBarChart(ctxId, displayLegend) {
                 legend: { display: displayLegend, position: 'bottom', labels: { boxWidth: 12, font: { family: 'Space Grotesk'} } },
                 datalabels: { display: false },
                 tooltip: {
-                    backgroundColor: palette.espresso,
-                    titleFont: { family: 'Space Grotesk', size: 13 },
-                    bodyFont: { family: 'Space Grotesk', size: 12 },
-                    padding: 12,
+                    backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 }, padding: 12,
                     callbacks: { label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; } }
-                },
-                annotation: {
-                    annotations: {
-                        emptyLine: {
-                            type: 'line', scaleID: 'x', value: 0, borderColor: palette.orange, borderWidth: 2, borderDash: [5, 5], display: false,
-                            label: { display: true, content: 'Pot Empty', position: 'start', backgroundColor: palette.orange, color: '#fff', font: { family: 'Space Grotesk', size: 11 } }
-                        }
-                    }
                 }
             } 
         }
@@ -372,16 +314,15 @@ function setupCharts() {
             }] 
         },
         options: { 
-            responsive: true, layout: { padding: 0 },
+            responsive: true, 
+            maintainAspectRatio: false, // CRITICAL FIX
+            layout: { padding: 0 },
             scales: { r: { min: -20, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
             plugins: { 
                 legend: { display: false }, tooltip: { enabled: false }, 
                 datalabels: {
                     color: '#F9F8F6', font: { family: 'Space Grotesk', weight: '600', size: 10 }, textAlign: 'center',
-                    formatter: function(value, context) {
-                        const labelName = context.chart.data.labels[context.dataIndex];
-                        return labelName; // Hide the £ number here as it gets too crowded in the dark dashboard
-                    }
+                    formatter: function(value, context) { return context.chart.data.labels[context.dataIndex]; }
                 }
             } 
         }
@@ -420,10 +361,10 @@ function updateCharts() {
 
             let projectedVal = data.value * Math.pow(1 + data.inf, yearsPassed);
             
-            // U-Shape Logic (Travel drops at 75, Health Spikes at 80)
+            // Apply Toggles to Trajectory
             if (pillar === 'living') {
                 if (data.shape === 'taper' && age >= 75 && doTravelTaper) projectedVal *= 0.5; 
-                if (data.shape === 'spike' && age >= 80 && doCareSpike) projectedVal *= 2.5; 
+                if (data.shape === 'spike' && age >= 80 && doCareSpike) projectedVal *= 3.0; 
             }
             
             if (pillar === 'home' && cat === 'shelter' && state.tenure === 'mortgage' && age >= state.mortgageEndAge) {
@@ -435,17 +376,14 @@ function updateCharts() {
             if (pillar === 'living') lSum += projectedVal;
         }
 
-        // Drawdown Pot Math
         const totalNetNeed = eSum + hSum + lSum;
         const shortfall = totalNetNeed - regIncome;
         
         if (shortfall > 0) {
-            // Simplified Gross-up for pot withdrawal
             let grossShortfall = shortfall;
             const pa = rldConfig.tax.personalAllowance;
-            if (totalNetNeed > pa) {
-                grossShortfall = shortfall / (1 - rldConfig.tax.basicRate); 
-            }
+            if (totalNetNeed > pa) grossShortfall = shortfall / (1 - rldConfig.tax.basicRate); 
+            
             runningPot -= grossShortfall;
             if (runningPot <= 0 && exhaustionAge === -1 && (state.pensionPot + state.otherSavings) > 0) {
                 exhaustionAge = age;
@@ -457,42 +395,80 @@ function updateCharts() {
         dataL.push(lSum);
     }
 
-    // Update Designer Tips with new exhaustion data
+    // Call Designer Tips with Pot Data
     updateDesignerTips(exhaustionAge);
 
-    // Apply data to Main Chart
+    // Main Chart
     charts.mainBar.data.labels = labels;
     charts.mainBar.data.datasets[0].data = dataE;
     charts.mainBar.data.datasets[1].data = dataH;
     charts.mainBar.data.datasets[2].data = dataL;
-
-    // Handle Annotation Line on Main Chart
-    if (exhaustionAge !== -1 && exhaustionAge <= 90) {
-        charts.mainBar.options.plugins.annotation.annotations.emptyLine.value = (exhaustionAge - state.age);
-        charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = true;
-    } else {
-        charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = false;
-    }
     charts.mainBar.update();
 
-    // Local P1 Focus (Fade H & L)
+    // Local P1 Focus (Highlight Core, Fade Rest)
     charts.p1.data.labels = labels;
     charts.p1.data.datasets[0] = { label: 'Core', backgroundColor: palette.sage, data: dataE };
     charts.p1.data.datasets[1] = { label: 'Home', backgroundColor: palette.stoneFaded, data: dataH };
     charts.p1.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p1.update();
 
-    // Local P2 Focus (Fade E & L)
+    // Local P2 Focus (Highlight Home, Fade Rest)
     charts.p2.data.labels = labels;
     charts.p2.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
     charts.p2.data.datasets[1] = { label: 'Home', backgroundColor: palette.stone, data: dataH };
     charts.p2.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p2.update();
 
-    // Local P3 Focus (Fade E & H)
+    // Local P3 Focus (Highlight Lifestyle, Fade Rest)
     charts.p3.data.labels = labels;
     charts.p3.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
     charts.p3.data.datasets[1] = { label: 'Home', backgroundColor: palette.stoneFaded, data: dataH };
     charts.p3.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orange, data: dataL };
     charts.p3.update();
+}
+
+function updateDesignerTips(exhaustionAge) {
+    const regIncome = rldConfig.assumptions.statePension + state.dbPension;
+    
+    // Pillar 1: Core Tip
+    const p1Text = document.getElementById('tips-p1-text');
+    const annuityCard = document.getElementById('partner-annuity');
+    if (regIncome >= currentValues.essentials) {
+        p1Text.innerHTML = `Your guaranteed regular income (State + DB Pension) totals <strong>£${Math.round(regIncome).toLocaleString()}</strong> annually, which comfortably covers your <strong>£${Math.round(currentValues.essentials).toLocaleString()}</strong> Core needs. This provides a highly secure foundation.`;
+        annuityCard.classList.add('hidden');
+    } else {
+        const shortfall = currentValues.essentials - regIncome;
+        p1Text.innerHTML = `Your guaranteed regular income falls short of your Core need by <strong>£${Math.round(shortfall).toLocaleString()}</strong> per year. <br><br><strong>Action to consider:</strong> Convert a portion of your savings into an annuity to guarantee your baseline and cover this gap.`;
+        annuityCard.classList.remove('hidden');
+    }
+
+    // Pillar 2: Home Tip
+    const p2Text = document.getElementById('tips-p2-text');
+    const portfolioCard = document.getElementById('partner-portfolio');
+    const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
+    
+    if (remainingRegAfterEss >= currentValues.home && currentValues.home > 0) {
+        p2Text.innerHTML = `After covering your Core needs, your remaining regular income fully absorbs your Home costs.`;
+        portfolioCard.classList.add('hidden');
+    } else {
+        p2Text.innerHTML = `You will need to draw steadily from your pots and savings to fund your Home costs.`;
+        portfolioCard.classList.remove('hidden');
+    }
+
+    // Pillar 3: Lifestyle Tip (Driven by Pot Exhaustion)
+    const p3Text = document.getElementById('tips-p3-text');
+    const equityCard = document.getElementById('partner-equity');
+    const healthCard = document.getElementById('partner-health');
+    
+    if (exhaustionAge !== -1 && exhaustionAge <= 90) {
+        p3Text.innerHTML = `<strong>Caution:</strong> Based on your chosen Lifestyle shape, your current wealth pots will deplete by <strong>Age ${exhaustionAge}</strong>. <br><br>By utilizing the toggles above to taper your active spending later in life, you can instantly see how much further your capital stretches.`;
+    } else {
+        p3Text.innerHTML = `<strong>Sustainable:</strong> Based on your current wealth pots and your chosen chapter transitions, this Lifestyle shape appears financially sustainable past Age 90.`;
+    }
+
+    if (state.tenure === 'owner' || state.tenure === 'mortgage') equityCard.classList.remove('hidden');
+    else equityCard.classList.add('hidden');
+
+    if (state.living >= 50 || document.getElementById('toggle-care').checked) healthCard.classList.remove('hidden');
+    else healthCard.classList.add('hidden');
 }
