@@ -4,6 +4,7 @@ Chart.register(window['chartjs-plugin-annotation']);
 let rldConfig = null;
 let state = { 
     age: 67,
+    postcode: '',
     dbPension: 0,
     pensionPot: 0,
     otherSavings: 0,
@@ -20,7 +21,6 @@ let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 
 let categoryData = {}; 
 let charts = { polar: null, mainBar: null, p1: null, p2: null, p3: null }; 
 
-// The Extreme Contrast Palette (Featuring 'Dusk' for Pillar 2)
 const palette = {
     sage: '#A3C6C4', sageFaded: 'rgba(163, 198, 196, 0.1)',
     dusk: '#6B7A8F', duskFaded: 'rgba(107, 122, 143, 0.1)', 
@@ -49,8 +49,46 @@ function toggleSection(bodyId, headerElement) {
     headerElement.classList.toggle('collapsed');
 }
 
+function updatePostcodeReadout() {
+    const pc = document.getElementById('meas-postcode').value.trim().toUpperCase();
+    const hint = document.getElementById('postcode-hint');
+    state.postcode = pc;
+    
+    if (pc.length >= 2) {
+        // Mock ONS Age-based income bands
+        let ageIncome = 21000;
+        if (state.age < 55) ageIncome = 38000;
+        else if (state.age < 60) ageIncome = 35000;
+        else if (state.age < 65) ageIncome = 31000;
+        else if (state.age < 70) ageIncome = 26000;
+        else if (state.age < 75) ageIncome = 23000;
+        
+        // Dummy logic to create a geo-variance for testing (Simulates the future JSON lookup)
+        let geoMultiplier = 1.0;
+        if (pc.startsWith('SW') || pc.startsWith('W') || pc.startsWith('EC')) geoMultiplier = 1.35; // London Weighting
+        else if (pc.startsWith('M') || pc.startsWith('B')) geoMultiplier = 0.95; // Urban Regional
+        else geoMultiplier = 1.05; // Standard
+
+        const localAgeAvg = Math.round(ageIncome * geoMultiplier);
+        const natAvg = 34900; // Fixed UK National Average
+        
+        hint.innerHTML = `Est. local income (Age ${state.age}): <br><strong>£${localAgeAvg.toLocaleString()}</strong> (UK Avg: <strong>£${natAvg.toLocaleString()}</strong>)`;
+    } else {
+        hint.innerHTML = '';
+    }
+}
+
 function setupListeners() {
-    document.getElementById('meas-age').addEventListener('change', (e) => { state.age = parseInt(e.target.value) || 67; calculateAll(); });
+    // Measurements Inputs
+    document.getElementById('meas-age').addEventListener('change', (e) => { 
+        state.age = parseInt(e.target.value) || 67; 
+        updatePostcodeReadout(); 
+        calculateAll(); 
+    });
+    
+    // Postcode Listener
+    document.getElementById('meas-postcode').addEventListener('input', updatePostcodeReadout);
+
     document.getElementById('meas-db').addEventListener('input', (e) => { state.dbPension = parseFloat(e.target.value) || 0; calculateAll(); });
     document.getElementById('meas-pots').addEventListener('input', (e) => { state.pensionPot = parseFloat(e.target.value) || 0; calculateAll(); });
     document.getElementById('meas-savings').addEventListener('input', (e) => { state.otherSavings = parseFloat(e.target.value) || 0; calculateAll(); });
@@ -418,21 +456,18 @@ function updateCharts() {
     }
     charts.mainBar.update();
 
-    // Local P1 Focus 
     charts.p1.data.labels = labels;
     charts.p1.data.datasets[0] = { label: 'Core', backgroundColor: palette.sage, data: dataE };
     charts.p1.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH };
     charts.p1.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p1.update();
 
-    // Local P2 Focus 
     charts.p2.data.labels = labels;
     charts.p2.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
     charts.p2.data.datasets[1] = { label: 'Home', backgroundColor: palette.dusk, data: dataH };
     charts.p2.data.datasets[2] = { label: 'Lifestyle', backgroundColor: palette.orangeFaded, data: dataL };
     charts.p2.update();
 
-    // Local P3 Focus 
     charts.p3.data.labels = labels;
     charts.p3.data.datasets[0] = { label: 'Core', backgroundColor: palette.sageFaded, data: dataE };
     charts.p3.data.datasets[1] = { label: 'Home', backgroundColor: palette.duskFaded, data: dataH };
@@ -443,7 +478,6 @@ function updateCharts() {
 function updateDesignerTips(exhaustionAge) {
     const regIncome = rldConfig.assumptions.statePension + state.dbPension;
     
-    // Pillar 1: Core Tip
     const p1Text = document.getElementById('tips-p1-text');
     const annuityCard = document.getElementById('partner-annuity');
     if (regIncome >= currentValues.essentials) {
@@ -455,7 +489,6 @@ function updateDesignerTips(exhaustionAge) {
         annuityCard.classList.remove('hidden');
     }
 
-    // Pillar 2: Home Tip
     const p2Text = document.getElementById('tips-p2-text');
     const portfolioCard = document.getElementById('partner-portfolio');
     const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
@@ -468,7 +501,6 @@ function updateDesignerTips(exhaustionAge) {
         portfolioCard.classList.remove('hidden');
     }
 
-    // Pillar 3: Lifestyle Tip
     const p3Text = document.getElementById('tips-p3-text');
     const equityCard = document.getElementById('partner-equity');
     const healthCard = document.getElementById('partner-health');
@@ -479,7 +511,6 @@ function updateDesignerTips(exhaustionAge) {
         p3Text.innerHTML = `<strong>Sustainable:</strong> Based on your current wealth pots and your chosen chapter transitions, this Lifestyle shape appears financially sustainable past Age 90.`;
     }
 
-    // Logic explicitly requested: Only show Equity Release to Non-Renters
     if (state.tenure === 'owner' || state.tenure === 'mortgage') {
         equityCard.classList.remove('hidden');
     } else {
