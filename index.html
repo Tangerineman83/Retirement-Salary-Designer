@@ -29,7 +29,7 @@
             
             <div class="onboarding-card" id="onboarding-card">
                 <h2>Start Your Design</h2>
-                <p class="onboarding-desc">Tell us a little about yourself to unlock the "People Like You" curated experience.</p>
+                <p class="onboarding-desc">Tell us a little about yourself to unlock your curated experience.</p>
                 <div class="input-grid">
                     <label>Current Age: <input type="number" id="meas-age" class="seamless-input" value="55" min="40" max="95"></label>
                     <label>Postcode Area: 
@@ -94,6 +94,8 @@
                             <h4 class="tips-title">Core Coverage</h4>
                             <p class="tips-text" id="tips-p1-text"></p>
                             
+                            <div id="core-wallet-slot"></div>
+
                             <div class="partner-card-tip hidden" id="partner-annuity">
                                 <div class="pct-content">
                                     <strong>Secure Your Foundation</strong>
@@ -115,7 +117,8 @@
                     </div>
                     
                     <div class="pillar-body" id="body-home">
-                        <div class="dynamic-status-readout" id="p2-tenure-display"></div>
+                        <div class="dynamic-status-readout" id="p2-tenure-display">
+                            </div>
 
                         <div class="tenure-wrapper">
                             <label class="meas-label">Is this accurate for you?</label>
@@ -171,6 +174,8 @@
                             <h4 class="tips-title">Home Coverage</h4>
                             <p class="tips-text" id="tips-p2-text"></p>
                             
+                            <div id="home-wallet-slot"></div>
+                            
                             <div class="partner-card-tip hidden" id="partner-portfolio">
                                 <div class="pct-content">
                                     <strong>Generate Reliable Income</strong>
@@ -201,15 +206,17 @@
                             </div>
                         </div>
 
-                        <div class="chapter-toggles" style="margin-top: 30px;">
-                            <span class="panel-desc" style="display:block; margin-bottom:10px;">Curate your chapter transitions (The U-Shape):</span>
-                            <label class="toggle-row"><input type="checkbox" id="toggle-travel" checked> Scale back international travel after age 75</label>
-                            <label class="toggle-row"><input type="checkbox" id="toggle-care" checked> Ring-fence a private later-life care fund (Spikes at Age 80+)</label>
-                        </div>
-
                         <div class="designer-tips">
                             <h4 class="tips-title">Lifestyle Coverage</h4>
                             <p class="tips-text" id="tips-p3-text"></p>
+                            
+                            <div id="lifestyle-wallet-slot"></div>
+                            
+                            <div class="chapter-toggles" style="margin-top: 25px;">
+                                <span class="panel-desc" style="display:block; margin-bottom:10px;">Curate your chapter transitions (The U-Shape):</span>
+                                <label class="toggle-row"><input type="checkbox" id="toggle-travel"> Scale back international travel after age 75</label>
+                                <label class="toggle-row"><input type="checkbox" id="toggle-care"> Ring-fence a private later-life care fund (Spikes at Age 80+)</label>
+                            </div>
 
                             <div class="partner-card-tip hidden" id="partner-equity" style="margin-top: 15px;">
                                 <div class="pct-content">
@@ -265,7 +272,6 @@
                 <div id="db-box" class="hidden" style="margin-bottom:20px;">
                     <label>Defined Benefit Pension (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
                 </div>
-
                 
                 <div id="pots-box" class="hidden">
                     <label>Pension Pots Built Up (£): <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
