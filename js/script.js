@@ -45,7 +45,6 @@ function initApp() {
 }
 
 function setupListeners() {
-    // Measurements Inputs
     document.getElementById('meas-age').addEventListener('change', (e) => { state.age = parseInt(e.target.value) || 67; calculateAll(); });
     document.getElementById('meas-db').addEventListener('input', (e) => { state.dbPension = parseFloat(e.target.value) || 0; calculateAll(); });
     document.getElementById('meas-pots').addEventListener('input', (e) => { state.pensionPot = parseFloat(e.target.value) || 0; calculateAll(); });
@@ -68,7 +67,6 @@ function setupListeners() {
 
     document.getElementById('meas-mortgage-age').addEventListener('change', (e) => { state.mortgageEndAge = parseInt(e.target.value) || 75; calculateAll(); });
 
-    // Tenure Toggle
     document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
@@ -79,7 +77,7 @@ function setupListeners() {
         });
     });
 
-    // Active Sliders (Living is disabled so it doesn't need an event listener)
+    // P1 and P2 Sliders
     ['essentials', 'home'].forEach(pillar => {
         const slider = document.getElementById(`slider-${pillar}`);
         slider.addEventListener('input', (e) => {
@@ -97,7 +95,6 @@ function setupListeners() {
     let tooltipTimeout;
     const hideTooltip = () => tooltip.classList.remove('show');
 
-    // Input Tooltips
     document.querySelectorAll('.pers-input').forEach(input => {
         input.addEventListener('input', (e) => extrapolate(e.target.dataset.pillar));
         
@@ -132,7 +129,6 @@ function setupListeners() {
         input.addEventListener('blur', hideTooltip);
     });
 
-    // Label Tooltips
     document.querySelectorAll('.tt-trigger').forEach(label => {
         const showLabelTooltip = (e) => {
             clearTimeout(tooltipTimeout);
@@ -162,22 +158,25 @@ function handleTenureUI() {
     ownerInputs.classList.add('hidden');
     mortgageInputs.classList.add('hidden');
     rentInputs.classList.add('hidden');
-    
     shelterInput.disabled = true;
+
+    let friendlyText = "";
 
     if (state.tenure === 'owner') {
         ownerInputs.classList.remove('hidden');
-        displayReadout.innerHTML = `Your structure is mapped as a <strong>Homeowner (Outright)</strong> based on your measurements.`;
+        friendlyText = "you own your home outright.";
         shelterInput.value = '';
     } else if (state.tenure === 'mortgage') {
         mortgageInputs.classList.remove('hidden');
-        displayReadout.innerHTML = `Your structure is mapped as a <strong>Homeowner (Mortgage)</strong> based on your measurements.`;
+        friendlyText = "you have a mortgage.";
         shelterInput.value = state.mortgagePmt || '';
     } else {
         rentInputs.classList.remove('hidden');
-        displayReadout.innerHTML = `Your structure is mapped as a <strong>Renter</strong> based on your measurements.`;
+        friendlyText = "you are renting.";
         shelterInput.value = state.rentPmt || '';
     }
+    
+    displayReadout.innerHTML = `<strong>Curated for you:</strong> We've styled your Home baseline using the details you provided above. Adjust your standard of living below.`;
 }
 
 function togglePersonalize(id) {
@@ -186,9 +185,8 @@ function togglePersonalize(id) {
 }
 
 function extrapolate(pillar) {
-    // Note: Extrapolation only applies to manual inputs. Since Living is auto-calculated, we only care about Essentials/Home.
-    if (pillar === 'living') return; 
-
+    if (pillar === 'living') return; // Disabled slider, no extrapolation needed
+    
     const defaultFreq = parseInt(document.getElementById(`freq-${pillar}`).value);
     const inputs = document.querySelectorAll(`.pers-input[data-pillar="${pillar}"]`);
     
@@ -229,7 +227,6 @@ function extrapolate(pillar) {
 function calculateAll() {
     currentValues.essentials = 0; currentValues.home = 0; currentValues.living = 0;
     
-    // 1. Calculate P1 & P2 directly from sliders/inputs
     for (const pillar of ['essentials', 'home']) {
         const sliderVal = state[pillar];
         for (const [key, catData] of Object.entries(rldConfig.benchmarks[pillar])) {
@@ -255,7 +252,6 @@ function calculateAll() {
         }
     }
 
-    // 2. Waterfall Logic for Auto-populating Pillar III (Living)
     const assumptionSP = rldConfig.assumptions.statePension;
     const assumptionDR = rldConfig.assumptions.drawdownRate;
     
@@ -265,7 +261,6 @@ function calculateAll() {
     
     const remainingForLiving = Math.max(0, totalAvailableIncome - currentValues.essentials - currentValues.home);
 
-    // Get Living Benchmarks to reverse-calculate the score
     let lStaples = 0, lSig = 0, lDes = 0;
     for (const [key, catData] of Object.entries(rldConfig.benchmarks.living)) {
         lStaples += catData.staples;
@@ -284,11 +279,9 @@ function calculateAll() {
         livingScore = 50 + (((remainingForLiving - lSig) / (lDes - lSig)) * 50);
     }
     
-    // Auto-update state and UI slider for P3
     state.living = Math.max(0, Math.min(100, Math.round(livingScore)));
     document.getElementById('slider-living').value = state.living;
 
-    // 3. Calculate Exact Living Value based on auto-populated score
     for (const [key, catData] of Object.entries(rldConfig.benchmarks.living)) {
         let val = 0;
         if (state.living <= 50) val = catData.staples + ((catData.signature - catData.staples) * (state.living / 50));
@@ -298,7 +291,6 @@ function calculateAll() {
         currentValues.living += val;
     }
 
-    // 4. Global Tax Tailoring
     const gross = currentValues.essentials + currentValues.home + currentValues.living;
     let tax = 0;
     const pa = rldConfig.tax.personalAllowance;
@@ -315,7 +307,6 @@ function calculateAll() {
     currentValues.net = gross - tax;
     currentValues.tax = tax;
 
-    // Update UI Elements
     ['essentials', 'home', 'living'].forEach(p => {
         document.getElementById(`val-${p}`).innerText = `£${Math.round(currentValues[p]).toLocaleString()}`;
     });
@@ -323,59 +314,66 @@ function calculateAll() {
     document.getElementById('display-net').innerText = `£${Math.round(currentValues.net).toLocaleString()}`;
     document.getElementById('display-tax').innerText = `+£${Math.round(tax).toLocaleString()}`;
 
-    // Trigger Designer Tips Update
     updateDesignerTips(totalRegIncome, drawdownIncome, remainingForLiving);
-
     updateCharts();
 }
 
 function updateDesignerTips(regIncome, drawdownIncome, remainingLivingBudget) {
-    // Pillar 1: Essentials Tip
+    // Pillar 1: Core Tip
     const p1Text = document.getElementById('tips-p1-text');
     const annuityCard = document.getElementById('partner-annuity');
     const strRegInc = `£${Math.round(regIncome).toLocaleString()}`;
     const strEss = `£${Math.round(currentValues.essentials).toLocaleString()}`;
 
     if (regIncome >= currentValues.essentials) {
-        p1Text.innerHTML = `Your guaranteed regular income (State + DB Pension) totals <strong>${strRegInc}</strong> annually, which comfortably covers your <strong>${strEss}</strong> Essentials need. This provides a highly secure foundation for your retirement.`;
+        p1Text.innerHTML = `Your guaranteed regular income (State + DB Pension) totals <strong>${strRegInc}</strong> annually, which comfortably covers your <strong>${strEss}</strong> Core needs. This provides a highly secure foundation for your retirement.`;
         annuityCard.classList.add('hidden');
     } else {
         const shortfall = currentValues.essentials - regIncome;
-        p1Text.innerHTML = `Your guaranteed regular income totals <strong>${strRegInc}</strong> annually, falling short of your <strong>${strEss}</strong> Essentials need by <strong>£${Math.round(shortfall).toLocaleString()}</strong> per year. <br><br><strong>You may wish to consider</strong> converting a portion of your savings into an annuity to guarantee your baseline and cover this gap.`;
+        p1Text.innerHTML = `Your guaranteed regular income totals <strong>${strRegInc}</strong> annually, falling short of your <strong>${strEss}</strong> Core need by <strong>£${Math.round(shortfall).toLocaleString()}</strong> per year. <br><br><strong>Action to consider:</strong> Convert a portion of your savings into an annuity to guarantee your baseline and cover this gap.`;
         annuityCard.classList.remove('hidden');
     }
 
     // Pillar 2: Home Tip
     const p2Text = document.getElementById('tips-p2-text');
-    const propertyCard = document.getElementById('partner-property');
+    const portfolioCard = document.getElementById('partner-portfolio');
     const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
     
-    let p2Prefix = '';
-    if (state.tenure === 'mortgage' || state.tenure === 'rent') {
-        p2Prefix = `As a ${state.tenure === 'rent' ? 'renter' : 'mortgage holder'}, your Home Style is heavily driven by your actual current payments. `;
-    }
-
     if (remainingRegAfterEss >= currentValues.home && currentValues.home > 0) {
-        p2Text.innerHTML = `${p2Prefix}After covering your Essentials, your remaining regular income fully absorbs your Home costs.`;
+        p2Text.innerHTML = `After covering your Core needs, your remaining regular income fully absorbs your Home costs.`;
+        portfolioCard.classList.add('hidden');
     } else if (remainingRegAfterEss > 0 && currentValues.home > 0) {
         const homeShortfall = currentValues.home - remainingRegAfterEss;
         const pctCovered = Math.round((remainingRegAfterEss / currentValues.home) * 100);
-        p2Text.innerHTML = `${p2Prefix}After meeting Essentials, you have <strong>£${Math.round(remainingRegAfterEss).toLocaleString()}</strong> of regular income left, covering ${pctCovered}% of your Home costs. You will need to draw <strong>£${Math.round(homeShortfall).toLocaleString()}</strong> annually from your pots and savings to cover the balance.`;
+        p2Text.innerHTML = `After meeting your Core needs, you have <strong>£${Math.round(remainingRegAfterEss).toLocaleString()}</strong> of regular income left, covering ${pctCovered}% of your Home costs. You will need to draw <strong>£${Math.round(homeShortfall).toLocaleString()}</strong> annually from your pots and savings to cover the balance.`;
+        portfolioCard.classList.remove('hidden');
     } else {
-        p2Text.innerHTML = `${p2Prefix}Since your regular income is fully absorbed by your Essentials, you will need to draw <strong>£${Math.round(currentValues.home).toLocaleString()}</strong> annually from your pots and savings to fund your Home costs.`;
+        p2Text.innerHTML = `Since your regular income is fully absorbed by your Core needs, you will need to draw <strong>£${Math.round(currentValues.home).toLocaleString()}</strong> annually from your pots and savings to fund your Home costs.`;
+        portfolioCard.classList.remove('hidden');
     }
 
-    if (state.tenure === 'owner' || state.tenure === 'mortgage') {
-        propertyCard.classList.remove('hidden');
-    } else {
-        propertyCard.classList.add('hidden');
-    }
-
-    // Pillar 3: Living Tip
+    // Pillar 3: Lifestyle Tip
     const p3Text = document.getElementById('tips-p3-text');
+    const equityCard = document.getElementById('partner-equity');
+    const healthCard = document.getElementById('partner-health');
     const strLiv = remainingLivingBudget > 0 ? `£${Math.round(remainingLivingBudget).toLocaleString()}` : '£0';
     
-    p3Text.innerHTML = `We have auto-populated your Lifestyle based on your available resources. After funding your Essentials and Home, and assuming a sustainable ${Math.round(rldConfig.assumptions.drawdownRate * 100)}% drawdown from your savings, you have <strong>${strLiv}</strong> annually to fund your Living costs.<br><br><strong>To boost your lifestyle:</strong> Consider delaying retirement to build further capital, reviewing your Home curation, or exploring equity release options.`;
+    p3Text.innerHTML = `We have auto-populated your Lifestyle based on your available resources. After funding your Core and Home, and assuming a sustainable ${Math.round(rldConfig.assumptions.drawdownRate * 100)}% drawdown from your savings, you have <strong>${strLiv}</strong> annually to fund your Lifestyle costs.`;
+
+    // Equity Partner Logic
+    if (state.tenure === 'owner' || state.tenure === 'mortgage') {
+        equityCard.classList.remove('hidden');
+    } else {
+        equityCard.classList.add('hidden');
+    }
+
+    // Health Partner Logic (Show if Lifestyle is high or care toggle is checked)
+    const careChecked = document.getElementById('toggle-care').checked;
+    if (state.living >= 50 || careChecked) {
+        healthCard.classList.remove('hidden');
+    } else {
+        healthCard.classList.add('hidden');
+    }
 }
 
 function setupCharts() {
@@ -383,7 +381,7 @@ function setupCharts() {
     charts.polar = new Chart(ctxPolar, {
         type: 'polarArea',
         data: { 
-            labels: ['Essentials', 'Home', 'Living'], 
+            labels: ['Core', 'Home', 'Lifestyle'], 
             datasets: [{ 
                 data: [50, 50, 50],
                 backgroundColor: [palette.sage, palette.stone, palette.orange],
@@ -405,9 +403,9 @@ function setupCharts() {
                     formatter: function(value, context) {
                         const labelName = context.chart.data.labels[context.dataIndex];
                         let cashVal = 0;
-                        if(labelName === 'Essentials') cashVal = currentValues.essentials;
+                        if(labelName === 'Core') cashVal = currentValues.essentials;
                         if(labelName === 'Home') cashVal = currentValues.home;
-                        if(labelName === 'Living') cashVal = currentValues.living;
+                        if(labelName === 'Lifestyle') cashVal = currentValues.living;
                         return labelName + '\n£' + Math.round(cashVal).toLocaleString();
                     }
                 }
@@ -421,9 +419,9 @@ function setupCharts() {
         data: { 
             labels: [], 
             datasets: [
-                { label: 'Essentials', backgroundColor: palette.sageFill, borderColor: palette.sage, fill: true, tension: 0.4, data: [] },
+                { label: 'Core', backgroundColor: palette.sageFill, borderColor: palette.sage, fill: true, tension: 0.4, data: [] },
                 { label: 'Home', backgroundColor: palette.stoneFill, borderColor: palette.stone, fill: true, tension: 0.4, data: [] },
-                { label: 'Living', backgroundColor: palette.orangeFill, borderColor: palette.orange, fill: true, tension: 0.4, data: [] }
+                { label: 'Lifestyle', backgroundColor: palette.orangeFill, borderColor: palette.orange, fill: true, tension: 0.4, data: [] }
             ] 
         },
         options: { 
