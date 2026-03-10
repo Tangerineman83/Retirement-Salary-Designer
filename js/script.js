@@ -5,7 +5,7 @@ let rldConfig = null;
 let locationBenchmarks = null;
 
 let state = { 
-    age: 67,
+    age: 55, // Set to 55 to match new HTML default
     postcode: '',
     dbPension: 0,
     pensionPot: 0,
@@ -36,10 +36,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             fetch('data/config.json'),
             fetch('data/location_benchmarks.json')
         ]);
-        
         rldConfig = await configRes.json();
         locationBenchmarks = await locRes.json();
-        
         initApp();
     } catch (e) { console.error("Initialization failed.", e); }
 });
@@ -47,8 +45,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initApp() {
     setupCharts();
     setupListeners();
-    handleTenureUI();
-    calculateAll();
 }
 
 function toggleSection(bodyId, headerElement) {
@@ -57,16 +53,29 @@ function toggleSection(bodyId, headerElement) {
     headerElement.classList.toggle('collapsed');
 }
 
-// NEW: ONS Mapping Logic & Auto-Slider Execution
+// Visual Pulse Animation for Live Updates
+function triggerPulse(elementId) {
+    const el = document.getElementById(elementId);
+    if(el) {
+        el.classList.remove('value-updated');
+        void el.offsetWidth; // Trigger reflow
+        el.classList.add('value-updated');
+    }
+}
+
+// STEP 1 & 2: Onboarding & Reveal
 function updatePostcodeReadout() {
     const pcInput = document.getElementById('meas-postcode').value.trim();
     const hint = document.getElementById('postcode-hint');
     state.postcode = pcInput;
     
-    // Regex extracts just the leading alpha characters (e.g. "SW1A 1AA" -> "SW")
     const alphaMatch = pcInput.match(/^[A-Z]+/i);
     
     if (alphaMatch && locationBenchmarks) {
+        // REVEAL THE PLAYLIST!
+        document.getElementById('main-journey-flow').classList.add('revealed-flow');
+        document.getElementById('main-journey-flow').classList.remove('hidden-flow');
+
         const areaCode = alphaMatch[0].toUpperCase();
         const districtData = locationBenchmarks.districts[areaCode];
         const natAvg = locationBenchmarks.metadata.national_average;
@@ -75,6 +84,19 @@ function updatePostcodeReadout() {
             const localAvg = districtData.avg_disposable_income;
             hint.innerHTML = `Est. local income (${districtData.region}): <br><strong>£${localAvg.toLocaleString()}</strong> (UK Avg: £${natAvg.toLocaleString()})`;
             
+            // "People Like You" Implied Tenure & Property Price calculation
+            const avgPropPrice = localAvg * 8.5; // Rule of thumb metric
+            let impliedTenure = 'owner';
+            if (state.age < 55) impliedTenure = 'mortgage';
+            else if (districtData.imd_decile <= 4) impliedTenure = 'rent';
+
+            state.tenure = impliedTenure;
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`).classList.add('active');
+
+            const displayReadout = document.getElementById('p2-tenure-display');
+            displayReadout.innerHTML = `<strong>Curated for you:</strong> Based on <strong>${districtData.region}</strong> and your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>. The average property price in this area is estimated at <strong>£${Math.round(avgPropPrice).toLocaleString()}</strong>. We've styled your Home baseline using this data.`;
+
             // Auto-Snap Sliders to Local Demographics
             state.essentials = districtData.slider_positions.core;
             state.home = districtData.slider_positions.home;
@@ -84,10 +106,12 @@ function updatePostcodeReadout() {
             document.getElementById('slider-home').value = state.home;
             document.getElementById('slider-living').value = state.living;
             
-            calculateAll(); // Update the whole app based on new sliders
+            handleTenureUI(false); // Update UI without overriding the custom text above
+            calculateAll(); 
 
         } else {
             hint.innerHTML = `Area not mapped. Using UK Avg: <br><strong>£${natAvg.toLocaleString()}</strong>`;
+            calculateAll();
         }
     } else {
         hint.innerHTML = '';
@@ -95,30 +119,24 @@ function updatePostcodeReadout() {
 }
 
 function setupListeners() {
-    document.getElementById('meas-age').addEventListener('change', (e) => { state.age = parseInt(e.target.value) || 67; calculateAll(); });
+    document.getElementById('meas-age').addEventListener('change', (e) => { 
+        state.age = parseInt(e.target.value) || 67; 
+        updatePostcodeReadout(); 
+        calculateAll(); 
+    });
     
-    // Connect the Postcode field
     document.getElementById('meas-postcode').addEventListener('input', updatePostcodeReadout);
 
+    // Wealth Wallet Inputs
     document.getElementById('meas-db').addEventListener('input', (e) => { state.dbPension = parseFloat(e.target.value) || 0; calculateAll(); });
     document.getElementById('meas-pots').addEventListener('input', (e) => { state.pensionPot = parseFloat(e.target.value) || 0; calculateAll(); });
     document.getElementById('meas-savings').addEventListener('input', (e) => { state.otherSavings = parseFloat(e.target.value) || 0; calculateAll(); });
     
+    // Dynamic Tenure Inputs
     document.getElementById('meas-home-value').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
     document.getElementById('meas-home-value-mortgage').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
-    
-    document.getElementById('meas-mortgage-pmt').addEventListener('input', (e) => { 
-        state.mortgagePmt = parseFloat(e.target.value) || 0; 
-        document.getElementById('input-shelter').value = state.mortgagePmt || '';
-        calculateAll(); 
-    });
-    
-    document.getElementById('meas-rent-pmt').addEventListener('input', (e) => { 
-        state.rentPmt = parseFloat(e.target.value) || 0; 
-        document.getElementById('input-shelter').value = state.rentPmt || '';
-        calculateAll(); 
-    });
-
+    document.getElementById('meas-mortgage-pmt').addEventListener('input', (e) => { state.mortgagePmt = parseFloat(e.target.value) || 0; document.getElementById('input-shelter').value = state.mortgagePmt || ''; calculateAll(); });
+    document.getElementById('meas-rent-pmt').addEventListener('input', (e) => { state.rentPmt = parseFloat(e.target.value) || 0; document.getElementById('input-shelter').value = state.rentPmt || ''; calculateAll(); });
     document.getElementById('meas-mortgage-age').addEventListener('change', (e) => { state.mortgageEndAge = parseInt(e.target.value) || 75; calculateAll(); });
 
     document.querySelectorAll('.toggle-btn').forEach(btn => {
@@ -126,7 +144,7 @@ function setupListeners() {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             state.tenure = e.target.dataset.tenure;
-            handleTenureUI();
+            handleTenureUI(true);
             calculateAll();
         });
     });
@@ -141,65 +159,15 @@ function setupListeners() {
             slider.value = val;
             state[pillar] = val;
             calculateAll();
+            triggerPulse(`val-${pillar}`); // Trigger animation on slide
         });
     });
 
     document.getElementById('toggle-travel').addEventListener('change', calculateAll);
     document.getElementById('toggle-care').addEventListener('change', calculateAll);
-
-    const tooltip = document.getElementById('smart-tooltip');
-    let tooltipTimeout;
-    const hideTooltip = () => tooltip.classList.remove('show');
-
-    document.querySelectorAll('.pers-input').forEach(input => {
-        input.addEventListener('input', (e) => extrapolate(e.target.dataset.pillar));
-        const showInputTooltip = (e) => {
-            clearTimeout(tooltipTimeout);
-            if(e.target.disabled || e.target.closest('.hidden')) return;
-
-            const cat = e.target.dataset.cat;
-            const pillar = e.target.dataset.pillar;
-            const freq = parseInt(e.target.dataset.freq) || parseInt(document.getElementById(`freq-${pillar}`).value);
-            
-            let b = pillar === 'home' && cat === 'shelter' 
-                ? rldConfig.benchmarks.home.shelter[state.tenure] 
-                : rldConfig.benchmarks[pillar][cat];
-
-            const name = rldConfig.benchmarks[pillar][cat].name;
-            const st = Math.round(b.staples / freq); 
-            const si = Math.round(b.signature / freq);
-            const de = Math.round(b.designer / freq);
-
-            tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
-            const rect = e.target.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
-            tooltip.classList.add('show');
-        };
-        input.addEventListener('mouseenter', showInputTooltip);
-        input.addEventListener('focus', showInputTooltip);
-        input.addEventListener('mouseleave', hideTooltip);
-        input.addEventListener('blur', hideTooltip);
-    });
-
-    document.querySelectorAll('.tt-trigger').forEach(label => {
-        const showLabelTooltip = (e) => {
-            clearTimeout(tooltipTimeout);
-            const desc = e.currentTarget.dataset.desc;
-            tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
-            const rect = e.currentTarget.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
-            tooltip.classList.add('show');
-        };
-        label.addEventListener('mouseenter', showLabelTooltip);
-        label.addEventListener('touchstart', showLabelTooltip, {passive: true});
-        label.addEventListener('mouseleave', hideTooltip);
-        label.addEventListener('touchend', () => tooltipTimeout = setTimeout(hideTooltip, 2500));
-    });
 }
 
-function handleTenureUI() {
+function handleTenureUI(updateText = true) {
     const ownerInputs = document.getElementById('tenure-owner-inputs');
     const mortgageInputs = document.getElementById('tenure-mortgage-inputs');
     const rentInputs = document.getElementById('tenure-rent-inputs');
@@ -213,56 +181,17 @@ function handleTenureUI() {
 
     if (state.tenure === 'owner') {
         ownerInputs.classList.remove('hidden');
-        displayReadout.innerHTML = `<strong>Curated for you:</strong> You own your home outright. We've styled your Home baseline using the details provided above.`;
+        if(updateText) displayReadout.innerHTML = `<strong>Manual Update:</strong> You own your home outright. We've styled your Home baseline using the details provided above.`;
         shelterInput.value = '';
     } else if (state.tenure === 'mortgage') {
         mortgageInputs.classList.remove('hidden');
-        displayReadout.innerHTML = `<strong>Curated for you:</strong> You have a mortgage. We've styled your Home baseline using the details provided above.`;
+        if(updateText) displayReadout.innerHTML = `<strong>Manual Update:</strong> You have a mortgage. We've styled your Home baseline using the details provided above.`;
         shelterInput.value = state.mortgagePmt || '';
     } else {
         rentInputs.classList.remove('hidden');
-        displayReadout.innerHTML = `<strong>Curated for you:</strong> You are renting. We've styled your Home baseline using the details provided above.`;
+        if(updateText) displayReadout.innerHTML = `<strong>Manual Update:</strong> You are renting. We've styled your Home baseline using the details provided above.`;
         shelterInput.value = state.rentPmt || '';
     }
-}
-
-function togglePersonalize(id) {
-    const panel = document.getElementById(`pers-${id}`);
-    panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-}
-
-function extrapolate(pillar) {
-    const defaultFreq = parseInt(document.getElementById(`freq-${pillar}`).value);
-    const inputs = document.querySelectorAll(`.pers-input[data-pillar="${pillar}"]`);
-    
-    let totalSliderScore = 0;
-    let inputCount = 0;
-
-    inputs.forEach(input => {
-        if (!input.disabled && !input.closest('.hidden') && input.value && parseFloat(input.value) > 0) {
-            const cat = input.dataset.cat;
-            const freq = parseInt(input.dataset.freq) || defaultFreq;
-            let b = (pillar === 'home' && cat === 'shelter') ? rldConfig.benchmarks.home.shelter[state.tenure] : rldConfig.benchmarks[pillar][cat];
-            
-            const annualVal = parseFloat(input.value) * freq;
-            let score = 50;
-            if (b.staples === b.designer) score = 50; 
-            else if (annualVal <= b.staples) score = 0;
-            else if (annualVal >= b.designer) score = 100;
-            else if (annualVal <= b.signature) {
-                score = ((annualVal - b.staples) / (b.signature - b.staples)) * 50;
-            } else {
-                score = 50 + (((annualVal - b.signature) / (b.designer - b.signature)) * 50);
-            }
-            totalSliderScore += score;
-            inputCount++;
-        }
-    });
-
-    if (inputCount === 0) return;
-    state[pillar] = Math.round(totalSliderScore / inputCount);
-    document.getElementById(`slider-${pillar}`).value = state[pillar];
-    calculateAll();
 }
 
 function calculateAll() {
@@ -300,8 +229,7 @@ function calculateAll() {
     if (gross > pa) {
         if (gross <= rldConfig.tax.higherRateThreshold) { tax = (gross - pa) * rldConfig.tax.basicRate; } 
         else {
-            tax = ((rldConfig.tax.higherRateThreshold - pa) * rldConfig.tax.basicRate) + 
-                  ((gross - rldConfig.tax.higherRateThreshold) * rldConfig.tax.higherRate);
+            tax = ((rldConfig.tax.higherRateThreshold - pa) * rldConfig.tax.basicRate) + ((gross - rldConfig.tax.higherRateThreshold) * rldConfig.tax.higherRate);
         }
     }
 
@@ -312,87 +240,16 @@ function calculateAll() {
     ['essentials', 'home', 'living'].forEach(p => {
         document.getElementById(`val-${p}`).innerText = `£${Math.round(currentValues[p]).toLocaleString()}`;
     });
+    
     document.getElementById('display-salary').innerText = `£${Math.round(gross).toLocaleString()}`;
+    triggerPulse('display-salary');
     document.getElementById('display-net').innerText = `£${Math.round(currentValues.net).toLocaleString()}`;
     document.getElementById('display-tax').innerText = `+£${Math.round(tax).toLocaleString()}`;
 
-    updateCharts();
+    updateChartsAndJourney();
 }
 
-function createBarChart(ctxId, displayLegend) {
-    const ctx = document.getElementById(ctxId).getContext('2d');
-    return new Chart(ctx, {
-        type: 'bar',
-        data: { 
-            labels: [], 
-            datasets: [
-                { label: 'Core', backgroundColor: palette.sage, data: [] },
-                { label: 'Home', backgroundColor: palette.dusk, data: [] },
-                { label: 'Lifestyle', backgroundColor: palette.orange, data: [] }
-            ] 
-        },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            scales: { 
-                x: { stacked: true, grid: { display: false } }, 
-                y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } 
-            }, 
-            plugins: { 
-                legend: { display: displayLegend, position: 'bottom', labels: { boxWidth: 12, font: { family: 'Space Grotesk'} } },
-                datalabels: { display: false },
-                tooltip: {
-                    backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 }, padding: 12,
-                    callbacks: { label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; } }
-                },
-                annotation: {
-                    annotations: {
-                        emptyLine: {
-                            type: 'line', scaleID: 'x', value: 0, borderColor: palette.orange, borderWidth: 2, borderDash: [5, 5], display: false,
-                            label: { display: true, content: 'Pot Empty', position: 'start', backgroundColor: palette.orange, color: '#fff', font: { family: 'Space Grotesk', size: 11 } }
-                        }
-                    }
-                }
-            } 
-        }
-    });
-}
-
-function setupCharts() {
-    const ctxPolar = document.getElementById('polarChart').getContext('2d');
-    charts.polar = new Chart(ctxPolar, {
-        type: 'polarArea',
-        data: { 
-            labels: ['Core', 'Home', 'Lifestyle'], 
-            datasets: [{ 
-                data: [50, 50, 50],
-                backgroundColor: [palette.sage, palette.dusk, palette.orange],
-                borderColor: [palette.sage, palette.dusk, palette.orange],
-                borderWidth: 1
-            }] 
-        },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            layout: { padding: 0 },
-            scales: { r: { min: -20, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
-            plugins: { 
-                legend: { display: false }, tooltip: { enabled: false }, 
-                datalabels: {
-                    color: '#F9F8F6', font: { family: 'Space Grotesk', weight: '600', size: 10 }, textAlign: 'center',
-                    formatter: function(value, context) { return context.chart.data.labels[context.dataIndex]; }
-                }
-            } 
-        }
-    });
-
-    charts.mainBar = createBarChart('mainStackedChart', true);
-    charts.p1 = createBarChart('chart-p1', false);
-    charts.p2 = createBarChart('chart-p2', false);
-    charts.p3 = createBarChart('chart-p3', false);
-}
-
-function updateCharts() {
+function updateChartsAndJourney() {
     charts.polar.data.datasets[0].data = [state.essentials, state.home, state.living];
     charts.polar.update();
 
@@ -403,14 +260,144 @@ function updateCharts() {
     const doTravelTaper = document.getElementById('toggle-travel').checked;
     const doCareSpike = document.getElementById('toggle-care').checked;
 
-    let runningPot = state.pensionPot + state.otherSavings;
-    const regIncome = rldConfig.assumptions.statePension + state.dbPension;
+    // STEP 2: State Pension Calc (2.5% Inflation to target age)
+    const spAge = 67; // Assuming current standard
+    const yearsToSp = Math.max(0, spAge - state.age);
+    const spBase = rldConfig.assumptions.statePension || 11500;
+    const spInflation = rldConfig.assumptions.statePensionInflation || 0.025;
+    const projectedSp = spBase * Math.pow((1 + spInflation), yearsToSp);
+
+    document.getElementById('sp-amount-val').innerText = `£${Math.round(projectedSp).toLocaleString()}`;
+    document.getElementById('sp-age-val').innerText = spAge;
+
+    // Evaluate Waterfall
+    let incSP = projectedSp;
+    let incDB = state.dbPension;
+    let combinedPots = state.pensionPot + state.otherSavings;
+    let incPots = combinedPots * 0.06; 
+
+    let walletTarget = null;
+    let showDb = false;
+    let showPots = false;
+    
+    const coreCost = currentValues.essentials;
+    const homeCost = currentValues.home;
+    const livingCost = currentValues.living;
+    
+    let coreMsg = '';
+    
+    // Core Coverage Logic
+    if (incSP >= coreCost) {
+        coreMsg = `Your State Pension of <strong>£${Math.round(incSP).toLocaleString()}</strong> fully covers your <strong>£${Math.round(coreCost).toLocaleString()}</strong> Core needs.`;
+        incSP -= coreCost;
+        document.getElementById('partner-annuity').classList.add('hidden');
+    } else {
+        coreMsg = `Your State Pension falls short of your Core needs by <strong>£${Math.round(coreCost - incSP).toLocaleString()}</strong>.`;
+        let shortfall = coreCost - incSP;
+        incSP = 0;
+        
+        walletTarget = walletTarget || 'core-wallet-slot';
+        showDb = true;
+
+        if (incDB >= shortfall) {
+            coreMsg += `<br><br>Your DB Pension bridges the gap perfectly.`;
+            incDB -= shortfall;
+            document.getElementById('partner-annuity').classList.add('hidden');
+        } else {
+            shortfall -= incDB;
+            incDB = 0;
+            showPots = true;
+            
+            if (incPots >= shortfall) {
+                coreMsg += `<br><br>Your savings drawdown successfully covers the remaining gap.`;
+                incPots -= shortfall;
+                document.getElementById('partner-annuity').classList.add('hidden');
+            } else {
+                coreMsg += `<br><br><strong>Action:</strong> You still have a critical shortfall. Consider securing an annuity.`;
+                incPots = 0;
+                document.getElementById('partner-annuity').classList.remove('hidden');
+            }
+        }
+    }
+    document.getElementById('tips-p1-text').innerHTML = coreMsg;
+
+    // Home Coverage Logic
+    let homeMsg = '';
+    let availableReg = incSP + incDB; 
+    
+    if (availableReg >= homeCost) {
+        homeMsg = `Your remaining regular income fully covers your Home costs.`;
+        availableReg -= homeCost;
+        document.getElementById('partner-portfolio').classList.add('hidden');
+    } else {
+        let homeShortfall = homeCost - availableReg;
+        availableReg = 0;
+        homeMsg = `Your remaining regular income leaves a gap of <strong>£${Math.round(homeShortfall).toLocaleString()}</strong> for your Home costs.`;
+        
+        walletTarget = walletTarget || 'home-wallet-slot';
+        showDb = true; showPots = true;
+
+        if (incPots >= homeShortfall) {
+            homeMsg += `<br><br>Your savings drawdown covers this. Since you are drawing heavily from savings, an income-generating portfolio could protect your capital.`;
+            incPots -= homeShortfall;
+            document.getElementById('partner-portfolio').classList.remove('hidden');
+        } else {
+            homeMsg += `<br><br>Even with your savings withdrawal, you have a shortfall here.`;
+            incPots = 0;
+            document.getElementById('partner-portfolio').classList.remove('hidden');
+        }
+    }
+    document.getElementById('tips-p2-text').innerHTML = homeMsg;
+
+    // Lifestyle Coverage Logic
+    let livingMsg = '';
+    let totalRemaining = availableReg + incPots;
+    
+    if (totalRemaining >= livingCost) {
+        livingMsg = `You have sufficient wealth to fully fund your desired Lifestyle!`;
+        document.getElementById('surplus-block').classList.remove('hidden');
+        document.getElementById('surplus-amount').innerText = `£${Math.round(totalRemaining - livingCost).toLocaleString()}`;
+    } else {
+        livingMsg = `Your preferred Lifestyle exceeds your available resources by <strong>£${Math.round(livingCost - totalRemaining).toLocaleString()}</strong>. <br><br>Consider reshaping your timeline above (e.g., tapering travel) to make your capital stretch further.`;
+        walletTarget = walletTarget || 'lifestyle-wallet-slot';
+        showDb = true; showPots = true;
+        document.getElementById('surplus-block').classList.add('hidden');
+    }
+    document.getElementById('tips-p3-text').innerHTML = livingMsg;
+
+    // DYNAMIC WALLET PLACEMENT (Only place once to prevent losing focus while typing)
+    const wallet = document.getElementById('wealth-wallet');
+    if (walletTarget && !wallet.classList.contains('placed')) {
+        document.getElementById(walletTarget).appendChild(wallet);
+        wallet.classList.add('placed');
+        wallet.classList.remove('hidden');
+    } else if (!walletTarget) {
+        // If no shortfall, place it at bottom just in case they want to boost surplus
+        document.getElementById('lifestyle-wallet-slot').appendChild(wallet);
+        wallet.classList.remove('hidden'); 
+        showDb = true; showPots = true;
+    }
+    
+    if (showDb) document.getElementById('db-box').classList.remove('hidden');
+    if (showPots) document.getElementById('pots-box').classList.remove('hidden');
+
+    // Partner Logic
+    const equityCard = document.getElementById('partner-equity');
+    const healthCard = document.getElementById('partner-health');
+
+    if (state.tenure === 'owner' || state.tenure === 'mortgage') equityCard.classList.remove('hidden');
+    else equityCard.classList.add('hidden');
+
+    if (state.living >= 50 || document.getElementById('toggle-care').checked) healthCard.classList.remove('hidden');
+    else healthCard.classList.add('hidden');
+
+    // Chart Trajectory Logic & Pot Exhaustion Math
+    let runningPot = combinedPots;
     let exhaustionAge = -1;
 
     for (let age = state.age; age <= endAge; age++) {
         labels.push(age);
         const yearsPassed = age - state.age;
-        
         let eSum = 0; let hSum = 0; let lSum = 0;
 
         for (const [key, data] of Object.entries(categoryData)) {
@@ -423,10 +410,7 @@ function updateCharts() {
                 if (data.shape === 'taper' && age >= 75 && doTravelTaper) projectedVal *= 0.5; 
                 if (data.shape === 'spike' && age >= 80 && doCareSpike) projectedVal *= 3.0; 
             }
-            
-            if (pillar === 'home' && cat === 'shelter' && state.tenure === 'mortgage' && age >= state.mortgageEndAge) {
-                projectedVal = 0;
-            }
+            if (pillar === 'home' && cat === 'shelter' && state.tenure === 'mortgage' && age >= state.mortgageEndAge) projectedVal = 0;
 
             if (pillar === 'essentials') eSum += projectedVal;
             if (pillar === 'home') hSum += projectedVal;
@@ -434,15 +418,15 @@ function updateCharts() {
         }
 
         const totalNetNeed = eSum + hSum + lSum;
-        const shortfall = totalNetNeed - regIncome;
+        const shortfallYearly = totalNetNeed - (projectedSp + state.dbPension);
         
-        if (shortfall > 0) {
-            let grossShortfall = shortfall;
+        if (shortfallYearly > 0) {
+            let grossShortfall = shortfallYearly;
             const pa = rldConfig.tax.personalAllowance;
-            if (totalNetNeed > pa) grossShortfall = shortfall / (1 - rldConfig.tax.basicRate); 
+            if (totalNetNeed > pa) grossShortfall = shortfallYearly / (1 - rldConfig.tax.basicRate); 
             
             runningPot -= grossShortfall;
-            if (runningPot <= 0 && exhaustionAge === -1 && (state.pensionPot + state.otherSavings) > 0) {
+            if (runningPot <= 0 && exhaustionAge === -1 && combinedPots > 0) {
                 exhaustionAge = age;
             }
         }
@@ -452,8 +436,15 @@ function updateCharts() {
         dataL.push(lSum);
     }
 
-    updateDesignerTips(exhaustionAge);
+    // Auto-Play Feature: Pulse the card if exhaustion detected
+    if (exhaustionAge !== -1 && exhaustionAge <= 90) {
+        document.getElementById('tips-p3-text').innerHTML += `<br><br><strong style="color:var(--accent-orange);">End of Credits Warning:</strong> Based on this shape, your wealth pots will fully deplete by <strong>Age ${exhaustionAge}</strong>.`;
+        if(state.tenure === 'owner' || state.tenure === 'mortgage') equityCard.classList.add('pulse-alert');
+    } else {
+        equityCard.classList.remove('pulse-alert');
+    }
 
+    // Update charts
     charts.mainBar.data.labels = labels;
     charts.mainBar.data.datasets[0].data = dataE;
     charts.mainBar.data.datasets[1].data = dataH;
@@ -486,51 +477,37 @@ function updateCharts() {
     charts.p3.update();
 }
 
-function updateDesignerTips(exhaustionAge) {
-    const regIncome = rldConfig.assumptions.statePension + state.dbPension;
-    
-    const p1Text = document.getElementById('tips-p1-text');
-    const annuityCard = document.getElementById('partner-annuity');
-    if (regIncome >= currentValues.essentials) {
-        p1Text.innerHTML = `Your guaranteed regular income (State + DB Pension) totals <strong>£${Math.round(regIncome).toLocaleString()}</strong> annually, which comfortably covers your <strong>£${Math.round(currentValues.essentials).toLocaleString()}</strong> Core needs. This provides a highly secure foundation.`;
-        annuityCard.classList.add('hidden');
-    } else {
-        const shortfall = currentValues.essentials - regIncome;
-        p1Text.innerHTML = `Your guaranteed regular income falls short of your Core need by <strong>£${Math.round(shortfall).toLocaleString()}</strong> per year. <br><br><strong>Action to consider:</strong> Convert a portion of your savings into an annuity to guarantee your baseline and cover this gap.`;
-        annuityCard.classList.remove('hidden');
-    }
+function createBarChart(ctxId, displayLegend) {
+    const ctx = document.getElementById(ctxId).getContext('2d');
+    return new Chart(ctx, {
+        type: 'bar',
+        data: { labels: [], datasets: [{ label: 'Core', backgroundColor: palette.sage, data: [] }, { label: 'Home', backgroundColor: palette.dusk, data: [] }, { label: 'Lifestyle', backgroundColor: palette.orange, data: [] }] },
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.03)' } } }, 
+            plugins: { 
+                legend: { display: displayLegend, position: 'bottom', labels: { boxWidth: 12, font: { family: 'Space Grotesk'} } },
+                datalabels: { display: false },
+                tooltip: { backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 }, padding: 12, callbacks: { label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; } } },
+                annotation: { annotations: { emptyLine: { type: 'line', scaleID: 'x', value: 0, borderColor: palette.orange, borderWidth: 2, borderDash: [5, 5], display: false, label: { display: true, content: 'Pot Empty', position: 'start', backgroundColor: palette.orange, color: '#fff', font: { family: 'Space Grotesk', size: 11 } } } } }
+            } 
+        }
+    });
+}
 
-    const p2Text = document.getElementById('tips-p2-text');
-    const portfolioCard = document.getElementById('partner-portfolio');
-    const remainingRegAfterEss = Math.max(0, regIncome - currentValues.essentials);
-    
-    if (remainingRegAfterEss >= currentValues.home && currentValues.home > 0) {
-        p2Text.innerHTML = `After covering your Core needs, your remaining regular income fully absorbs your Home costs.`;
-        portfolioCard.classList.add('hidden');
-    } else {
-        p2Text.innerHTML = `You will need to draw steadily from your pots and savings to fund your Home costs.`;
-        portfolioCard.classList.remove('hidden');
-    }
-
-    const p3Text = document.getElementById('tips-p3-text');
-    const equityCard = document.getElementById('partner-equity');
-    const healthCard = document.getElementById('partner-health');
-    
-    if (exhaustionAge !== -1 && exhaustionAge <= 90) {
-        p3Text.innerHTML = `<strong>Caution:</strong> Based on your chosen Lifestyle shape, your current wealth pots will deplete by <strong>Age ${exhaustionAge}</strong>. <br><br>By utilizing the toggles above to taper your active spending later in life, you can instantly see how much further your capital stretches.`;
-    } else {
-        p3Text.innerHTML = `<strong>Sustainable:</strong> Based on your current wealth pots and your chosen chapter transitions, this Lifestyle shape appears financially sustainable past Age 90.`;
-    }
-
-    if (state.tenure === 'owner' || state.tenure === 'mortgage') {
-        equityCard.classList.remove('hidden');
-    } else {
-        equityCard.classList.add('hidden');
-    }
-
-    if (state.living >= 50 || document.getElementById('toggle-care').checked) {
-        healthCard.classList.remove('hidden');
-    } else {
-        healthCard.classList.add('hidden');
-    }
+function setupCharts() {
+    const ctxPolar = document.getElementById('polarChart').getContext('2d');
+    charts.polar = new Chart(ctxPolar, {
+        type: 'polarArea',
+        data: { labels: ['Core', 'Home', 'Lifestyle'], datasets: [{ data: [50, 50, 50], backgroundColor: [palette.sage, palette.dusk, palette.orange], borderColor: [palette.sage, palette.dusk, palette.orange], borderWidth: 1 }] },
+        options: { 
+            responsive: true, maintainAspectRatio: false, layout: { padding: 0 },
+            scales: { r: { min: -20, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
+            plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { color: '#F9F8F6', font: { family: 'Space Grotesk', weight: '600', size: 10 }, textAlign: 'center', formatter: function(value, context) { return context.chart.data.labels[context.dataIndex]; } } } 
+        }
+    });
+    charts.mainBar = createBarChart('mainStackedChart', true);
+    charts.p1 = createBarChart('chart-p1', false);
+    charts.p2 = createBarChart('chart-p2', false);
+    charts.p3 = createBarChart('chart-p3', false);
 }
