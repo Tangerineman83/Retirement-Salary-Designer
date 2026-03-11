@@ -282,6 +282,58 @@ function setupListeners() {
     });
 
     document.getElementById('toggle-travel')?.addEventListener('change', calculateAll);
+
+    const tooltip = document.getElementById('smart-tooltip');
+    let tooltipTimeout;
+    const hideTooltip = () => tooltip?.classList.remove('show');
+
+    document.querySelectorAll('.pers-input').forEach(input => {
+        input.addEventListener('input', (e) => window.extrapolate(e.target.dataset.pillar));
+        const showInputTooltip = (e) => {
+            clearTimeout(tooltipTimeout);
+            if(e.target.disabled || e.target.closest('.hidden') || !tooltip) return;
+
+            const cat = e.target.dataset.cat;
+            const pillar = e.target.dataset.pillar;
+            const freq = parseInt(e.target.dataset.freq) || parseInt(document.getElementById(`freq-${pillar}`)?.value || 12);
+            
+            let b = pillar === 'home' && cat === 'shelter' 
+                ? rldConfig.benchmarks.home.shelter[state.tenure] 
+                : rldConfig.benchmarks[pillar][cat];
+
+            const name = rldConfig.benchmarks[pillar][cat].name;
+            const st = Math.round(b.staples / freq); 
+            const si = Math.round(b.signature / freq);
+            const de = Math.round(b.designer / freq);
+
+            tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
+            const rect = e.target.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
+            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
+            tooltip.classList.add('show');
+        };
+        input.addEventListener('mouseenter', showInputTooltip);
+        input.addEventListener('focus', showInputTooltip);
+        input.addEventListener('mouseleave', hideTooltip);
+        input.addEventListener('blur', hideTooltip);
+    });
+
+    document.querySelectorAll('.tt-trigger').forEach(label => {
+        const showLabelTooltip = (e) => {
+            clearTimeout(tooltipTimeout);
+            if(!tooltip) return;
+            const desc = e.currentTarget.dataset.desc;
+            tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
+            const rect = e.currentTarget.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
+            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
+            tooltip.classList.add('show');
+        };
+        label.addEventListener('mouseenter', showLabelTooltip);
+        label.addEventListener('touchstart', showLabelTooltip, {passive: true});
+        label.addEventListener('mouseleave', hideTooltip);
+        label.addEventListener('touchend', () => tooltipTimeout = setTimeout(hideTooltip, 2500));
+    });
 }
 
 function handleTenureUI(updateText = true) {
@@ -484,7 +536,7 @@ function updateChartsAndJourney() {
     else if (state.walletOpenPillar === 3) walletTarget = 'lifestyle-wallet-slot';
 
     // -----------------------------------------------------
-    // 1. CORE RENDER 
+    // 1. CORE RENDER
     // -----------------------------------------------------
     const corePrompt = document.getElementById('core-text-prompt');
     const coreBanner = document.getElementById('core-success-banner');
@@ -497,7 +549,8 @@ function updateChartsAndJourney() {
         coreAnnuity?.classList.add('hidden');
         corePrompt?.classList.remove('hidden');
         
-        setHTMLSafe('tips-p1-text', `Your guaranteed annual income falls short of your Core needs by <strong>£${Math.round(grossCoreGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
+        let initialGap = Math.max(0, currentValues.essentials - projectedSp);
+        setHTMLSafe('tips-p1-text', `Your guaranteed annual income falls short of your Core needs by <strong>£${Math.round(initialGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
     } else {
         corePrompt?.classList.add('hidden');
         coreBanner?.classList.remove('hidden');
@@ -555,7 +608,8 @@ function updateChartsAndJourney() {
             homeEquityBlock?.classList.add('hidden');
             homePrompt?.classList.remove('hidden');
             
-            setHTMLSafe('tips-p2-text', `Your remaining annual income leaves a Home gap of <strong>£${Math.round(grossHomeGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
+            let initialHomeGap = Math.max(0, currentValues.home - Math.max(0, projectedSp - currentValues.essentials));
+            setHTMLSafe('tips-p2-text', `Your remaining annual income leaves a Home gap of <strong>£${Math.round(initialHomeGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
         } else {
             homePrompt?.classList.add('hidden');
             homeBanner?.classList.remove('hidden');
@@ -656,7 +710,14 @@ function updateChartsAndJourney() {
                 surplusBlock?.classList.remove('hidden');
                 setHTMLSafe('surplus-amount', `£${Math.round(gSp + gDb + gPots).toLocaleString()}/yr`); 
 
-                equityBlock?.classList.add('hidden');
+                // Introduce "boost" equity block even if funded
+                if (estEquityIncome > 0) {
+                    equityBlock?.classList.remove('hidden');
+                    setHTMLSafe('equity-desc', `Your lifestyle is fully supported, but releasing 30% of your property wealth could generate an estimated <strong>£${Math.round(estEquityIncome).toLocaleString()}/yr</strong> to boost your retirement further or fund later-life needs.`);
+                } else {
+                    equityBlock?.classList.add('hidden');
+                }
+
                 shapeBlock?.classList.add('hidden');
                 healthBlock?.classList.remove('hidden'); 
 
@@ -678,7 +739,7 @@ function updateChartsAndJourney() {
 
                 if (estEquityIncome > 0) {
                     equityBlock?.classList.remove('hidden');
-                    setHTMLSafe('equity-desc', `Releasing 30% of your property wealth could generate an estimated <strong>£${Math.round(estEquityIncome).toLocaleString()}/yr</strong>.`);
+                    setHTMLSafe('equity-desc', `Releasing 30% of your property wealth could generate an estimated <strong>£${Math.round(estEquityIncome).toLocaleString()}/yr</strong> to help bridge this gap.`);
                 } else {
                     equityBlock?.classList.add('hidden');
                 }
