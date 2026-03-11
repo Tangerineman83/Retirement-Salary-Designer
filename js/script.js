@@ -30,10 +30,10 @@ let categoryData = {};
 let charts = { polar: null, mainBar: null }; 
 
 const palette = {
-    sage: '#8BB2AF',
+    sage: '#A3C6C4',
     dusk: '#6B7A8F', 
     orange: '#FF5A36',
-    espresso: '#2D2725'
+    espresso: '#2B2625'
 };
 
 // --- SAFE DOM HELPERS ---
@@ -97,6 +97,7 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
+    // Explicit User Override: Always advance to the next step when they click apply, even if a gap remains
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
@@ -321,7 +322,7 @@ function setupListeners() {
             clearTimeout(tooltipTimeout);
             if(!tooltip) return;
             const desc = e.currentTarget.dataset.desc;
-            tooltip.innerHTML = `<span style="color:var(--bg-card); font-family:'Space Grotesk', sans-serif; font-weight:400; font-size:0.9rem;">${desc}</span>`;
+            tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
             const rect = e.currentTarget.getBoundingClientRect();
             tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
             tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
@@ -545,7 +546,8 @@ function updateChartsAndJourney() {
         coreAnnuity?.classList.add('hidden');
         corePrompt?.classList.remove('hidden');
         
-        setHTMLSafe('tips-p1-text', `Your guaranteed annual income falls short of your Core needs by <strong>£${Math.round(grossCoreGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
+        let initialGap = Math.max(0, currentValues.essentials - projectedSp);
+        setHTMLSafe('tips-p1-text', `Your guaranteed annual income falls short of your Core needs by <strong>£${Math.round(initialGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
     } else {
         corePrompt?.classList.add('hidden');
         coreBanner?.classList.remove('hidden');
@@ -603,7 +605,8 @@ function updateChartsAndJourney() {
             homeEquityBlock?.classList.add('hidden');
             homePrompt?.classList.remove('hidden');
             
-            setHTMLSafe('tips-p2-text', `Your remaining annual income leaves a Home gap of <strong>£${Math.round(grossHomeGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
+            let initialHomeGap = Math.max(0, currentValues.home - Math.max(0, projectedSp - currentValues.essentials));
+            setHTMLSafe('tips-p2-text', `Your remaining annual income leaves a Home gap of <strong>£${Math.round(initialHomeGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
         } else {
             homePrompt?.classList.add('hidden');
             homeBanner?.classList.remove('hidden');
@@ -650,10 +653,9 @@ function updateChartsAndJourney() {
     }
 
     // -----------------------------------------------------
-    // 3. LIFESTYLE RENDER
+    // 3. LIFESTYLE RENDER 
     // -----------------------------------------------------
     const equityBlock = document.getElementById('equity-block');
-    const shapeBlock = document.getElementById('shape-block');
     const healthBlock = document.getElementById('health-block');
     const surplusBlock = document.getElementById('surplus-block');
 
@@ -677,12 +679,12 @@ function updateChartsAndJourney() {
             setHTMLSafe('tips-p3-text', `Your preferred Lifestyle exceeds your available annual income by <strong>£${Math.round(nLife).toLocaleString()} per year</strong>. Use the wallet below to check your assets.`);
             
             equityBlock?.classList.add('hidden');
-            shapeBlock?.classList.add('hidden');
             healthBlock?.classList.add('hidden');
             surplusBlock?.classList.add('hidden');
         } else {
             
             if (nLife <= 0 && currentValues.living > 0) {
+                // FULLY FUNDED
                 lifePrompt?.classList.add('hidden');
                 lifeBanner?.classList.remove('hidden');
                 lifeEdit?.classList.remove('hidden');
@@ -710,10 +712,10 @@ function updateChartsAndJourney() {
                     equityBlock?.classList.add('hidden');
                 }
 
-                shapeBlock?.classList.add('hidden');
                 healthBlock?.classList.remove('hidden'); 
 
             } else {
+                // GAP REMAINS AFTER WALLET APPLIED
                 lifePrompt?.classList.add('hidden');
                 lifeBanner?.classList.remove('hidden');
                 lifeEdit?.classList.remove('hidden');
@@ -733,12 +735,6 @@ function updateChartsAndJourney() {
                     setHTMLSafe('equity-desc', `Releasing 30% of your property wealth could generate an estimated <strong>£${Math.round(estEquityIncome).toLocaleString()}/yr</strong> to help bridge this gap.`);
                 } else {
                     equityBlock?.classList.add('hidden');
-                }
-
-                if (nLife - estEquityIncome > 0) {
-                    shapeBlock?.classList.remove('hidden');
-                } else {
-                    shapeBlock?.classList.add('hidden');
                 }
             }
         }
@@ -868,7 +864,7 @@ function setupCharts() {
         const ctxPolar = polarEl.getContext('2d');
         charts.polar = new Chart(ctxPolar, {
             type: 'polarArea',
-            data: { labels: ['Core', 'Home', 'Lifestyle'], datasets: [{ data: [50, 50, 50], backgroundColor: [palette.sage, palette.dusk, palette.orange], borderColor: [palette.sage, palette.dusk, palette.orange], borderWidth: 2 }] },
+            data: { labels: ['Core', 'Home', 'Lifestyle'], datasets: [{ data: [50, 50, 50], backgroundColor: [palette.sage, palette.dusk, palette.orange], borderColor: [palette.sage, palette.dusk, palette.orange], borderWidth: 1 }] },
             options: { 
                 responsive: true, maintainAspectRatio: false, layout: { padding: 0 },
                 scales: { r: { min: -20, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
