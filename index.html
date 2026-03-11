@@ -95,7 +95,7 @@
                             <p class="tips-text" id="tips-p1-text">Loading insights...</p>
                             
                             <div id="core-wallet-slot"></div>
-                            
+
                             <div class="step-action-container hidden" id="step-action-1">
                                 <div class="chevron-action" onclick="advanceStep(2)">
                                     <span>Next: Review Home</span>
@@ -243,7 +243,6 @@
                             <p class="tips-text">You have a projected surplus of <strong id="surplus-amount" style="font-size:1.2rem;">£0</strong> per year.</p>
                             <p class="tips-text" style="margin-top:10px;">You are in a fantastic position to boost your lifestyle further, accelerate your retirement date, or consider legacy planning and charitable giving.</p>
                         </div>
-
                     </div>
                 </section>
 
@@ -281,19 +280,31 @@
 
     <div id="wealth-wallet" class="wealth-wallet hidden">
         <h4 class="tips-title" id="wallet-dynamic-title" style="color:var(--accent-orange);">Bridge the Gap</h4>
-        <p class="wallet-desc" id="wallet-dynamic-desc">Your guaranteed income falls short here. Add your assets below to cover the difference.</p>
+        <p class="wallet-desc" id="wallet-dynamic-desc">Your guaranteed income falls short here. Please input any other assets to cover the difference.</p>
         
-        <div class="input-grid" style="grid-template-columns: 1fr; gap: 15px;">
-            <div id="db-box" class="hidden">
-                <label>Defined Benefit Pension (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
+        <div class="asset-cards-container">
+            
+            <div id="db-card" class="asset-card hidden">
+                <h5>1. Defined Benefit Pension</h5>
+                <p>Do you have a guaranteed annual pension from a previous employer?</p>
+                <label>Annual Amount (£): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
             </div>
             
-            <div id="pots-box" class="hidden">
-                <label>Total Pension Pots Built Up (£): <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
-                <label style="margin-top:15px;">Other Individual Savings (£): <input type="number" id="meas-savings" class="seamless-input" placeholder="£0"></label>
-                <span class="input-hint" style="margin-top:8px;">We estimate a sustainable 6% annual withdrawal rate.</span>
+            <div id="pots-card" class="asset-card hidden">
+                <h5>2. Pension Pots</h5>
+                <p>Total value of accumulated defined contribution pension pots.</p>
+                <label>Total Value (£): <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
             </div>
+
+            <div id="savings-card" class="asset-card hidden">
+                <h5>3. Other Savings</h5>
+                <p>ISAs, cash, or other investments available to draw from.</p>
+                <label>Total Value (£): <input type="number" id="meas-savings" class="seamless-input" placeholder="£0"></label>
+            </div>
+
         </div>
+        
+        <span id="withdrawal-hint" class="input-hint hidden" style="margin-top:15px;">We estimate a sustainable 6% annual withdrawal rate on pots & savings.</span>
 
         <div id="wallet-partner-annuity" class="partner-card-tip hidden" style="margin-top: 20px;">
             <div class="pct-content">
