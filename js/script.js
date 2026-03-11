@@ -12,7 +12,7 @@ let state = {
     pensionPot: 0,
     otherSavings: 0,
     revealedAssets: ['db'], 
-    walletOpenPillar: null, // Controls exact placement of the manual input wallet
+    walletOpenPillar: null, 
     homeValue: 0,
     mortgagePmt: 0,
     rentPmt: 0,
@@ -68,37 +68,24 @@ window.revealAsset = function(assetType) {
     }
 }
 
-// User clicks Edit Assets ⌄ to manually reopen the wallet
 window.openWallet = function(pillarNumber) {
     state.walletOpenPillar = pillarNumber;
     calculateAll();
 }
 
-// User clicks Apply & Continue inside the Wallet
 window.applyWallet = function() {
-    // If they bridged the gap, applying auto-advances the journey
-    const spRem = rldConfig?.assumptions?.statePension ?? 11973;
-    const dbRem = state.dbPension || 0;
-    const potsRem = ((state.pensionPot || 0) + (state.otherSavings || 0)) * (rldConfig?.assumptions?.drawdownRate ?? 0.05);
-
-    let cCost = currentValues.essentials;
-    let nCore = Math.max(0, cCost - spRem - dbRem - potsRem);
-
-    let hCost = currentValues.home;
-    let nHome = Math.max(0, hCost - Math.max(0, spRem - cCost) - Math.max(0, dbRem - cCost) - Math.max(0, potsRem - cCost));
-
-    if (state.walletOpenPillar === 1 && nCore <= 0 && state.unlockedStep === 1) {
-        window.advanceStep(2);
-    } else if (state.walletOpenPillar === 2 && nHome <= 0 && state.unlockedStep === 2) {
-        window.advanceStep(3);
-    }
+    // When Apply is clicked, close the wallet and automatically push them to the next available step
+    const currentOpen = state.walletOpenPillar;
+    state.walletOpenPillar = null; 
     
-    state.walletOpenPillar = null; // Close wallet, let Success Banners take over
-    calculateAll();
+    if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
+    else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
+    else calculateAll();
 }
 
 window.advanceStep = function(targetStep) {
     state.unlockedStep = targetStep;
+    state.walletOpenPillar = null; // Always close wallet on advance
     
     if (targetStep === 2) {
         const homeSection = document.getElementById('pillar-home');
@@ -114,6 +101,7 @@ window.advanceStep = function(targetStep) {
         document.getElementById('step-action-2').classList.add('hidden');
         lifeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+    
     calculateAll();
 }
 
@@ -451,143 +439,185 @@ function updateChartsAndJourney() {
     // -----------------------------------------------------
     // CALCULATE NET GAPS PROGRESSIVELY
     // -----------------------------------------------------
-    let nSp = projectedSp;
-    let nDb = state.dbPension;
-    let potsTotal = state.pensionPot + state.otherSavings;
-    let nPots = potsTotal * drawdownRate;
+    let gSp = projectedSp;
+    let gDb = state.dbPension;
+    let potsTotal = (state.pensionPot || 0) + (state.otherSavings || 0);
+    let gPots = potsTotal * drawdownRate;
 
     // -- CORE CALC --
-    let cCost = currentValues.essentials;
-    let cSpUsed = Math.min(cCost, nSp); nSp -= cSpUsed; cCost -= cSpUsed;
-    let cDbUsed = Math.min(cCost, nDb); nDb -= cDbUsed; cCost -= cDbUsed;
-    let cPotsUsed = Math.min(cCost, nPots); nPots -= cPotsUsed; cCost -= cPotsUsed;
+    let reqCore = currentValues.essentials;
+    let cSp = Math.min(reqCore, gSp); gSp -= cSp; reqCore -= cSp;
+    let cDb = Math.min(reqCore, gDb); gDb -= cDb; reqCore -= cDb;
+    let cPots = Math.min(reqCore, gPots); gPots -= cPots; reqCore -= cPots;
+    let nCore = reqCore; 
 
     // -- HOME CALC --
-    let hCost = 0; let hSpUsed = 0; let hDbUsed = 0; let hPotsUsed = 0;
-    if (state.unlockedStep >= 2) {
-        hCost = currentValues.home;
-        hSpUsed = Math.min(hCost, nSp); nSp -= hSpUsed; hCost -= hSpUsed;
-        hDbUsed = Math.min(hCost, nDb); nDb -= hDbUsed; hCost -= hDbUsed;
-        hPotsUsed = Math.min(hCost, nPots); nPots -= hPotsUsed; hCost -= hPotsUsed;
-    }
+    let reqHome = (state.unlockedStep >= 2) ? currentValues.home : 0;
+    let hSp = Math.min(reqHome, gSp); gSp -= hSp; reqHome -= hSp;
+    let hDb = Math.min(reqHome, gDb); gDb -= hDb; reqHome -= hDb;
+    let hPots = Math.min(reqHome, gPots); gPots -= hPots; reqHome -= hPots;
+    let nHome = reqHome;
 
     // -- LIFESTYLE CALC --
-    let lCost = 0; let lSpUsed = 0; let lDbUsed = 0; let lPotsUsed = 0;
-    let preLifeRem = nSp + nDb + nPots; 
-    if (state.unlockedStep >= 3) {
-        lCost = currentValues.living;
-        lSpUsed = Math.min(lCost, nSp); nSp -= lSpUsed; lCost -= lSpUsed;
-        lDbUsed = Math.min(lCost, nDb); nDb -= lDbUsed; lCost -= lDbUsed;
-        lPotsUsed = Math.min(lCost, nPots); nPots -= lPotsUsed; lCost -= lPotsUsed;
+    let preLifeRem = gSp + gDb + gPots; 
+    let reqLife = (state.unlockedStep >= 3) ? currentValues.living : 0;
+    let lSp = Math.min(reqLife, gSp); gSp -= lSp; reqLife -= lSp;
+    let lDb = Math.min(reqLife, gDb); gDb -= lDb; reqLife -= lDb;
+    let lPots = Math.min(reqLife, gPots); gPots -= lPots; reqLife -= lPots;
+    let nLife = reqLife;
+
+    // -----------------------------------------------------
+    // SMART WALLET AUTO-OPEN LOGIC
+    // -----------------------------------------------------
+    if (state.walletOpenPillar === null) {
+        if (nCore > 0) state.walletOpenPillar = 1;
+        else if (nHome > 0 && state.unlockedStep >= 2) state.walletOpenPillar = 2;
+        else if (nLife > 0 && state.unlockedStep >= 3) state.walletOpenPillar = 3;
     }
 
     // -----------------------------------------------------
-    // IDENTIFY UNBRIDGED GAPS TO AUTO-FORCE THE WALLET OPEN
+    // 1. CORE RENDER
     // -----------------------------------------------------
-    let unbridgedPillar = null;
-    if (cCost > 0) unbridgedPillar = 1;
-    else if (hCost > 0 && state.unlockedStep >= 2) unbridgedPillar = 2;
-    else if (lCost > 0 && state.unlockedStep >= 3) unbridgedPillar = 3;
-
-    // If there is a gap, and the user hasn't explicitly closed the wallet, auto-open it there.
-    if (state.walletOpenPillar === null && unbridgedPillar !== null) {
-        state.walletOpenPillar = unbridgedPillar;
-    }
-
-    // Determine target slot based on wallet state
-    let walletTarget = "";
-    if (state.walletOpenPillar === 1) walletTarget = 'core-wallet-slot';
-    else if (state.walletOpenPillar === 2) walletTarget = 'home-wallet-slot';
-    else if (state.walletOpenPillar === 3) walletTarget = 'lifestyle-wallet-slot';
-
-    // -----------------------------------------------------
-    // RENDER SUCCESS BANNERS & TEXT PROMPTS
-    // -----------------------------------------------------
-    
-    // 1. CORE
+    const corePrompt = document.getElementById('core-text-prompt');
     const coreBanner = document.getElementById('core-success-banner');
+    const coreEdit = document.getElementById('core-edit-container');
     const coreAnnuity = document.getElementById('core-partner-annuity');
-    const coreEditBtn = document.getElementById('core-edit-container');
-    
+
     if (state.walletOpenPillar === 1) {
         coreBanner.classList.add('hidden');
+        coreEdit.classList.add('hidden');
         coreAnnuity.classList.add('hidden');
-        coreEditBtn.classList.add('hidden');
+        corePrompt.classList.remove('hidden');
+        
+        if (nCore <= 0) {
+            document.getElementById('tips-p1-text').innerHTML = `You have successfully bridged the gap. Click <strong>Apply & Continue ⌃</strong> below to proceed.`;
+        } else {
+            let initialGap = Math.max(0, currentValues.essentials - projectedSp);
+            document.getElementById('tips-p1-text').innerHTML = `Your guaranteed income falls short of your Core needs by <strong>£${Math.round(initialGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`;
+        }
     } else {
-        if (cCost <= 0) { // Gap Bridged & Wallet Closed
+        if (nCore <= 0 && currentValues.essentials > 0) {
+            corePrompt.classList.add('hidden');
             coreBanner.classList.remove('hidden');
-            coreEditBtn.classList.remove('hidden');
+            coreEdit.classList.remove('hidden');
             document.getElementById('core-success-val').innerText = `£${Math.round(currentValues.essentials).toLocaleString()}`;
             
-            if (cPotsUsed > 0) {
-                document.getElementById('core-success-desc').innerText = "Your State Pension, DB Pension, and Savings securely cover your Core needs.";
+            if (cPots > 0) {
+                document.getElementById('core-success-desc').innerText = "Your savings successfully bridge your Core needs.";
                 coreAnnuity.classList.remove('hidden');
-            } else if (cDbUsed > 0) {
-                document.getElementById('core-success-desc').innerText = "Your State Pension and DB Pension fully cover your Core needs.";
+            } else if (cDb > 0) {
+                document.getElementById('core-success-desc').innerText = "Your DB Pension successfully bridges your Core needs.";
                 coreAnnuity.classList.add('hidden');
             } else {
                 document.getElementById('core-success-desc').innerText = "Your State Pension fully covers your Core needs.";
                 coreAnnuity.classList.add('hidden');
             }
+        } else {
+            corePrompt.classList.remove('hidden');
+            coreBanner.classList.add('hidden');
+            coreEdit.classList.remove('hidden');
+            coreAnnuity.classList.add('hidden');
+            document.getElementById('tips-p1-text').innerHTML = `You have an unbridged Core shortfall of <strong>£${Math.round(nCore).toLocaleString()}</strong>.`;
         }
     }
+    
+    if (state.unlockedStep === 1) document.getElementById('step-action-1').classList.remove('hidden');
+    else document.getElementById('step-action-1').classList.add('hidden');
 
-    // 2. HOME
+    // -----------------------------------------------------
+    // 2. HOME RENDER
+    // -----------------------------------------------------
     if (state.unlockedStep >= 2) {
+        const homePrompt = document.getElementById('home-text-prompt');
         const homeBanner = document.getElementById('home-success-banner');
+        const homeEdit = document.getElementById('home-edit-container');
         const homePortfolio = document.getElementById('home-partner-portfolio');
-        const homeEditBtn = document.getElementById('home-edit-container');
-        
+
         if (state.walletOpenPillar === 2) {
             homeBanner.classList.add('hidden');
+            homeEdit.classList.add('hidden');
             homePortfolio.classList.add('hidden');
-            homeEditBtn.classList.add('hidden');
+            homePrompt.classList.remove('hidden');
+            
+            if (nHome <= 0) {
+                document.getElementById('tips-p2-text').innerHTML = `You have successfully bridged the gap. Click <strong>Apply & Continue ⌃</strong> below to proceed.`;
+            } else {
+                let initialHomeGap = Math.max(0, currentValues.home - Math.max(0, projectedSp - currentValues.essentials));
+                document.getElementById('tips-p2-text').innerHTML = `Your remaining income leaves a Home gap of <strong>£${Math.round(initialHomeGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`;
+            }
         } else {
-            if (hCost <= 0 && cCost <= 0) { 
+            if (nHome <= 0 && currentValues.home > 0) {
+                homePrompt.classList.add('hidden');
                 homeBanner.classList.remove('hidden');
-                homeEditBtn.classList.remove('hidden');
+                homeEdit.classList.remove('hidden');
                 document.getElementById('home-success-val').innerText = `£${Math.round(currentValues.home).toLocaleString()}`;
                 
-                if (hPotsUsed > 0) {
-                    document.getElementById('home-success-desc').innerText = "Your savings drawdown bridges your Home costs.";
+                if (hPots > 0) {
+                    document.getElementById('home-success-desc').innerText = "Your savings effectively bridge your Home costs.";
                     homePortfolio.classList.remove('hidden');
-                } else if (hDbUsed > 0) {
+                } else if (hDb > 0) {
                     document.getElementById('home-success-desc').innerText = "Your DB Pension bridges your Home costs.";
                     homePortfolio.classList.add('hidden');
                 } else {
-                    document.getElementById('home-success-desc').innerText = "Your regular income seamlessly covers your Home costs.";
+                    document.getElementById('home-success-desc').innerText = "Your regular income perfectly covers your Home costs.";
                     homePortfolio.classList.add('hidden');
                 }
-            } 
+            } else {
+                homePrompt.classList.remove('hidden');
+                homeBanner.classList.add('hidden');
+                homeEdit.classList.remove('hidden');
+                homePortfolio.classList.add('hidden');
+                document.getElementById('tips-p2-text').innerHTML = `You have an unbridged Home shortfall of <strong>£${Math.round(nHome).toLocaleString()}</strong>.`;
+            }
         }
+        
+        if (state.unlockedStep === 2) document.getElementById('step-action-2').classList.remove('hidden');
+        else document.getElementById('step-action-2').classList.add('hidden');
     }
 
-    // 3. LIFESTYLE
+    // -----------------------------------------------------
+    // 3. LIFESTYLE RENDER
+    // -----------------------------------------------------
     const equityCard = document.getElementById('partner-equity');
     const healthCard = document.getElementById('partner-health');
 
     if (state.unlockedStep >= 3) {
+        const lifePrompt = document.getElementById('life-text-prompt');
         const lifeBanner = document.getElementById('lifestyle-success-banner');
-        const lifeEditBtn = document.getElementById('lifestyle-edit-container');
-        document.getElementById('tips-p3-intro').innerHTML = `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`;
+        const lifeEdit = document.getElementById('lifestyle-edit-container');
 
         if (state.walletOpenPillar === 3) {
             lifeBanner.classList.add('hidden');
-            lifeEditBtn.classList.add('hidden');
+            lifeEdit.classList.add('hidden');
+            lifePrompt.classList.remove('hidden');
             document.getElementById('surplus-block').classList.add('hidden');
+            
+            if (nLife <= 0) {
+                document.getElementById('tips-p3-text').innerHTML = `You have successfully funded your Lifestyle. Click <strong>Apply & Continue ⌃</strong> below.`;
+            } else {
+                document.getElementById('tips-p3-text').innerHTML = `Your preferred Lifestyle exceeds your resources by <strong>£${Math.round(nLife).toLocaleString()}</strong>. Use the wallet or reshape your timeline above.`;
+            }
         } else {
-            if (lCost <= 0 && hCost <= 0 && cCost <= 0) {
+            document.getElementById('tips-p3-intro').innerHTML = `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`;
+            
+            if (nLife <= 0 && currentValues.living > 0) {
+                lifePrompt.classList.add('hidden');
                 lifeBanner.classList.remove('hidden');
-                lifeEditBtn.classList.remove('hidden');
+                lifeEdit.classList.remove('hidden');
                 document.getElementById('lifestyle-success-val').innerText = `£${Math.round(currentValues.living).toLocaleString()}`;
                 
-                if (lPotsUsed > 0) document.getElementById('lifestyle-success-desc').innerText = "Your savings drawdown successfully funds your chosen lifestyle.";
+                if (lPots > 0) document.getElementById('lifestyle-success-desc').innerText = "Your savings successfully fund your chosen lifestyle.";
                 else document.getElementById('lifestyle-success-desc').innerText = "Your guaranteed income fully covers your chosen lifestyle.";
 
-                let currentRem = spRem + dbRem + potsRem; 
                 document.getElementById('surplus-block').classList.remove('hidden');
-                document.getElementById('surplus-amount').innerText = `£${Math.round(currentRem).toLocaleString()}`;
-            } 
+                document.getElementById('surplus-amount').innerText = `£${Math.round(preLifeRem - currentValues.living).toLocaleString()}`;
+            } else {
+                lifePrompt.classList.remove('hidden');
+                lifeBanner.classList.add('hidden');
+                lifeEdit.classList.remove('hidden');
+                document.getElementById('surplus-block').classList.add('hidden');
+                document.getElementById('tips-p3-text').innerHTML = `You have an unbridged Lifestyle shortfall of <strong>£${Math.round(nLife).toLocaleString()}</strong>.`;
+            }
         }
 
         if (state.tenure === 'owner' || state.tenure === 'mortgage') equityCard?.classList.remove('hidden');
@@ -598,21 +628,22 @@ function updateChartsAndJourney() {
     }
 
     // -----------------------------------------------------
-    // EXECUTE WEALTH WALLET UI STATE
+    // EXECUTE WEALTH WALLET INJECTION & ASSET CARDS
     // -----------------------------------------------------
     const walletEl = document.getElementById('wealth-wallet');
-    
+    let walletTarget = (state.walletOpenPillar === 1) ? 'core-wallet-slot' : (state.walletOpenPillar === 2) ? 'home-wallet-slot' : (state.walletOpenPillar === 3) ? 'lifestyle-wallet-slot' : "";
+
     if (walletTarget !== "") {
-        let activeGap = (state.walletOpenPillar === 1) ? cCost : (state.walletOpenPillar === 2) ? hCost : lCost;
+        let activeNetGap = (state.walletOpenPillar === 1) ? nCore : (state.walletOpenPillar === 2) ? nHome : nLife;
         
-        if (activeGap > 0) {
-            document.getElementById('wallet-dynamic-title').innerText = `Bridge the Gap: £${Math.round(activeGap).toLocaleString()}`;
-            document.getElementById('wallet-dynamic-title').style.color = "var(--accent-orange)";
-            document.getElementById('wallet-dynamic-desc').innerText = `Your guaranteed income falls short here. Check your assets below to cover the difference.`;
-        } else {
-            document.getElementById('wallet-dynamic-title').innerHTML = `You've closed the gap <span style="color:var(--accent-sage)">✓</span>`;
+        if (activeNetGap <= 0) {
+            document.getElementById('wallet-dynamic-title').innerHTML = `Gap Bridged <span style="color:var(--accent-sage)">✓</span>`;
             document.getElementById('wallet-dynamic-title').style.color = "var(--text-espresso)";
-            document.getElementById('wallet-dynamic-desc').innerText = `Your assets now cover this need. Click 'Apply' below to continue.`;
+            document.getElementById('wallet-dynamic-desc').innerText = `Your assets successfully cover this need.`;
+        } else {
+            document.getElementById('wallet-dynamic-title').innerText = `Bridge the Gap: £${Math.round(activeNetGap).toLocaleString()}`;
+            document.getElementById('wallet-dynamic-title').style.color = "var(--accent-orange)";
+            document.getElementById('wallet-dynamic-desc').innerText = `Input your assets below to cover the remaining difference.`;
         }
         
         if (state.revealedAssets.includes('pots')) {
@@ -640,14 +671,6 @@ function updateChartsAndJourney() {
     } else {
         walletEl.classList.add('hidden');
     }
-
-    // Chevrons to advance are visible only when the wallet is NOT open in that pillar
-    if(state.unlockedStep === 1 && state.walletOpenPillar !== 1) document.getElementById('step-action-1').classList.remove('hidden');
-    else document.getElementById('step-action-1').classList.add('hidden');
-    
-    if(state.unlockedStep === 2 && state.walletOpenPillar !== 2) document.getElementById('step-action-2').classList.remove('hidden');
-    else document.getElementById('step-action-2').classList.add('hidden');
-
 
     // -----------------------------------------------------
     // CHART HORIZON TRAJECTORY
