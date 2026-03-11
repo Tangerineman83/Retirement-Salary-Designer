@@ -11,6 +11,7 @@ let state = {
     dbPension: 0,
     pensionPot: 0,
     otherSavings: 0,
+    revealedAssets: ['db'], // Tracks which wallet cards are visible
     homeValue: 0,
     mortgagePmt: 0,
     rentPmt: 0,
@@ -57,6 +58,13 @@ window.toggleSection = function(bodyId, headerElement) {
 window.togglePersonalize = function(id) {
     const panel = document.getElementById(`pers-${id}`);
     panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+}
+
+window.revealAsset = function(assetType) {
+    if (!state.revealedAssets.includes(assetType)) {
+        state.revealedAssets.push(assetType);
+        calculateAll();
+    }
 }
 
 window.advanceStep = function(targetStep) {
@@ -189,7 +197,6 @@ function setupListeners() {
             slider.value = val;
             state[pillar] = val;
             
-            // Re-calc implied rents if slider moves
             if(pillar === 'home') handleTenureUI(false);
             
             calculateAll();
@@ -199,57 +206,6 @@ function setupListeners() {
 
     document.getElementById('toggle-travel').addEventListener('change', calculateAll);
     document.getElementById('toggle-care').addEventListener('change', calculateAll);
-
-    const tooltip = document.getElementById('smart-tooltip');
-    let tooltipTimeout;
-    const hideTooltip = () => tooltip.classList.remove('show');
-
-    document.querySelectorAll('.pers-input').forEach(input => {
-        input.addEventListener('input', (e) => window.extrapolate(e.target.dataset.pillar));
-        const showInputTooltip = (e) => {
-            clearTimeout(tooltipTimeout);
-            if(e.target.disabled || e.target.closest('.hidden')) return;
-
-            const cat = e.target.dataset.cat;
-            const pillar = e.target.dataset.pillar;
-            const freq = parseInt(e.target.dataset.freq) || parseInt(document.getElementById(`freq-${pillar}`).value);
-            
-            let b = pillar === 'home' && cat === 'shelter' 
-                ? rldConfig.benchmarks.home.shelter[state.tenure] 
-                : rldConfig.benchmarks[pillar][cat];
-
-            const name = rldConfig.benchmarks[pillar][cat].name;
-            const st = Math.round(b.staples / freq); 
-            const si = Math.round(b.signature / freq);
-            const de = Math.round(b.designer / freq);
-
-            tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
-            const rect = e.target.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
-            tooltip.classList.add('show');
-        };
-        input.addEventListener('mouseenter', showInputTooltip);
-        input.addEventListener('focus', showInputTooltip);
-        input.addEventListener('mouseleave', hideTooltip);
-        input.addEventListener('blur', hideTooltip);
-    });
-
-    document.querySelectorAll('.tt-trigger').forEach(label => {
-        const showLabelTooltip = (e) => {
-            clearTimeout(tooltipTimeout);
-            const desc = e.currentTarget.dataset.desc;
-            tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
-            const rect = e.currentTarget.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
-            tooltip.classList.add('show');
-        };
-        label.addEventListener('mouseenter', showLabelTooltip);
-        label.addEventListener('touchstart', showLabelTooltip, {passive: true});
-        label.addEventListener('mouseleave', hideTooltip);
-        label.addEventListener('touchend', () => tooltipTimeout = setTimeout(hideTooltip, 2500));
-    });
 }
 
 function handleTenureUI(updateText = true) {
@@ -264,7 +220,6 @@ function handleTenureUI(updateText = true) {
     rentInputs.classList.add('hidden');
     shelterInput.disabled = true;
 
-    // Auto-calculate implied shelter costs based on the active Home slider
     let bRent = rldConfig.benchmarks.home.shelter.rent;
     let impliedRentAnnual = (state.home <= 50) ? (bRent.staples + ((bRent.signature - bRent.staples) * (state.home / 50))) : (bRent.signature + ((bRent.designer - bRent.signature) * ((state.home - 50) / 50)));
     
@@ -401,124 +356,121 @@ function updateChartsAndJourney() {
     document.getElementById('sp-age-val').innerText = spAge;
 
     // -----------------------------------------------------
-    // 1. IDENTIFY THE WALLET ANCHOR (GROSS GAPS)
+    // TRACK RESOURCES ACCURATELY TO DRIVE SUCCESS BANNERS
     // -----------------------------------------------------
-    let gSp = projectedSp;
-    let gCore = Math.max(0, currentValues.essentials - gSp);
-    gSp = Math.max(0, gSp - currentValues.essentials);
-    let gHome = Math.max(0, currentValues.home - gSp);
-    gSp = Math.max(0, gSp - currentValues.home);
-    let gLife = Math.max(0, currentValues.living - gSp);
+    let spRem = projectedSp;
+    let dbRem = state.dbPension || 0;
+    let potsTotal = (state.pensionPot || 0) + (state.otherSavings || 0);
+    let potsRem = potsTotal * drawdownRate;
 
     let walletTarget = "";
-    if (state.unlockedStep === 1 && gCore > 0) walletTarget = 'core-wallet-slot';
-    else if (state.unlockedStep === 2 && (gCore > 0 || gHome > 0)) walletTarget = 'home-wallet-slot';
-    else if (state.unlockedStep === 3 && (gCore > 0 || gHome > 0 || gLife > 0)) walletTarget = 'lifestyle-wallet-slot';
+    let activeNetGap = 0;
 
-    // -----------------------------------------------------
-    // 2. CALCULATE NET GAPS (AFTER DB & POTS)
-    // -----------------------------------------------------
-    let nSp = projectedSp;
-    let nDb = state.dbPension;
-    let potsTotal = state.pensionPot + state.otherSavings;
-    let nPots = potsTotal * drawdownRate;
-
-    let nCore = Math.max(0, currentValues.essentials - nSp);
-    nSp = Math.max(0, nSp - currentValues.essentials);
-    let cDbUsed = Math.min(nCore, nDb); nCore -= cDbUsed; nDb -= cDbUsed;
-    let cPotsUsed = Math.min(nCore, nPots); nCore -= cPotsUsed; nPots -= cPotsUsed;
-
-    let nHome = Math.max(0, currentValues.home - nSp);
-    nSp = Math.max(0, nSp - currentValues.home);
-    let hDbUsed = Math.min(nHome, nDb); nHome -= hDbUsed; nDb -= hDbUsed;
-    let hPotsUsed = Math.min(nHome, nPots); nHome -= hPotsUsed; nPots -= hPotsUsed;
-
-    let nLife = Math.max(0, currentValues.living - nSp);
-    nSp = Math.max(0, nSp - currentValues.living);
-    let lDbUsed = Math.min(nLife, nDb); nLife -= lDbUsed; nDb -= lDbUsed;
-    let lPotsUsed = Math.min(nLife, nPots); nLife -= lPotsUsed; nPots -= lPotsUsed;
-
-    // -----------------------------------------------------
-    // 3. EXECUTE WALLET UI & FOCUS SAFEGUARD
-    // -----------------------------------------------------
-    const walletEl = document.getElementById('wealth-wallet');
-    const annuityCard = document.getElementById('wallet-partner-annuity');
-    const portfolioCard = document.getElementById('wallet-partner-portfolio');
+    // -- CORE --
+    let cCost = currentValues.essentials;
+    let cSpUsed = Math.min(cCost, spRem); spRem -= cSpUsed; cCost -= cSpUsed;
+    let cDbUsed = Math.min(cCost, dbRem); dbRem -= cDbUsed; cCost -= cDbUsed;
+    let cPotsUsed = Math.min(cCost, potsRem); potsRem -= cPotsUsed; cCost -= cPotsUsed;
     
-    if (walletTarget !== "") {
-        // Evaluate the remaining gap relevant to the current step
-        let activeNetGap = 0;
-        if (state.unlockedStep === 1) activeNetGap = nCore;
-        else if (state.unlockedStep === 2) activeNetGap = nHome + nCore;
-        else if (state.unlockedStep === 3) activeNetGap = nLife + nHome + nCore;
-
-        if (activeNetGap > 0) {
-            document.getElementById('wallet-dynamic-title').innerHTML = `Bridge the Gap: £${Math.round(activeNetGap).toLocaleString()}`;
-            document.getElementById('wallet-dynamic-desc').innerText = `Your guaranteed income falls short. Input your assets below to cover the difference.`;
-            document.getElementById('wallet-dynamic-title').style.color = "var(--accent-orange)";
-        } else {
-            document.getElementById('wallet-dynamic-title').innerHTML = `Needs Covered <span style="color:var(--accent-sage)">✓</span>`;
-            document.getElementById('wallet-dynamic-desc').innerText = `Your entered assets successfully cover your needs up to this point.`;
-            document.getElementById('wallet-dynamic-title').style.color = "var(--text-espresso)";
-        }
-
-        // Only appendChild if the wallet is NOT already in the correct slot. This prevents the input jitter.
-        if (walletEl.parentElement.id !== walletTarget) {
-            document.getElementById(walletTarget).appendChild(walletEl);
-        }
-        walletEl.classList.remove('hidden');
-
-        if (cPotsUsed > 0 || hPotsUsed > 0) annuityCard?.classList.remove('hidden');
-        else annuityCard?.classList.add('hidden');
-
-        if (hPotsUsed > 0) portfolioCard?.classList.remove('hidden');
-        else portfolioCard?.classList.add('hidden');
-
-    } else {
-        walletEl.classList.add('hidden');
-        annuityCard?.classList.add('hidden');
-        portfolioCard?.classList.add('hidden');
+    if (cCost > 0 && state.unlockedStep === 1) {
+        walletTarget = 'core-wallet-slot';
+        activeNetGap = cCost;
     }
 
-    // -----------------------------------------------------
-    // 4. UPDATE PILLAR TEXT & PROGRESSION CHEVRONS
-    // -----------------------------------------------------
-    // CORE
-    if (gCore <= 0) {
-        document.getElementById('tips-p1-text').innerHTML = `Your State Pension fully covers your Core needs.`;
-    } else if (nCore <= 0) {
-        document.getElementById('tips-p1-text').innerHTML = `Your added assets successfully cover your Core needs.`;
-    } else {
-        document.getElementById('tips-p1-text').innerHTML = `You have a Core shortfall of £${Math.round(nCore).toLocaleString()}.`;
-    }
-    if (state.unlockedStep === 1) document.getElementById('step-action-1').classList.remove('hidden');
-
-    // HOME
+    // -- HOME --
+    let hCost = 0; let hSpUsed = 0; let hDbUsed = 0; let hPotsUsed = 0;
     if (state.unlockedStep >= 2) {
-        if (gHome <= 0 && gCore <= 0) {
-            document.getElementById('tips-p2-text').innerHTML = `Your regular income fully covers your Home costs.`;
-        } else if (nHome <= 0) {
-            document.getElementById('tips-p2-text').innerHTML = `Your added assets cover your Home costs.`;
-        } else {
-            document.getElementById('tips-p2-text').innerHTML = `You have a Home shortfall of £${Math.round(nHome).toLocaleString()}.`;
+        hCost = currentValues.home;
+        hSpUsed = Math.min(hCost, spRem); spRem -= hSpUsed; hCost -= hSpUsed;
+        hDbUsed = Math.min(hCost, dbRem); dbRem -= hDbUsed; hCost -= hDbUsed;
+        hPotsUsed = Math.min(hCost, potsRem); potsRem -= hPotsUsed; hCost -= hPotsUsed;
+        
+        if (hCost > 0 && walletTarget === "") {
+            walletTarget = 'home-wallet-slot';
+            activeNetGap = hCost;
         }
-        if (state.unlockedStep === 2) document.getElementById('step-action-2').classList.remove('hidden');
     }
 
-    // LIFESTYLE
+    // -- LIFESTYLE --
+    let lCost = 0; let lSpUsed = 0; let lDbUsed = 0; let lPotsUsed = 0;
+    if (state.unlockedStep >= 3) {
+        lCost = currentValues.living;
+        lSpUsed = Math.min(lCost, spRem); spRem -= lSpUsed; lCost -= lSpUsed;
+        lDbUsed = Math.min(lCost, dbRem); dbRem -= lDbUsed; lCost -= lDbUsed;
+        lPotsUsed = Math.min(lCost, potsRem); potsRem -= lPotsUsed; lCost -= lPotsUsed;
+        
+        if (lCost > 0 && walletTarget === "") {
+            walletTarget = 'lifestyle-wallet-slot';
+            activeNetGap = lCost;
+        }
+    }
+
+    // -----------------------------------------------------
+    // RENDER SUCCESS BANNERS & PARTNER HANDOFFS
+    // -----------------------------------------------------
+    
+    // 1. Core Success UI
+    if (cCost <= 0) {
+        document.getElementById('core-success-banner').classList.remove('hidden');
+        document.getElementById('core-success-val').innerText = `£${Math.round(currentValues.essentials).toLocaleString()}`;
+        
+        if (cPotsUsed > 0) {
+            document.getElementById('core-success-desc').innerText = "Your State Pension, DB Pension, and Savings securely cover your Core needs.";
+            document.getElementById('core-partner-annuity').classList.remove('hidden');
+        } else if (cDbUsed > 0) {
+            document.getElementById('core-success-desc').innerText = "Your State Pension and Defined Benefit Pension fully cover your Core needs.";
+            document.getElementById('core-partner-annuity').classList.add('hidden');
+        } else {
+            document.getElementById('core-success-desc').innerText = "Your State Pension fully covers your Core needs.";
+            document.getElementById('core-partner-annuity').classList.add('hidden');
+        }
+    } else {
+        document.getElementById('core-success-banner').classList.add('hidden');
+        document.getElementById('core-partner-annuity').classList.add('hidden');
+    }
+
+    // 2. Home Success UI
+    if (state.unlockedStep >= 2) {
+        if (hCost <= 0) {
+            document.getElementById('home-success-banner').classList.remove('hidden');
+            document.getElementById('home-success-val').innerText = `£${Math.round(currentValues.home).toLocaleString()}`;
+            
+            if (hPotsUsed > 0) {
+                document.getElementById('home-success-desc').innerText = "Your savings drawdown bridges your Home costs.";
+                document.getElementById('home-partner-portfolio').classList.remove('hidden');
+            } else if (hDbUsed > 0) {
+                document.getElementById('home-success-desc').innerText = "Your DB Pension bridges your Home costs.";
+                document.getElementById('home-partner-portfolio').classList.add('hidden');
+            } else {
+                document.getElementById('home-success-desc').innerText = "Your State Pension covers your Home costs.";
+                document.getElementById('home-partner-portfolio').classList.add('hidden');
+            }
+        } else {
+            document.getElementById('home-success-banner').classList.add('hidden');
+            document.getElementById('home-partner-portfolio').classList.add('hidden');
+        }
+    }
+
+    // 3. Lifestyle Success UI
     const equityCard = document.getElementById('partner-equity');
     const healthCard = document.getElementById('partner-health');
-
+    
     if (state.unlockedStep >= 3) {
-        let currentRem = (projectedSp + state.dbPension + (potsTotal * drawdownRate)) - currentValues.essentials - currentValues.home;
-        document.getElementById('tips-p3-intro').innerHTML = `You have a remaining projected income of <strong>£${Math.max(0, Math.round(currentRem)).toLocaleString()}</strong> per year to design your lifestyle.`;
-        
-        if (nLife <= 0) {
-            document.getElementById('tips-p3-text').innerHTML = `You have sufficient wealth to fully fund your desired Lifestyle!`;
+        if (lCost <= 0) {
+            document.getElementById('lifestyle-success-banner').classList.remove('hidden');
+            document.getElementById('lifestyle-success-val').innerText = `£${Math.round(currentValues.living).toLocaleString()}`;
+            
+            if (lPotsUsed > 0) {
+                document.getElementById('lifestyle-success-desc').innerText = "Your savings drawdown successfully funds your chosen lifestyle.";
+            } else if (lDbUsed > 0) {
+                document.getElementById('lifestyle-success-desc').innerText = "Your guaranteed income fully covers your chosen lifestyle.";
+            }
+
+            let currentRem = spRem + dbRem + potsRem; 
             document.getElementById('surplus-block').classList.remove('hidden');
-            document.getElementById('surplus-amount').innerText = `£${Math.round(currentRem - currentValues.living).toLocaleString()}`;
+            document.getElementById('surplus-amount').innerText = `£${Math.round(currentRem).toLocaleString()}`;
         } else {
-            document.getElementById('tips-p3-text').innerHTML = `Your preferred Lifestyle exceeds your resources by £${Math.round(nLife).toLocaleString()}. Consider reshaping your timeline using the toggles above.`;
+            document.getElementById('lifestyle-success-banner').classList.add('hidden');
             document.getElementById('surplus-block').classList.add('hidden');
         }
 
@@ -527,13 +479,51 @@ function updateChartsAndJourney() {
 
         if (state.living >= 50 || doCareSpike) healthCard?.classList.remove('hidden');
         else healthCard?.classList.add('hidden');
-    } else {
-        equityCard?.classList.add('hidden');
-        healthCard?.classList.add('hidden');
     }
 
     // -----------------------------------------------------
-    // 5. CHART HORIZON TRAJECTORY
+    // EXECUTE WEALTH WALLET UI STATE & ASSET REVEALS
+    // -----------------------------------------------------
+    const walletEl = document.getElementById('wealth-wallet');
+    
+    if (walletTarget !== "") {
+        document.getElementById('wallet-dynamic-title').innerText = `Bridge the Gap: £${Math.round(activeNetGap).toLocaleString()}`;
+        document.getElementById('wallet-dynamic-desc').innerText = `Your guaranteed income falls short here. Check your assets below to cover the difference.`;
+        
+        // Asset progressive disclosure logic
+        if (state.revealedAssets.includes('pots')) {
+            document.getElementById('pots-card').classList.remove('hidden');
+            document.getElementById('btn-reveal-pots').classList.add('hidden');
+            document.getElementById('withdrawal-hint').classList.remove('hidden');
+        } else {
+            document.getElementById('pots-card').classList.add('hidden');
+            document.getElementById('btn-reveal-pots').classList.remove('hidden');
+            document.getElementById('withdrawal-hint').classList.add('hidden');
+        }
+
+        if (state.revealedAssets.includes('savings')) {
+            document.getElementById('savings-card').classList.remove('hidden');
+            document.getElementById('btn-reveal-savings').classList.add('hidden');
+        } else {
+            document.getElementById('savings-card').classList.add('hidden');
+            document.getElementById('btn-reveal-savings').classList.remove('hidden');
+        }
+
+        // Move wallet only if it's not already there (prevents input jitter)
+        if (walletEl.parentElement.id !== walletTarget) {
+            document.getElementById(walletTarget).appendChild(walletEl);
+        }
+        walletEl.classList.remove('hidden');
+    } else {
+        walletEl.classList.add('hidden');
+    }
+
+    // Ensure step chevrons are visible
+    if(state.unlockedStep === 1) document.getElementById('step-action-1').classList.remove('hidden');
+    if(state.unlockedStep === 2) document.getElementById('step-action-2').classList.remove('hidden');
+
+    // -----------------------------------------------------
+    // CHART HORIZON TRAJECTORY
     // -----------------------------------------------------
     let runningPot = potsTotal;
     let exhaustionAge = -1;
@@ -581,7 +571,7 @@ function updateChartsAndJourney() {
     }
 
     if (exhaustionAge !== -1 && exhaustionAge <= 90 && state.unlockedStep >= 3) {
-        document.getElementById('tips-p3-text').innerHTML += `<br><br><strong style="color:var(--accent-orange);">End of Credits Warning:</strong> Based on this shape, your wealth pots will fully deplete by <strong>Age ${exhaustionAge}</strong>.`;
+        document.getElementById('tips-p3-text').innerHTML = `<strong style="color:var(--accent-orange);">End of Credits Warning:</strong> Based on this shape, your wealth pots will fully deplete by <strong>Age ${exhaustionAge}</strong>.`;
         if(state.tenure === 'owner' || state.tenure === 'mortgage') equityCard?.classList.add('pulse-alert');
     } else {
         equityCard?.classList.remove('pulse-alert');
