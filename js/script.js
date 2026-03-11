@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initApp() {
     setupCharts();
     setupListeners();
+    calculateAll(); // CRITICAL FIX: Ensures initial load calculates and clears "Loading..." instantly
 }
 
 window.toggleSection = function(bodyId, headerElement) {
@@ -74,10 +75,10 @@ window.openWallet = function(pillarNumber) {
 }
 
 window.applyWallet = function() {
-    // When Apply is clicked, close the wallet and automatically push them to the next available step
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
+    // Auto-advance safely if the gap was successfully bridged
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll();
@@ -85,7 +86,7 @@ window.applyWallet = function() {
 
 window.advanceStep = function(targetStep) {
     state.unlockedStep = targetStep;
-    state.walletOpenPillar = null; // Always close wallet on advance
+    state.walletOpenPillar = null; 
     
     if (targetStep === 2) {
         const homeSection = document.getElementById('pillar-home');
@@ -155,10 +156,10 @@ function updatePostcodeReadout() {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`).classList.add('active');
 
-            let bRent = rldConfig.benchmarks.home.shelter.rent;
+            let bRent = rldConfig?.benchmarks?.home?.shelter?.rent || {staples: 12000, signature: 22000, designer: 35000};
             let impliedRentAnnual = (state.home <= 50) ? (bRent.staples + ((bRent.signature - bRent.staples) * (state.home / 50))) : (bRent.signature + ((bRent.designer - bRent.signature) * ((state.home - 50) / 50)));
             
-            let bMort = rldConfig.benchmarks.home.shelter.mortgage;
+            let bMort = rldConfig?.benchmarks?.home?.shelter?.mortgage || {staples: 12000, signature: 22000, designer: 35000};
             let impliedMortAnnual = (state.home <= 50) ? (bMort.staples + ((bMort.signature - bMort.staples) * (state.home / 50))) : (bMort.signature + ((bMort.designer - bMort.signature) * ((state.home - 50) / 50)));
 
             if (impliedTenure === 'rent') {
@@ -301,10 +302,10 @@ function handleTenureUI(updateText = true) {
     rentInputs.classList.add('hidden');
     shelterInput.disabled = true;
 
-    let bRent = rldConfig.benchmarks.home.shelter.rent;
+    let bRent = rldConfig?.benchmarks?.home?.shelter?.rent || {staples: 12000, signature: 22000, designer: 35000};
     let impliedRentAnnual = (state.home <= 50) ? (bRent.staples + ((bRent.signature - bRent.staples) * (state.home / 50))) : (bRent.signature + ((bRent.designer - bRent.signature) * ((state.home - 50) / 50)));
     
-    let bMort = rldConfig.benchmarks.home.shelter.mortgage;
+    let bMort = rldConfig?.benchmarks?.home?.shelter?.mortgage || {staples: 12000, signature: 22000, designer: 35000};
     let impliedMortAnnual = (state.home <= 50) ? (bMort.staples + ((bMort.signature - bMort.staples) * (state.home / 50))) : (bMort.signature + ((bMort.designer - bMort.signature) * ((state.home - 50) / 50)));
 
     if (state.tenure === 'owner') {
@@ -363,6 +364,8 @@ window.extrapolate = function(pillar) {
 function calculateAll() {
     currentValues.essentials = 0; currentValues.home = 0; currentValues.living = 0;
     
+    if (!rldConfig) return; // Safety check
+
     for (const pillar of ['essentials', 'home', 'living']) {
         const sliderVal = state[pillar];
         for (const [key, catData] of Object.entries(rldConfig.benchmarks[pillar])) {
@@ -391,10 +394,10 @@ function calculateAll() {
     const gross = currentValues.essentials + currentValues.home + currentValues.living;
     let tax = 0;
     
-    const pa = rldConfig?.tax?.personalAllowance ?? 12570;
-    const basicRate = rldConfig?.tax?.basicRate ?? 0.20;
-    const higherThresh = rldConfig?.tax?.higherRateThreshold ?? 50270;
-    const higherRate = rldConfig?.tax?.higherRate ?? 0.40;
+    const pa = rldConfig.tax.personalAllowance;
+    const basicRate = rldConfig.tax.basicRate;
+    const higherThresh = rldConfig.tax.higherRateThreshold;
+    const higherRate = rldConfig.tax.higherRate;
 
     if (gross > pa) {
         if (gross <= higherThresh) { tax = (gross - pa) * basicRate; } 
@@ -428,13 +431,8 @@ function updateChartsAndJourney() {
     const doTravelTaper = document.getElementById('toggle-travel').checked;
     const doCareSpike = document.getElementById('toggle-care').checked;
 
-    const spAge = 67; 
-    const spBase = rldConfig?.assumptions?.statePension ?? 11973; 
-    const projectedSp = spBase; 
+    const projectedSp = rldConfig?.assumptions?.statePension ?? 11973; 
     const drawdownRate = rldConfig?.assumptions?.drawdownRate ?? 0.05; 
-
-    document.getElementById('sp-amount-val').innerText = `£${Math.round(projectedSp).toLocaleString()}`;
-    document.getElementById('sp-age-val').innerText = spAge;
 
     // -----------------------------------------------------
     // CALCULATE NET GAPS PROGRESSIVELY
@@ -475,6 +473,11 @@ function updateChartsAndJourney() {
         else if (nLife > 0 && state.unlockedStep >= 3) state.walletOpenPillar = 3;
     }
 
+    let walletTarget = "";
+    if (state.walletOpenPillar === 1) walletTarget = 'core-wallet-slot';
+    else if (state.walletOpenPillar === 2) walletTarget = 'home-wallet-slot';
+    else if (state.walletOpenPillar === 3) walletTarget = 'lifestyle-wallet-slot';
+
     // -----------------------------------------------------
     // 1. CORE RENDER
     // -----------------------------------------------------
@@ -503,10 +506,10 @@ function updateChartsAndJourney() {
             document.getElementById('core-success-val').innerText = `£${Math.round(currentValues.essentials).toLocaleString()}`;
             
             if (cPots > 0) {
-                document.getElementById('core-success-desc').innerText = "Your savings successfully bridge your Core needs.";
+                document.getElementById('core-success-desc').innerText = "Your State Pension, DB Pension, and Savings securely cover your Core needs.";
                 coreAnnuity.classList.remove('hidden');
             } else if (cDb > 0) {
-                document.getElementById('core-success-desc').innerText = "Your DB Pension successfully bridges your Core needs.";
+                document.getElementById('core-success-desc').innerText = "Your State Pension and DB Pension fully cover your Core needs.";
                 coreAnnuity.classList.add('hidden');
             } else {
                 document.getElementById('core-success-desc').innerText = "Your State Pension fully covers your Core needs.";
@@ -521,7 +524,7 @@ function updateChartsAndJourney() {
         }
     }
     
-    if (state.unlockedStep === 1) document.getElementById('step-action-1').classList.remove('hidden');
+    if (state.unlockedStep === 1 && state.walletOpenPillar !== 1) document.getElementById('step-action-1').classList.remove('hidden');
     else document.getElementById('step-action-1').classList.add('hidden');
 
     // -----------------------------------------------------
@@ -553,13 +556,13 @@ function updateChartsAndJourney() {
                 document.getElementById('home-success-val').innerText = `£${Math.round(currentValues.home).toLocaleString()}`;
                 
                 if (hPots > 0) {
-                    document.getElementById('home-success-desc').innerText = "Your savings effectively bridge your Home costs.";
+                    document.getElementById('home-success-desc').innerText = "Your savings drawdown bridges your Home costs.";
                     homePortfolio.classList.remove('hidden');
                 } else if (hDb > 0) {
                     document.getElementById('home-success-desc').innerText = "Your DB Pension bridges your Home costs.";
                     homePortfolio.classList.add('hidden');
                 } else {
-                    document.getElementById('home-success-desc').innerText = "Your regular income perfectly covers your Home costs.";
+                    document.getElementById('home-success-desc').innerText = "Your regular income seamlessly covers your Home costs.";
                     homePortfolio.classList.add('hidden');
                 }
             } else {
@@ -571,7 +574,7 @@ function updateChartsAndJourney() {
             }
         }
         
-        if (state.unlockedStep === 2) document.getElementById('step-action-2').classList.remove('hidden');
+        if (state.unlockedStep === 2 && state.walletOpenPillar !== 2) document.getElementById('step-action-2').classList.remove('hidden');
         else document.getElementById('step-action-2').classList.add('hidden');
     }
 
@@ -592,6 +595,8 @@ function updateChartsAndJourney() {
             lifePrompt.classList.remove('hidden');
             document.getElementById('surplus-block').classList.add('hidden');
             
+            document.getElementById('tips-p3-intro').innerHTML = `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`;
+
             if (nLife <= 0) {
                 document.getElementById('tips-p3-text').innerHTML = `You have successfully funded your Lifestyle. Click <strong>Apply & Continue ⌃</strong> below.`;
             } else {
@@ -606,11 +611,12 @@ function updateChartsAndJourney() {
                 lifeEdit.classList.remove('hidden');
                 document.getElementById('lifestyle-success-val').innerText = `£${Math.round(currentValues.living).toLocaleString()}`;
                 
-                if (lPots > 0) document.getElementById('lifestyle-success-desc').innerText = "Your savings successfully fund your chosen lifestyle.";
+                if (lPots > 0) document.getElementById('lifestyle-success-desc').innerText = "Your savings drawdown successfully funds your chosen lifestyle.";
                 else document.getElementById('lifestyle-success-desc').innerText = "Your guaranteed income fully covers your chosen lifestyle.";
 
+                let currentRem = gSp + gDb + gPots; 
                 document.getElementById('surplus-block').classList.remove('hidden');
-                document.getElementById('surplus-amount').innerText = `£${Math.round(preLifeRem - currentValues.living).toLocaleString()}`;
+                document.getElementById('surplus-amount').innerText = `£${Math.round(currentRem).toLocaleString()}`;
             } else {
                 lifePrompt.classList.remove('hidden');
                 lifeBanner.classList.add('hidden');
@@ -628,11 +634,10 @@ function updateChartsAndJourney() {
     }
 
     // -----------------------------------------------------
-    // EXECUTE WEALTH WALLET INJECTION & ASSET CARDS
+    // EXECUTE WEALTH WALLET UI STATE
     // -----------------------------------------------------
     const walletEl = document.getElementById('wealth-wallet');
-    let walletTarget = (state.walletOpenPillar === 1) ? 'core-wallet-slot' : (state.walletOpenPillar === 2) ? 'home-wallet-slot' : (state.walletOpenPillar === 3) ? 'lifestyle-wallet-slot' : "";
-
+    
     if (walletTarget !== "") {
         let activeNetGap = (state.walletOpenPillar === 1) ? nCore : (state.walletOpenPillar === 2) ? nHome : nLife;
         
@@ -664,7 +669,7 @@ function updateChartsAndJourney() {
             document.getElementById('btn-reveal-savings').classList.remove('hidden');
         }
 
-        if (walletEl.parentElement.id !== walletTarget) {
+        if (walletEl.parentElement?.id !== walletTarget) {
             document.getElementById(walletTarget).appendChild(walletEl);
         }
         walletEl.classList.remove('hidden');
