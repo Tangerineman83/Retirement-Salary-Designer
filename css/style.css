@@ -44,14 +44,14 @@ h1 { font-size: 2.2rem; }
 .onboarding-card { background: var(--bg-card); padding: 35px; border-radius: 16px; box-shadow: 0 10px 30px rgba(43, 38, 37, 0.05); margin-bottom: 30px; border: 1px solid var(--accent-sage); }
 .onboarding-desc { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;}
 
-/* State Pension Premiere */
-.sp-banner { background: var(--text-espresso); color: var(--bg-oatmilk); padding: 30px 35px; border-radius: 16px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(43, 38, 37, 0.15); }
-.sp-text h3 { color: var(--accent-sage); margin-bottom: 8px; font-size: 1.4rem;}
-.sp-text p { margin: 0; font-size: 0.95rem; line-height: 1.5; }
-.sp-subtext { font-size: 0.75rem; color: var(--border-stone); margin-top: 5px !important; opacity: 0.7;}
-.sp-amount-block { text-align: right; }
-.sp-label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-sage); margin-bottom: 5px;}
-.sp-value { font-family: 'Playfair Display', serif; font-size: 2.8rem; color: var(--bg-card); }
+/* Success Banners (Based on SP Premiere) */
+@keyframes slideDownCard { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.success-banner { background: var(--text-espresso); color: var(--bg-oatmilk); padding: 25px 30px; border-radius: 12px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(43, 38, 37, 0.15); animation: slideDownCard 0.4s ease-out; }
+.sb-text h3 { color: var(--bg-oatmilk); margin-bottom: 8px; font-size: 1.3rem;}
+.sb-text p { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--border-stone); }
+.sb-amount-block { text-align: right; }
+.sb-label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-sage); margin-bottom: 5px;}
+.sb-value { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--bg-card); }
 
 /* Pillars & Collapsible Sections */
 .pillar-section { background: var(--bg-card); padding: 25px 35px; border-radius: 16px; box-shadow: 0 10px 30px rgba(43, 38, 37, 0.03); margin-bottom: 30px; border: 1px solid var(--border-stone); }
@@ -107,35 +107,34 @@ h1 { font-size: 2.2rem; }
 .panel-desc { font-size: 0.9rem; font-weight: 400; color: var(--text-espresso); line-height: 1.4;}
 .freq-select { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-stone); font-size: 0.8rem; background: transparent; color: var(--text-espresso); outline: none;}
 
-/* THE DYNAMIC WEALTH WALLET (In-Pillar Styling with Cards) */
-@keyframes slideDownCard { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-.wealth-wallet { background: var(--bg-card); border: 2px dashed var(--accent-orange); padding: 25px; border-radius: 12px; margin-top: 25px; box-shadow: 0 8px 25px rgba(255, 90, 54, 0.08); animation: slideDownCard 0.4s ease-out; }
+/* THE DYNAMIC WEALTH WALLET */
+.wealth-wallet { background: var(--bg-card); border: 2px dashed var(--accent-orange); padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 8px 25px rgba(255, 90, 54, 0.08); animation: slideDownCard 0.4s ease-out; }
 .wallet-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; margin-top: 0; line-height: 1.4;}
 
 /* ASSET CARDS INSIDE WALLET */
 .asset-cards-container { display: flex; flex-direction: column; gap: 15px; }
-.asset-card { background: var(--bg-oatmilk); border: 1px solid var(--border-stone); padding: 18px 20px; border-radius: 8px; transition: all 0.3s ease; }
+.asset-card { background: var(--bg-oatmilk); border: 1px solid var(--border-stone); padding: 18px 20px; border-radius: 8px; transition: all 0.3s ease; animation: slideDownCard 0.3s ease-out;}
 .asset-card h5 { margin: 0 0 5px 0; color: var(--text-espresso); font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; }
 .asset-card p { margin: 0 0 15px 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
 .asset-card label { font-size: 0.8rem; color: var(--text-espresso); font-weight: 600; display: block; margin-top: 5px;}
 
 /* Designer Tips & Partner Cards */
-.designer-tips { background: var(--bg-oatmilk); border: 1px solid var(--border-stone); border-radius: 12px; padding: 25px; margin-top: 35px; }
+.designer-tips { background: var(--bg-card); padding: 5px 0 25px 0; margin-top: 20px; }
 .tips-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--text-espresso); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
 .tips-title::before { content: '✦'; font-size: 0.9rem; color: var(--accent-orange); }
 .tips-text { font-size: 0.85rem; color: var(--text-espresso); line-height: 1.6; margin: 0; }
 
 @keyframes pulseAlert { 0% { box-shadow: 0 0 0 0 rgba(255, 90, 54, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 90, 54, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 90, 54, 0); } }
-.partner-card-tip { display: flex; justify-content: space-between; align-items: center; background: var(--text-espresso); color: var(--bg-oatmilk); padding: 18px 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(43, 38, 37, 0.2); transition: transform 0.3s ease; }
+.partner-card-tip { display: flex; justify-content: space-between; align-items: center; background: var(--bg-oatmilk); border: 1px solid var(--accent-sage); color: var(--text-espresso); padding: 18px 20px; border-radius: 12px; box-shadow: 0 8px 20px rgba(43, 38, 37, 0.05); transition: transform 0.3s ease; animation: slideDownCard 0.4s ease-out;}
 .partner-card-tip:hover { transform: translateY(-3px); }
 .pulse-alert { animation: pulseAlert 2s infinite; border-left: 4px solid var(--accent-orange);}
 .pct-content { display: flex; flex-direction: column; padding-right: 15px;}
 .pct-content strong { font-size: 0.9rem; color: var(--accent-sage); margin-bottom: 6px; font-weight: 600; letter-spacing: 0.5px;}
-.pct-content span { font-size: 0.8rem; color: var(--border-stone); line-height: 1.4; opacity: 0.9; }
+.pct-content span { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; opacity: 0.9; }
 .pct-btn { background: var(--accent-orange); color: var(--bg-card); border: none; padding: 10px 20px; border-radius: 30px; font-family: 'Space Grotesk', sans-serif; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.3s; white-space: nowrap; flex-shrink: 0;}
 .pct-btn:hover { background: #e04a29; }
 
-.chapter-toggles { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border-stone);}
+.chapter-toggles { background: var(--bg-oatmilk); padding: 20px; border-radius: 12px; border: 1px solid var(--border-stone);}
 .toggle-row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-espresso); margin-top: 10px; cursor: pointer;}
 
 /* Editorial Tooltip */
@@ -169,4 +168,6 @@ h1 { font-size: 2.2rem; }
     .salary-breakdown { text-align: center; }
     .partner-card-tip { flex-direction: column; align-items: flex-start; gap: 15px; }
     .pct-btn { width: 100%; margin-left: 0; }
+    .success-banner { flex-direction: column; text-align: center; gap: 15px;}
+    .sb-amount-block { text-align: center; }
 }
