@@ -8,6 +8,7 @@ let state = {
     unlockedStep: 1, 
     age: 60, 
     postcode: '',
+    baseHousePrice: 285000, // Default National Avg
     dbPension: 0,
     pensionPot: 0,
     otherSavings: 0,
@@ -16,8 +17,9 @@ let state = {
     homeValue: 0,
     mortgagePmt: 0,
     rentPmt: 0,
-    manualMortgagePmt: false, // Tracks if user manually typed a mortgage cost
-    manualRentPmt: false,     // Tracks if user manually typed a rent cost
+    manualHomeValue: false, // Tracks if user forced a home value
+    manualMortgagePmt: false, 
+    manualRentPmt: false,     
     tenure: 'owner', 
     mortgageEndAge: 75,
     essentials: 50, 
@@ -107,7 +109,6 @@ window.advanceStep = function(targetStep) {
             lifeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
-    
     calculateAll();
 }
 
@@ -166,27 +167,40 @@ function updatePostcodeReadout() {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`)?.classList.add('active');
 
-            // Reset manual overrides so new region correctly drives the UI
+            // Reset manual overrides so region logic flows perfectly
             state.manualRentPmt = false;
             state.manualMortgagePmt = false;
-
-            let propText = "";
-            if (impliedTenure === 'owner' || impliedTenure === 'mortgage') {
-                const avgPropPrice = localAvg * 8.5; 
-                propText = ` The average property price in this area is estimated at <strong>£${Math.round(avgPropPrice).toLocaleString()}</strong>.`;
-            }
-            setHTMLSafe('p2-tenure-display', `As you live in the <strong>${districtData.region}</strong> area and based on your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>.${propText} We've styled your Home baseline using this data.`);
+            state.manualHomeValue = false;
+            
+            // Base Property Logic
+            state.baseHousePrice = localAvg * 8.5; 
             
             handleTenureUI(false); 
             calculateAll(); 
 
         } else {
             if(hint) hint.innerHTML = `Area not mapped. We will use the National Average.`;
+            state.baseHousePrice = locationBenchmarks.metadata.national_average * 8.5;
             calculateAll();
         }
     } else {
         if(hint) hint.innerHTML = '';
     }
+}
+
+function updateSliderFromHomeValue(val) {
+    state.manualHomeValue = true;
+    state.homeValue = val;
+    let ratio = val / state.baseHousePrice;
+    let newSlider = 50;
+    if (ratio <= 0.5) newSlider = 0;
+    else if (ratio <= 1.0) newSlider = Math.round((ratio - 0.5) * 2 * 50);
+    else if (ratio <= 2.0) newSlider = Math.round(50 + (ratio - 1.0) * 50);
+    else newSlider = 100;
+
+    state.home = newSlider;
+    document.getElementById('slider-home').value = newSlider;
+    calculateAll();
 }
 
 function setupListeners() {
@@ -202,15 +216,17 @@ function setupListeners() {
     document.getElementById('meas-pots').addEventListener('input', (e) => { state.pensionPot = parseFloat(e.target.value) || 0; calculateAll(); });
     document.getElementById('meas-savings').addEventListener('input', (e) => { state.otherSavings = parseFloat(e.target.value) || 0; calculateAll(); });
     
-    document.getElementById('meas-home-value').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
-    document.getElementById('meas-home-value-mortgage').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
+    // Bidirectional Home Slider Logic
+    document.getElementById('meas-home-value').addEventListener('input', (e) => { updateSliderFromHomeValue(parseFloat(e.target.value) || 0); });
+    document.getElementById('meas-home-value-mortgage').addEventListener('input', (e) => { updateSliderFromHomeValue(parseFloat(e.target.value) || 0); });
+    
     document.getElementById('meas-mortgage-age').addEventListener('change', (e) => { state.mortgageEndAge = parseInt(e.target.value) || 75; calculateAll(); });
 
-    // Handle Smart Override for Mortgage
+    // Handle Smart Override for Mortgage & Rent
     document.getElementById('meas-mortgage-pmt').addEventListener('input', (e) => { 
         if (e.target.value.trim() === '') {
             state.manualMortgagePmt = false;
-            handleTenureUI(false); // Snaps back to slider value
+            handleTenureUI(false); 
         } else {
             state.manualMortgagePmt = true;
             state.mortgagePmt = parseFloat(e.target.value) || 0; 
@@ -220,11 +236,10 @@ function setupListeners() {
         calculateAll(); 
     });
 
-    // Handle Smart Override for Rent
     document.getElementById('meas-rent-pmt').addEventListener('input', (e) => { 
         if (e.target.value.trim() === '') {
             state.manualRentPmt = false;
-            handleTenureUI(false); // Snaps back to slider value
+            handleTenureUI(false); 
         } else {
             state.manualRentPmt = true;
             state.rentPmt = parseFloat(e.target.value) || 0; 
@@ -254,8 +269,10 @@ function setupListeners() {
             slider.value = val;
             state[pillar] = val;
             
-            // Slider drives dynamic inputs directly
-            if(pillar === 'home') handleTenureUI(false);
+            if(pillar === 'home') {
+                state.manualHomeValue = false; // User dragged slider, reset manual lock
+                handleTenureUI(false);
+            }
             
             calculateAll();
             triggerPulse(`val-${pillar}`); 
@@ -329,11 +346,21 @@ function handleTenureUI(updateText = true) {
     rentInputs?.classList.add('hidden');
     if(shelterInput) shelterInput.disabled = true;
 
+    // Derived values for mapping
     let bRent = rldConfig?.benchmarks?.home?.shelter?.rent || {staples: 12000, signature: 22000, designer: 35000};
     let impliedRentAnnual = (state.home <= 50) ? (bRent.staples + ((bRent.signature - bRent.staples) * (state.home / 50))) : (bRent.signature + ((bRent.designer - bRent.signature) * ((state.home - 50) / 50)));
     
     let bMort = rldConfig?.benchmarks?.home?.shelter?.mortgage || {staples: 12000, signature: 22000, designer: 35000};
     let impliedMortAnnual = (state.home <= 50) ? (bMort.staples + ((bMort.signature - bMort.staples) * (state.home / 50))) : (bMort.signature + ((bMort.designer - bMort.signature) * ((state.home - 50) / 50)));
+
+    let f = state.home <= 50 ? 0.5 + 0.5*(state.home/50) : 1.0 + (state.home - 50)/50;
+    if(!state.manualHomeValue) {
+        state.homeValue = Math.round(state.baseHousePrice * f);
+        const hvInp1 = document.getElementById('meas-home-value');
+        const hvInp2 = document.getElementById('meas-home-value-mortgage');
+        if(hvInp1) hvInp1.value = state.homeValue;
+        if(hvInp2) hvInp2.value = state.homeValue;
+    }
 
     if (!state.manualRentPmt) state.rentPmt = Math.round(impliedRentAnnual / 12);
     if (!state.manualMortgagePmt) state.mortgagePmt = Math.round(impliedMortAnnual / 12);
@@ -614,10 +641,11 @@ function updateChartsAndJourney() {
     }
 
     // -----------------------------------------------------
-    // 3. LIFESTYLE RENDER
+    // 3. LIFESTYLE RENDER (Refactored Sequence)
     // -----------------------------------------------------
-    const equityCard = document.getElementById('partner-equity');
-    const healthCard = document.getElementById('partner-health');
+    const equityBlock = document.getElementById('equity-block');
+    const shapeBlock = document.getElementById('shape-block');
+    const healthBlock = document.getElementById('health-block');
 
     if (state.unlockedStep >= 3) {
         const lifePrompt = document.getElementById('life-text-prompt');
@@ -632,11 +660,17 @@ function updateChartsAndJourney() {
             document.getElementById('surplus-block')?.classList.add('hidden');
             
             setHTMLSafe('tips-p3-intro', `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`);
-            setHTMLSafe('tips-p3-text', `Your preferred Lifestyle exceeds your resources by <strong>£${Math.round(nLife).toLocaleString()}</strong>. Use the wallet or reshape your timeline above.`);
+            setHTMLSafe('tips-p3-text', `Your preferred Lifestyle exceeds your resources by <strong>£${Math.round(nLife).toLocaleString()}</strong>. Use the wallet below to check your assets.`);
+            
+            equityBlock?.classList.add('hidden');
+            shapeBlock?.classList.add('hidden');
+            healthBlock?.classList.add('hidden');
+            
         } else {
             setHTMLSafe('tips-p3-intro', `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`);
             
             if (nLife <= 0 && currentValues.living > 0) {
+                // Gap Bridged or Completely Covered
                 lifePrompt?.classList.add('hidden');
                 lifeBanner?.classList.remove('hidden');
                 lifeEdit?.classList.remove('hidden');
@@ -653,21 +687,40 @@ function updateChartsAndJourney() {
 
                 document.getElementById('surplus-block')?.classList.remove('hidden');
                 setHTMLSafe('surplus-amount', `£${Math.round(gSp + gDb + gPots).toLocaleString()}`); 
+
+                equityBlock?.classList.add('hidden');
+                shapeBlock?.classList.add('hidden');
+                healthBlock?.classList.remove('hidden'); // Show Healthcare because lifestyle is fully supported
+
             } else {
+                // STILL HAVE A GAP after checking wallet
                 lifePrompt?.classList.remove('hidden');
                 lifeBanner?.classList.add('hidden');
                 lifeEdit?.classList.remove('hidden');
                 if(btnLifeEdit) btnLifeEdit.innerText = "Edit Assets ⌄";
                 document.getElementById('surplus-block')?.classList.add('hidden');
                 setHTMLSafe('tips-p3-text', `You have an unbridged Lifestyle shortfall of <strong>£${Math.round(nLife).toLocaleString()}</strong>.`);
+
+                // Step 3 sequence: Can they release equity?
+                let estEquityIncome = 0;
+                if (state.tenure === 'owner' || state.tenure === 'mortgage') {
+                    estEquityIncome = (state.homeValue * 0.30) * drawdownRate;
+                    equityBlock?.classList.remove('hidden');
+                    setHTMLSafe('equity-desc', `Releasing 30% of your property wealth could generate an estimated <strong>£${Math.round(estEquityIncome).toLocaleString()}/yr</strong>.`);
+                } else {
+                    equityBlock?.classList.add('hidden');
+                }
+
+                // Step 4 sequence: If still a gap after hypothetical equity, show shape options
+                if (nLife - estEquityIncome > 0) {
+                    shapeBlock?.classList.remove('hidden');
+                } else {
+                    shapeBlock?.classList.add('hidden');
+                }
+                
+                healthBlock?.classList.add('hidden');
             }
         }
-
-        if (state.tenure === 'owner' || state.tenure === 'mortgage') equityCard?.classList.remove('hidden');
-        else equityCard?.classList.add('hidden');
-
-        if (state.living >= 50 || doCareSpike) healthCard?.classList.remove('hidden');
-        else healthCard?.classList.add('hidden');
     }
 
     // -----------------------------------------------------
@@ -721,20 +774,24 @@ function updateChartsAndJourney() {
     }
 
     // -----------------------------------------------------
-    // CHART HORIZON TRAJECTORY
+    // CHART HORIZON TRAJECTORY (Real-Terms Inflation math)
     // -----------------------------------------------------
     let runningPot = potsTotal;
     let exhaustionAge = -1;
+    let baseInf = 0.025; // Base discount rate
 
     for (let age = state.age; age <= endAge; age++) {
         labels.push(age);
         let eSum = 0; let hSum = 0; let lSum = 0;
+        let t = age - state.age;
 
         for (const [key, data] of Object.entries(categoryData)) {
             const pillar = key.split('_')[0];
             const cat = key.split('_')[1];
 
-            let projectedVal = data.value; 
+            // Apply specific real-terms inflation calculation
+            let realGrowth = (1 + (data.inf || baseInf)) / (1 + baseInf);
+            let projectedVal = data.value * Math.pow(realGrowth, t); 
             
             if (pillar === 'living') {
                 if (data.shape === 'taper' && age >= 75 && doTravelTaper) projectedVal *= 0.5; 
@@ -766,14 +823,6 @@ function updateChartsAndJourney() {
         dataE.push(eSum);
         dataH.push(hSum);
         dataL.push(lSum);
-    }
-
-    if (exhaustionAge !== -1 && exhaustionAge <= 90 && state.unlockedStep >= 3) {
-        let p3TextEl = document.getElementById('tips-p3-text');
-        if(p3TextEl) p3TextEl.innerHTML += `<br><br><strong style="color:var(--accent-orange);">End of Credits Warning:</strong> Based on this shape, your wealth pots will fully deplete by <strong>Age ${exhaustionAge}</strong>.`;
-        if(state.tenure === 'owner' || state.tenure === 'mortgage') equityCard?.classList.add('pulse-alert');
-    } else {
-        equityCard?.classList.remove('pulse-alert');
     }
 
     if(charts.mainBar) {
