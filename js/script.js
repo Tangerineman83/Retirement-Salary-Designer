@@ -16,6 +16,8 @@ let state = {
     homeValue: 0,
     mortgagePmt: 0,
     rentPmt: 0,
+    manualMortgagePmt: false, // Tracks if user manually typed a mortgage cost
+    manualRentPmt: false,     // Tracks if user manually typed a rent cost
     tenure: 'owner', 
     mortgageEndAge: 75,
     essentials: 50, 
@@ -48,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initApp() {
     setupCharts();
     setupListeners();
-    calculateAll(); // Safe execution on boot to populate baseline immediately
+    calculateAll(); 
 }
 
 window.toggleSection = function(bodyId, headerElement) {
@@ -78,7 +80,6 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
-    // Auto-advance logic if they are applying from the latest available step
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
@@ -119,7 +120,6 @@ function triggerPulse(elementId) {
     }
 }
 
-// Helper to safely write HTML without crashing if element is missing
 function setHTMLSafe(id, htmlString) {
     const el = document.getElementById(id);
     if(el) el.innerHTML = htmlString;
@@ -166,19 +166,9 @@ function updatePostcodeReadout() {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`)?.classList.add('active');
 
-            let bRent = rldConfig?.benchmarks?.home?.shelter?.rent || {staples: 12000, signature: 22000, designer: 35000};
-            let impliedRentAnnual = (state.home <= 50) ? (bRent.staples + ((bRent.signature - bRent.staples) * (state.home / 50))) : (bRent.signature + ((bRent.designer - bRent.signature) * ((state.home - 50) / 50)));
-            
-            let bMort = rldConfig?.benchmarks?.home?.shelter?.mortgage || {staples: 12000, signature: 22000, designer: 35000};
-            let impliedMortAnnual = (state.home <= 50) ? (bMort.staples + ((bMort.signature - bMort.staples) * (state.home / 50))) : (bMort.signature + ((bMort.designer - bMort.signature) * ((state.home - 50) / 50)));
-
-            if (impliedTenure === 'rent') {
-                state.rentPmt = Math.round(impliedRentAnnual / 12);
-                document.getElementById('meas-rent-pmt').value = state.rentPmt;
-            } else if (impliedTenure === 'mortgage') {
-                state.mortgagePmt = Math.round(impliedMortAnnual / 12);
-                document.getElementById('meas-mortgage-pmt').value = state.mortgagePmt;
-            }
+            // Reset manual overrides so new region correctly drives the UI
+            state.manualRentPmt = false;
+            state.manualMortgagePmt = false;
 
             let propText = "";
             if (impliedTenure === 'owner' || impliedTenure === 'mortgage') {
@@ -214,9 +204,35 @@ function setupListeners() {
     
     document.getElementById('meas-home-value').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
     document.getElementById('meas-home-value-mortgage').addEventListener('input', (e) => { state.homeValue = parseFloat(e.target.value) || 0; });
-    document.getElementById('meas-mortgage-pmt').addEventListener('input', (e) => { state.mortgagePmt = parseFloat(e.target.value) || 0; document.getElementById('input-shelter').value = state.mortgagePmt || ''; calculateAll(); });
-    document.getElementById('meas-rent-pmt').addEventListener('input', (e) => { state.rentPmt = parseFloat(e.target.value) || 0; document.getElementById('input-shelter').value = state.rentPmt || ''; calculateAll(); });
     document.getElementById('meas-mortgage-age').addEventListener('change', (e) => { state.mortgageEndAge = parseInt(e.target.value) || 75; calculateAll(); });
+
+    // Handle Smart Override for Mortgage
+    document.getElementById('meas-mortgage-pmt').addEventListener('input', (e) => { 
+        if (e.target.value.trim() === '') {
+            state.manualMortgagePmt = false;
+            handleTenureUI(false); // Snaps back to slider value
+        } else {
+            state.manualMortgagePmt = true;
+            state.mortgagePmt = parseFloat(e.target.value) || 0; 
+        }
+        const shelterInp = document.getElementById('input-shelter');
+        if(shelterInp) shelterInp.value = state.mortgagePmt || ''; 
+        calculateAll(); 
+    });
+
+    // Handle Smart Override for Rent
+    document.getElementById('meas-rent-pmt').addEventListener('input', (e) => { 
+        if (e.target.value.trim() === '') {
+            state.manualRentPmt = false;
+            handleTenureUI(false); // Snaps back to slider value
+        } else {
+            state.manualRentPmt = true;
+            state.rentPmt = parseFloat(e.target.value) || 0; 
+        }
+        const shelterInp = document.getElementById('input-shelter');
+        if(shelterInp) shelterInp.value = state.rentPmt || ''; 
+        calculateAll(); 
+    });
 
     document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -238,6 +254,7 @@ function setupListeners() {
             slider.value = val;
             state[pillar] = val;
             
+            // Slider drives dynamic inputs directly
             if(pillar === 'home') handleTenureUI(false);
             
             calculateAll();
@@ -247,6 +264,57 @@ function setupListeners() {
 
     document.getElementById('toggle-travel')?.addEventListener('change', calculateAll);
     document.getElementById('toggle-care')?.addEventListener('change', calculateAll);
+
+    const tooltip = document.getElementById('smart-tooltip');
+    let tooltipTimeout;
+    const hideTooltip = () => tooltip.classList.remove('show');
+
+    document.querySelectorAll('.pers-input').forEach(input => {
+        input.addEventListener('input', (e) => window.extrapolate(e.target.dataset.pillar));
+        const showInputTooltip = (e) => {
+            clearTimeout(tooltipTimeout);
+            if(e.target.disabled || e.target.closest('.hidden')) return;
+
+            const cat = e.target.dataset.cat;
+            const pillar = e.target.dataset.pillar;
+            const freq = parseInt(e.target.dataset.freq) || parseInt(document.getElementById(`freq-${pillar}`).value);
+            
+            let b = pillar === 'home' && cat === 'shelter' 
+                ? rldConfig.benchmarks.home.shelter[state.tenure] 
+                : rldConfig.benchmarks[pillar][cat];
+
+            const name = rldConfig.benchmarks[pillar][cat].name;
+            const st = Math.round(b.staples / freq); 
+            const si = Math.round(b.signature / freq);
+            const de = Math.round(b.designer / freq);
+
+            tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
+            const rect = e.target.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
+            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
+            tooltip.classList.add('show');
+        };
+        input.addEventListener('mouseenter', showInputTooltip);
+        input.addEventListener('focus', showInputTooltip);
+        input.addEventListener('mouseleave', hideTooltip);
+        input.addEventListener('blur', hideTooltip);
+    });
+
+    document.querySelectorAll('.tt-trigger').forEach(label => {
+        const showLabelTooltip = (e) => {
+            clearTimeout(tooltipTimeout);
+            const desc = e.currentTarget.dataset.desc;
+            tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
+            const rect = e.currentTarget.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
+            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
+            tooltip.classList.add('show');
+        };
+        label.addEventListener('mouseenter', showLabelTooltip);
+        label.addEventListener('touchstart', showLabelTooltip, {passive: true});
+        label.addEventListener('mouseleave', hideTooltip);
+        label.addEventListener('touchend', () => tooltipTimeout = setTimeout(hideTooltip, 2500));
+    });
 }
 
 function handleTenureUI(updateText = true) {
@@ -267,6 +335,9 @@ function handleTenureUI(updateText = true) {
     let bMort = rldConfig?.benchmarks?.home?.shelter?.mortgage || {staples: 12000, signature: 22000, designer: 35000};
     let impliedMortAnnual = (state.home <= 50) ? (bMort.staples + ((bMort.signature - bMort.staples) * (state.home / 50))) : (bMort.signature + ((bMort.designer - bMort.signature) * ((state.home - 50) / 50)));
 
+    if (!state.manualRentPmt) state.rentPmt = Math.round(impliedRentAnnual / 12);
+    if (!state.manualMortgagePmt) state.mortgagePmt = Math.round(impliedMortAnnual / 12);
+
     if (state.tenure === 'owner') {
         ownerInputs?.classList.remove('hidden');
         if(updateText && displayReadout) displayReadout.innerHTML = `You own your home outright. We've styled your Home baseline using the details provided above.`;
@@ -274,13 +345,11 @@ function handleTenureUI(updateText = true) {
     } else if (state.tenure === 'mortgage') {
         mortgageInputs?.classList.remove('hidden');
         if(updateText && displayReadout) displayReadout.innerHTML = `You have a mortgage. We've populated a default monthly payment based on your slider, but you can adjust it below.`;
-        if(!state.mortgagePmt) state.mortgagePmt = Math.round(impliedMortAnnual / 12);
         document.getElementById('meas-mortgage-pmt').value = state.mortgagePmt;
         if(shelterInput) shelterInput.value = state.mortgagePmt;
     } else {
         rentInputs?.classList.remove('hidden');
         if(updateText && displayReadout) displayReadout.innerHTML = `You are renting. We've populated a default monthly rent based on your slider, but you can adjust it below.`;
-        if(!state.rentPmt) state.rentPmt = Math.round(impliedRentAnnual / 12);
         document.getElementById('meas-rent-pmt').value = state.rentPmt;
         if(shelterInput) shelterInput.value = state.rentPmt;
     }
@@ -428,7 +497,6 @@ function updateChartsAndJourney() {
     // -----------------------------------------------------
     // SMART WALLET AUTO-CLOSE LOGIC
     // -----------------------------------------------------
-    // If the State Pension naturally covers the pillar completely, the wallet shouldn't exist here.
     let grossCoreGap = Math.max(0, currentValues.essentials - projectedSp);
     let remSpForHome = Math.max(0, projectedSp - currentValues.essentials);
     let grossHomeGap = Math.max(0, currentValues.home - remSpForHome);
