@@ -37,22 +37,17 @@ const palette = {
     espresso: '#2B2625'
 };
 
-// --- FAIL-SAFE DOM UTILITIES ---
+// --- SAFE DOM HELPERS ---
 function setHTMLSafe(id, htmlString) {
     const el = document.getElementById(id);
     if(el) el.innerHTML = htmlString;
-}
-
-function setTextSafe(id, textString) {
-    const el = document.getElementById(id);
-    if(el) el.innerText = textString;
 }
 
 function setValueSafe(id, val) {
     const el = document.getElementById(id);
     if(el) el.value = val;
 }
-// -------------------------------
+// ------------------------
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -182,7 +177,6 @@ function updatePostcodeReadout() {
             state.manualRentPmt = false;
             state.manualMortgagePmt = false;
             state.manualHomeValue = false;
-            
             state.baseHousePrice = localAvg * 8.5; 
             
             handleTenureUI(false); 
@@ -464,13 +458,13 @@ function calculateAll() {
     currentValues.tax = tax;
 
     ['essentials', 'home', 'living'].forEach(p => {
-        setTextSafe(`val-${p}`, `£${Math.round(currentValues[p]).toLocaleString()}`);
+        setHTMLSafe(`val-${p}`, `£${Math.round(currentValues[p]).toLocaleString()}`);
     });
     
-    setTextSafe('display-salary', `£${Math.round(gross).toLocaleString()}`);
+    setHTMLSafe('display-salary', `£${Math.round(gross).toLocaleString()}`);
     triggerPulse('display-salary');
-    setTextSafe('display-net', `£${Math.round(currentValues.net).toLocaleString()}`);
-    setTextSafe('display-tax', `+£${Math.round(tax).toLocaleString()}`);
+    setHTMLSafe('display-net', `£${Math.round(currentValues.net).toLocaleString()}`);
+    setHTMLSafe('display-tax', `+£${Math.round(tax).toLocaleString()}`);
 
     updateChartsAndJourney();
 }
@@ -501,7 +495,7 @@ function updateChartsAndJourney() {
 
     let reqCore = currentValues.essentials;
     let cSpUsed = Math.min(reqCore, gSp); gSp -= cSpUsed; reqCore -= cSpUsed;
-    let grossCoreGap = reqCore; // Needed to know if SP natively covered it
+    let grossCoreGap = reqCore; 
     
     let cDbUsed = Math.min(reqCore, gDb); gDb -= cDbUsed; reqCore -= cDbUsed;
     let cPotsUsed = Math.min(reqCore, gPots); gPots -= cPotsUsed; reqCore -= cPotsUsed;
@@ -518,7 +512,6 @@ function updateChartsAndJourney() {
     let preLifeRem = gSp + gDb + gPots; 
     let reqLife = (state.unlockedStep >= 3) ? currentValues.living : 0;
     let lSpUsed = Math.min(reqLife, gSp); gSp -= lSpUsed; reqLife -= lSpUsed;
-    let grossLifeGap = reqLife;
     
     let lDbUsed = Math.min(reqLife, gDb); gDb -= lDbUsed; reqLife -= lDbUsed;
     let lPotsUsed = Math.min(reqLife, gPots); gPots -= lPotsUsed; reqLife -= lPotsUsed;
@@ -555,8 +548,7 @@ function updateChartsAndJourney() {
         coreAnnuity?.classList.add('hidden');
         corePrompt?.classList.remove('hidden');
         
-        let initialGap = Math.max(0, currentValues.essentials - projectedSp);
-        setHTMLSafe('tips-p1-text', `Your guaranteed income falls short of your Core needs by <strong>£${Math.round(initialGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`);
+        setHTMLSafe('tips-p1-text', `Your guaranteed income falls short of your Core needs by <strong>£${Math.round(grossCoreGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`);
     } else {
         if (nCore <= 0 && currentValues.essentials > 0) {
             corePrompt?.classList.add('hidden');
@@ -565,16 +557,16 @@ function updateChartsAndJourney() {
             if (cDbUsed > 0 || cPotsUsed > 0) coreEdit?.classList.remove('hidden');
             else coreEdit?.classList.add('hidden');
 
-            setTextSafe('core-success-val', `£${Math.round(currentValues.essentials).toLocaleString()}`);
+            setHTMLSafe('core-success-val', `£${Math.round(currentValues.essentials).toLocaleString()}`);
             
             if (cPotsUsed > 0) {
-                setTextSafe('core-success-desc', "Your State Pension, DB Pension, and Savings securely cover your Core needs.");
+                setHTMLSafe('core-success-desc', "Your State Pension, DB Pension, and Savings securely cover your Core needs.");
                 coreAnnuity?.classList.remove('hidden');
             } else if (cDbUsed > 0) {
-                setTextSafe('core-success-desc', "Your State Pension and DB Pension fully cover your Core needs.");
+                setHTMLSafe('core-success-desc', "Your State Pension and DB Pension fully cover your Core needs.");
                 coreAnnuity?.classList.add('hidden');
             } else {
-                setTextSafe('core-success-desc', "Your State Pension fully covers your Core needs.");
+                setHTMLSafe('core-success-desc', "Your State Pension fully covers your Core needs.");
                 coreAnnuity?.classList.add('hidden');
             }
         } else {
@@ -604,8 +596,7 @@ function updateChartsAndJourney() {
             homePortfolio?.classList.add('hidden');
             homePrompt?.classList.remove('hidden');
             
-            let initialHomeGap = Math.max(0, currentValues.home - Math.max(0, projectedSp - currentValues.essentials));
-            setHTMLSafe('tips-p2-text', `Your remaining income leaves a Home gap of <strong>£${Math.round(initialHomeGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`);
+            setHTMLSafe('tips-p2-text', `Your remaining income leaves a Home gap of <strong>£${Math.round(grossHomeGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`);
         } else {
             if (nHome <= 0 && currentValues.home > 0) { 
                 homePrompt?.classList.add('hidden');
@@ -614,16 +605,16 @@ function updateChartsAndJourney() {
                 if (hDbUsed > 0 || hPotsUsed > 0) homeEdit?.classList.remove('hidden');
                 else homeEdit?.classList.add('hidden');
 
-                setTextSafe('home-success-val', `£${Math.round(currentValues.home).toLocaleString()}`);
+                setHTMLSafe('home-success-val', `£${Math.round(currentValues.home).toLocaleString()}`);
                 
                 if (hPotsUsed > 0) {
-                    setTextSafe('home-success-desc', "Your savings drawdown bridges your Home costs.");
+                    setHTMLSafe('home-success-desc', "Your savings drawdown bridges your Home costs.");
                     homePortfolio?.classList.remove('hidden');
                 } else if (hDbUsed > 0) {
-                    setTextSafe('home-success-desc', "Your DB Pension bridges your Home costs.");
+                    setHTMLSafe('home-success-desc', "Your DB Pension bridges your Home costs.");
                     homePortfolio?.classList.add('hidden');
                 } else {
-                    setTextSafe('home-success-desc', "Your regular income seamlessly covers your Home costs.");
+                    setHTMLSafe('home-success-desc', "Your regular income seamlessly covers your Home costs.");
                     homePortfolio?.classList.add('hidden');
                 }
             } else {
@@ -640,11 +631,12 @@ function updateChartsAndJourney() {
     }
 
     // -----------------------------------------------------
-    // 3. LIFESTYLE RENDER
+    // 3. LIFESTYLE RENDER (Sequence Waterfall)
     // -----------------------------------------------------
     const equityBlock = document.getElementById('equity-block');
     const shapeBlock = document.getElementById('shape-block');
     const healthBlock = document.getElementById('health-block');
+    const surplusBlock = document.getElementById('surplus-block');
 
     if (state.unlockedStep >= 3) {
         const lifePrompt = document.getElementById('life-text-prompt');
@@ -652,67 +644,73 @@ function updateChartsAndJourney() {
         const lifeEdit = document.getElementById('lifestyle-edit-container');
         const btnLifeEdit = document.getElementById('btn-life-edit');
 
+        let estEquityIncome = 0;
+        if (state.tenure === 'owner' || state.tenure === 'mortgage') {
+            estEquityIncome = (state.homeValue * 0.30) * drawdownRate;
+        }
+
+        setHTMLSafe('tips-p3-intro', `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`);
+
         if (state.walletOpenPillar === 3) {
             lifeBanner?.classList.add('hidden');
             lifeEdit?.classList.add('hidden');
             lifePrompt?.classList.remove('hidden');
-            document.getElementById('surplus-block')?.classList.add('hidden');
             
-            setHTMLSafe('tips-p3-intro', `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`);
             setHTMLSafe('tips-p3-text', `Your preferred Lifestyle exceeds your resources by <strong>£${Math.round(nLife).toLocaleString()}</strong>. Use the wallet below to check your assets.`);
             
             equityBlock?.classList.add('hidden');
             shapeBlock?.classList.add('hidden');
             healthBlock?.classList.add('hidden');
-            
+            surplusBlock?.classList.add('hidden');
         } else {
-            setHTMLSafe('tips-p3-intro', `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`);
-            
             if (nLife <= 0 && currentValues.living > 0) {
+                // FULLY FUNDED
                 lifePrompt?.classList.add('hidden');
                 lifeBanner?.classList.remove('hidden');
                 lifeEdit?.classList.remove('hidden');
                 
-                setTextSafe('lifestyle-success-val', `£${Math.round(currentValues.living).toLocaleString()}`);
+                setHTMLSafe('lifestyle-success-val', `£${Math.round(currentValues.living).toLocaleString()}`);
                 
                 if(btnLifeEdit) {
                     if (lDbUsed > 0 || lPotsUsed > 0) btnLifeEdit.innerText = "Edit Assets ⌄";
                     else btnLifeEdit.innerText = "Add Assets to Boost Surplus ⌄";
                 }
 
-                if (lPotsUsed > 0) setTextSafe('lifestyle-success-desc', "Your savings successfully fund your chosen lifestyle.");
-                else setTextSafe('lifestyle-success-desc', "Your guaranteed income fully covers your chosen lifestyle.");
+                if (lPotsUsed > 0) setHTMLSafe('lifestyle-success-desc', "Your savings successfully fund your chosen lifestyle.");
+                else setHTMLSafe('lifestyle-success-desc', "Your guaranteed income fully covers your chosen lifestyle.");
 
-                document.getElementById('surplus-block')?.classList.remove('hidden');
-                setTextSafe('surplus-amount', `£${Math.round(gSp + gDb + gPots).toLocaleString()}`); 
+                surplusBlock?.classList.remove('hidden');
+                setHTMLSafe('surplus-amount', `£${Math.round(gSp + gDb + gPots).toLocaleString()}`); 
 
                 equityBlock?.classList.add('hidden');
                 shapeBlock?.classList.add('hidden');
                 healthBlock?.classList.remove('hidden'); 
 
             } else {
+                // GAP REMAINS AFTER WALLET
                 lifePrompt?.classList.remove('hidden');
                 lifeBanner?.classList.add('hidden');
                 lifeEdit?.classList.remove('hidden');
                 if(btnLifeEdit) btnLifeEdit.innerText = "Edit Assets ⌄";
-                document.getElementById('surplus-block')?.classList.add('hidden');
+                
                 setHTMLSafe('tips-p3-text', `You have an unbridged Lifestyle shortfall of <strong>£${Math.round(nLife).toLocaleString()}</strong>.`);
 
-                let estEquityIncome = 0;
-                if (state.tenure === 'owner' || state.tenure === 'mortgage') {
-                    estEquityIncome = (state.homeValue * 0.30) * drawdownRate;
+                // Step 3: Equity Release
+                if (estEquityIncome > 0) {
                     equityBlock?.classList.remove('hidden');
                     setHTMLSafe('equity-desc', `Releasing 30% of your property wealth could generate an estimated <strong>£${Math.round(estEquityIncome).toLocaleString()}/yr</strong>.`);
                 } else {
                     equityBlock?.classList.add('hidden');
                 }
 
+                // Step 4: Shape Toggles
                 if (nLife - estEquityIncome > 0) {
                     shapeBlock?.classList.remove('hidden');
                 } else {
                     shapeBlock?.classList.add('hidden');
                 }
                 
+                surplusBlock?.classList.add('hidden');
                 healthBlock?.classList.add('hidden');
             }
         }
