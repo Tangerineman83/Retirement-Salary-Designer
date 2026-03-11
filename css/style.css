@@ -44,14 +44,16 @@ h1 { font-size: 2.2rem; }
 .onboarding-card { background: var(--bg-card); padding: 35px; border-radius: 16px; box-shadow: 0 10px 30px rgba(43, 38, 37, 0.05); margin-bottom: 30px; border: 1px solid var(--accent-sage); }
 .onboarding-desc { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5;}
 
-/* Success Banners (Based on SP Premiere) */
+/* Success Banners */
 @keyframes slideDownCard { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-.success-banner { background: var(--text-espresso); color: var(--bg-oatmilk); padding: 25px 30px; border-radius: 12px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(43, 38, 37, 0.15); animation: slideDownCard 0.4s ease-out; }
+.success-banner { background: var(--text-espresso); color: var(--bg-oatmilk); padding: 25px 30px; border-radius: 12px; margin-top: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 30px rgba(43, 38, 37, 0.15); animation: slideDownCard 0.4s ease-out; }
 .sb-text h3 { color: var(--bg-oatmilk); margin-bottom: 8px; font-size: 1.3rem;}
 .sb-text p { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--border-stone); }
 .sb-amount-block { text-align: right; }
 .sb-label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-sage); margin-bottom: 5px;}
 .sb-value { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--bg-card); }
+.edit-chevron { text-align: center; color: var(--accent-sage); font-family: 'Space Grotesk', sans-serif; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 15px; cursor: pointer; transition: color 0.3s; }
+.edit-chevron:hover { color: var(--accent-orange); }
 
 /* Pillars & Collapsible Sections */
 .pillar-section { background: var(--bg-card); padding: 25px 35px; border-radius: 16px; box-shadow: 0 10px 30px rgba(43, 38, 37, 0.03); margin-bottom: 30px; border: 1px solid var(--border-stone); }
@@ -108,8 +110,10 @@ h1 { font-size: 2.2rem; }
 .freq-select { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-stone); font-size: 0.8rem; background: transparent; color: var(--text-espresso); outline: none;}
 
 /* THE DYNAMIC WEALTH WALLET */
-.wealth-wallet { background: var(--bg-card); border: 2px dashed var(--accent-orange); padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 8px 25px rgba(255, 90, 54, 0.08); animation: slideDownCard 0.4s ease-out; }
+.wealth-wallet { background: var(--bg-card); border: 2px dashed var(--accent-orange); padding: 25px; border-radius: 12px; margin-top: 20px; box-shadow: 0 8px 25px rgba(255, 90, 54, 0.08); animation: slideDownCard 0.4s ease-out; }
 .wallet-desc { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; margin-top: 0; line-height: 1.4;}
+.action-btn { background: var(--text-espresso); color: var(--bg-oatmilk); border: none; padding: 14px 28px; border-radius: 30px; font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: 0.3s; }
+.action-btn:hover { background: var(--accent-orange); transform: translateY(-2px); }
 
 /* ASSET CARDS INSIDE WALLET */
 .asset-cards-container { display: flex; flex-direction: column; gap: 15px; }
