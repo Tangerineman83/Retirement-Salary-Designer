@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
 </head>
 <body>
 
@@ -93,7 +94,7 @@
                                 </div>
                                 <div class="sb-amount-block">
                                     <span class="sb-label" id="core-banner-label">Allocated</span>
-                                    <span class="sb-value" id="core-success-val">£0</span>
+                                    <span class="sb-value" id="core-success-val">£0/yr</span>
                                 </div>
                             </div>
                             
@@ -104,7 +105,7 @@
                             <div id="core-partner-annuity" class="partner-card-tip hidden" style="margin-bottom: 25px;">
                                 <div class="pct-content">
                                     <strong>Secure Your Foundation</strong>
-                                    <span>You are drawing from savings. Convert a portion into guaranteed income to definitively bridge this gap.</span>
+                                    <span>You are drawing from savings. Convert a portion into guaranteed annual income to definitively bridge this gap.</span>
                                 </div>
                                 <button class="pct-btn">Explore Annuities</button>
                             </div>
@@ -197,7 +198,7 @@
                                 </div>
                                 <div class="sb-amount-block">
                                     <span class="sb-label" id="home-banner-label">Allocated</span>
-                                    <span class="sb-value" id="home-success-val">£0</span>
+                                    <span class="sb-value" id="home-success-val">£0/yr</span>
                                 </div>
                             </div>
 
@@ -248,7 +249,7 @@
                         
                         <div class="designer-tips" style="margin-top: 0; margin-bottom: 25px; border-color: var(--accent-sage);">
                             <h4 class="tips-title" style="color: var(--accent-sage);">What's Left to Fund?</h4>
-                            <p class="tips-text" id="tips-p3-intro">Calculating your remaining capital...</p>
+                            <p class="tips-text" id="tips-p3-intro"></p>
                         </div>
 
                         <div class="slider-container">
@@ -276,7 +277,7 @@
                                 </div>
                                 <div class="sb-amount-block">
                                     <span class="sb-label" id="life-banner-label">Allocated</span>
-                                    <span class="sb-value" id="lifestyle-success-val">£0</span>
+                                    <span class="sb-value" id="lifestyle-success-val">£0/yr</span>
                                 </div>
                             </div>
                             
@@ -296,6 +297,11 @@
                                 </div>
                             </div>
 
+                            <div id="shape-block" class="chapter-toggles hidden" style="margin-top: 25px;">
+                                <span class="panel-desc" style="display:block; margin-bottom:10px;"><strong>Shape your retirement timeline:</strong> Still have an annual gap? Adjusting future plans can stretch your capital further today.</span>
+                                <label class="toggle-row"><input type="checkbox" id="toggle-travel"> Ease back on long-haul travel in later years (Age 75+)</label>
+                            </div>
+
                             <div id="health-block" class="hidden" style="margin-top: 25px; border-top: 1px dashed var(--border-stone); padding-top: 20px;">
                                 <h4 class="tips-title" style="color:var(--accent-sage);">Protect Your Independence</h4>
                                 <p class="tips-text">Your lifestyle is fully supported. Consider securing private healthcare to protect your later-life needs.</p>
@@ -310,7 +316,7 @@
 
                             <div id="surplus-block" class="designer-tips hidden" style="border-color: var(--accent-sage); margin-top: 25px;">
                                 <h4 class="tips-title" style="color: var(--accent-sage);">Surplus Detected</h4>
-                                <p class="tips-text">You have a projected surplus of <strong id="surplus-amount" style="font-size:1.2rem;">£0</strong> per year.</p>
+                                <p class="tips-text">You have a projected surplus of <strong id="surplus-amount" style="font-size:1.2rem;">£0/yr</strong>.</p>
                                 <p class="tips-text" style="margin-top:10px;">You are in a fantastic position to boost your lifestyle further, accelerate your retirement date, or consider legacy planning.</p>
                             </div>
                         </div>
@@ -326,7 +332,7 @@
             <div class="salary-dashboard" style="margin-bottom: 25px;">
                 <div class="dash-left">
                     <div class="salary-total">
-                        <span class="sd-label">Target Gross Fit</span>
+                        <span class="sd-label">Target Gross Annual Fit</span>
                         <span class="sd-gross" id="display-salary">£0</span>
                     </div>
                     <div class="salary-breakdown">
@@ -351,14 +357,14 @@
     </div>
 
     <div id="wealth-wallet" class="wealth-wallet hidden">
-        <h4 class="tips-title" id="wallet-dynamic-title" style="color:var(--accent-orange);">Bridge the Gap</h4>
+        <h4 class="tips-title" id="wallet-dynamic-title" style="color:var(--accent-orange);">Bridge the Annual Gap</h4>
         <p class="wallet-desc" id="wallet-dynamic-desc"></p>
         
         <div class="asset-cards-container">
             <div id="db-card" class="asset-card">
                 <h5>1. Defined Benefit Pension</h5>
                 <p>Do you have a guaranteed annual pension from a previous employer?</p>
-                <label>Annual Amount (£): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
+                <label>Annual Amount (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
                 <button class="text-btn" id="btn-reveal-pots" onclick="window.revealAsset('pots')" style="margin-top:15px; font-size:0.8rem;">+ Add Pension Pots</button>
             </div>
             
@@ -376,7 +382,7 @@
             </div>
         </div>
         
-        <span id="withdrawal-hint" class="input-hint hidden" style="margin-top:15px; text-align:center;">We map these pots to your income using a sustainable 5% annual withdrawal rate.</span>
+        <span id="withdrawal-hint" class="input-hint hidden" style="margin-top:15px; text-align:center;">We map your pots and savings into an estimated annual income using a sustainable 5% withdrawal rate.</span>
 
         <div class="wallet-actions" style="margin-top: 25px; text-align: center;">
             <button class="action-btn" id="wallet-apply-btn" onclick="window.applyWallet()">Apply & Continue ⌃</button>
