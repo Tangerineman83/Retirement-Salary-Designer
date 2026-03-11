@@ -94,6 +94,8 @@
                             <h4 class="tips-title">Core Coverage</h4>
                             <p class="tips-text" id="tips-p1-text">Loading insights...</p>
                             
+                            <div id="core-wallet-slot"></div>
+                            
                             <div class="step-action-container hidden" id="step-action-1">
                                 <div class="chevron-action" onclick="advanceStep(2)">
                                     <span>Next: Review Home</span>
@@ -170,6 +172,8 @@
                             <h4 class="tips-title">Home Coverage</h4>
                             <p class="tips-text" id="tips-p2-text">Loading insights...</p>
                             
+                            <div id="home-wallet-slot"></div>
+                            
                             <div class="step-action-container hidden" id="step-action-2">
                                 <div class="chevron-action" onclick="advanceStep(3)">
                                     <span>Next: Review Lifestyle</span>
@@ -214,6 +218,24 @@
                         <div class="designer-tips" id="p3-final-review">
                             <h4 class="tips-title">Lifestyle Coverage</h4>
                             <p class="tips-text" id="tips-p3-text">Loading insights...</p>
+                            
+                            <div id="lifestyle-wallet-slot"></div>
+
+                            <div class="partner-card-tip hidden" id="partner-equity" style="margin-top: 15px;">
+                                <div class="pct-content">
+                                    <strong>Property Management & Equity Release</strong>
+                                    <span>Unlock value from your home to support your lifestyle in retirement.</span>
+                                </div>
+                                <button class="pct-btn">Explore Options</button>
+                            </div>
+
+                            <div class="partner-card-tip hidden" id="partner-health" style="margin-top: 15px;">
+                                <div class="pct-content">
+                                    <strong>Protect Your Lifestyle</strong>
+                                    <span>Explore premium healthcare and later-life protection plans to secure your independence.</span>
+                                </div>
+                                <button class="pct-btn">Explore Healthcare</button>
+                            </div>
                         </div>
                         
                         <div id="surplus-block" class="designer-tips hidden" style="border-color: var(--accent-sage);">
@@ -221,6 +243,7 @@
                             <p class="tips-text">You have a projected surplus of <strong id="surplus-amount" style="font-size:1.2rem;">£0</strong> per year.</p>
                             <p class="tips-text" style="margin-top:10px;">You are in a fantastic position to boost your lifestyle further, accelerate your retirement date, or consider legacy planning and charitable giving.</p>
                         </div>
+
                     </div>
                 </section>
 
@@ -245,55 +268,6 @@
                 </div>
             </div>
 
-            <div id="wealth-wallet" class="wealth-wallet hidden">
-                <h4 class="tips-title" id="wallet-dynamic-title" style="color:var(--accent-orange);">Bridge the Gap</h4>
-                <p class="wallet-desc" id="wallet-dynamic-desc">Your guaranteed income falls short here. Please input any other assets to cover the difference.</p>
-                
-                <div class="input-grid" style="grid-template-columns: 1fr; gap: 15px;">
-                    <div id="db-box" class="hidden">
-                        <label>Defined Benefit Pension (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
-                    </div>
-                    
-                    <div id="pots-box" class="hidden">
-                        <label>Total Pension Pots Built Up (£) <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
-                        <label style="margin-top:15px;">Other Individual Savings (£) <input type="number" id="meas-savings" class="seamless-input" placeholder="£0"></label>
-                        <span class="input-hint" style="margin-top:8px;">We estimate a sustainable 6% annual withdrawal rate.</span>
-                    </div>
-                </div>
-
-                <div id="wallet-partner-annuity" class="partner-card-tip hidden" style="margin-top: 20px;">
-                    <div class="pct-content">
-                        <strong>Secure Your Foundation</strong>
-                        <span>Convert savings into guaranteed income to definitively bridge this gap.</span>
-                    </div>
-                    <button class="pct-btn">Explore Annuities</button>
-                </div>
-
-                <div id="wallet-partner-portfolio" class="partner-card-tip hidden" style="margin-top: 20px;">
-                    <div class="pct-content">
-                        <strong>Generate Reliable Income</strong>
-                        <span>Build an income-generating portfolio that funds your Home costs.</span>
-                    </div>
-                    <button class="pct-btn">Explore Portfolios</button>
-                </div>
-
-                <div id="wallet-partner-equity" class="partner-card-tip hidden" style="margin-top: 20px;">
-                    <div class="pct-content">
-                        <strong>Release Property Value</strong>
-                        <span>Unlock equity from your home to dramatically boost your Lifestyle.</span>
-                    </div>
-                    <button class="pct-btn">Explore Options</button>
-                </div>
-
-                <div id="wallet-partner-health" class="partner-card-tip hidden" style="margin-top: 20px;">
-                    <div class="pct-content">
-                        <strong>Later Life Healthcare</strong>
-                        <span>Explore premium protection plans to secure your independence.</span>
-                    </div>
-                    <button class="pct-btn">Explore Healthcare</button>
-                </div>
-            </div>
-
             <div class="chart-card">
                 <h3>Retirement Horizon</h3>
                 <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
@@ -304,6 +278,40 @@
             
         </aside>
     </div>
+
+    <div id="wealth-wallet" class="wealth-wallet hidden">
+        <h4 class="tips-title" id="wallet-dynamic-title" style="color:var(--accent-orange);">Bridge the Gap</h4>
+        <p class="wallet-desc" id="wallet-dynamic-desc">Your guaranteed income falls short here. Add your assets below to cover the difference.</p>
+        
+        <div class="input-grid" style="grid-template-columns: 1fr; gap: 15px;">
+            <div id="db-box" class="hidden">
+                <label>Defined Benefit Pension (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
+            </div>
+            
+            <div id="pots-box" class="hidden">
+                <label>Total Pension Pots Built Up (£): <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
+                <label style="margin-top:15px;">Other Individual Savings (£): <input type="number" id="meas-savings" class="seamless-input" placeholder="£0"></label>
+                <span class="input-hint" style="margin-top:8px;">We estimate a sustainable 6% annual withdrawal rate.</span>
+            </div>
+        </div>
+
+        <div id="wallet-partner-annuity" class="partner-card-tip hidden" style="margin-top: 20px;">
+            <div class="pct-content">
+                <strong>Secure Your Foundation</strong>
+                <span>Convert savings into guaranteed income to definitively bridge this gap.</span>
+            </div>
+            <button class="pct-btn">Explore Annuities</button>
+        </div>
+
+        <div id="wallet-partner-portfolio" class="partner-card-tip hidden" style="margin-top: 20px;">
+            <div class="pct-content">
+                <strong>Generate Reliable Income</strong>
+                <span>Build an income-generating portfolio that funds your Home costs.</span>
+            </div>
+            <button class="pct-btn">Explore Portfolios</button>
+        </div>
+    </div>
+
 </div>
 
 <div id="smart-tooltip" class="smart-tooltip"></div>
