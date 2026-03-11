@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
 </head>
 <body>
 
@@ -82,7 +81,7 @@
                             
                             <div id="core-text-prompt">
                                 <h4 class="tips-title">Core Coverage</h4>
-                                <p class="tips-text" id="tips-p1-text"></p>
+                                <p class="tips-text" id="tips-p1-text">Loading insights...</p>
                             </div>
 
                             <div id="core-wallet-slot"></div>
@@ -186,7 +185,7 @@
                             
                             <div id="home-text-prompt">
                                 <h4 class="tips-title">Home Coverage</h4>
-                                <p class="tips-text" id="tips-p2-text"></p>
+                                <p class="tips-text" id="tips-p2-text">Loading insights...</p>
                             </div>
 
                             <div id="home-wallet-slot"></div>
@@ -206,12 +205,24 @@
                                 <button class="text-btn" onclick="window.openWallet(2)">Edit Assets ⌄</button>
                             </div>
 
-                            <div id="home-partner-portfolio" class="partner-card-tip hidden" style="margin-bottom: 25px;">
+                            <div id="home-partner-annuity" class="partner-card-tip hidden" style="margin-bottom: 25px;">
                                 <div class="pct-content">
-                                    <strong>Generate Reliable Income</strong>
-                                    <span>You are drawing heavily on savings. Build an income-generating portfolio to sustainably fund your Home costs.</span>
+                                    <strong>Secure Your Foundation</strong>
+                                    <span>You are drawing from savings. Convert a portion into guaranteed income to sustainably fund your Home costs.</span>
                                 </div>
-                                <button class="pct-btn">Explore Portfolios</button>
+                                <button class="pct-btn">Explore Annuities</button>
+                            </div>
+
+                            <div id="home-equity-block" class="hidden" style="margin-bottom: 25px; border-top: 1px dashed var(--border-stone); padding-top: 20px;">
+                                <h4 class="tips-title" style="color:var(--text-espresso);">Consider Property Wealth</h4>
+                                <p class="tips-text" id="home-equity-desc"></p>
+                                <div class="partner-card-tip" id="home-partner-equity" style="margin-top: 15px;">
+                                    <div class="pct-content">
+                                        <strong>Property Management & Equity Release</strong>
+                                        <span>Unlock value from your home to support your essential needs in retirement.</span>
+                                    </div>
+                                    <button class="pct-btn">Explore Options</button>
+                                </div>
                             </div>
                             
                             <div class="step-action-container hidden" id="step-action-2">
@@ -235,7 +246,12 @@
                     
                     <div class="pillar-body collapsed" id="body-living">
                         
-                        <div class="slider-container" style="margin-top: 40px;">
+                        <div class="designer-tips" style="margin-top: 0; margin-bottom: 25px; border-color: var(--accent-sage);">
+                            <h4 class="tips-title" style="color: var(--accent-sage);">What's Left to Fund?</h4>
+                            <p class="tips-text" id="tips-p3-intro">Calculating your remaining capital...</p>
+                        </div>
+
+                        <div class="slider-container">
                             <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50">
                             <div class="slider-labels">
                                 <div class="label-group tt-trigger" data-desc="Local leisure, free bus pass, 1 UK holiday, reliant entirely on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
@@ -244,11 +260,16 @@
                             </div>
                         </div>
 
+                        <div class="chapter-toggles" style="margin-top: 40px;">
+                            <span class="panel-desc" style="display:block; margin-bottom:10px;"><strong>Shape your retirement timeline:</strong> See how adjusting your future plans stretches your capital today.</span>
+                            <label class="toggle-row"><input type="checkbox" id="toggle-travel"> Ease back on long-haul travel in later years (Age 75+)</label>
+                            <label class="toggle-row"><input type="checkbox" id="toggle-care"> Reserve a fund for later-life care or healthcare (Age 80+)</label>
+                        </div>
+
                         <div class="designer-tips" style="background:transparent; border:none; padding:10px 0 0 0;" id="p3-final-review">
                             
                             <div id="life-text-prompt" class="hidden">
                                 <h4 class="tips-title" style="color: var(--accent-orange);">Funding Gap Detected</h4>
-                                <p class="tips-text" id="tips-p3-intro" style="margin-bottom: 10px;"></p>
                                 <p class="tips-text" id="tips-p3-text"></p>
                             </div>
                             
@@ -283,8 +304,6 @@
 
                             <div id="shape-block" class="chapter-toggles hidden" style="margin-top: 25px;">
                                 <span class="panel-desc" style="display:block; margin-bottom:10px;"><strong>Shape your retirement timeline:</strong> Still have a gap? See how adjusting future plans stretches your capital today.</span>
-                                <label class="toggle-row"><input type="checkbox" id="toggle-travel"> Ease back on long-haul travel in later years (Age 75+)</label>
-                                <label class="toggle-row"><input type="checkbox" id="toggle-care"> Reserve a fund for later-life care or healthcare (Age 80+)</label>
                             </div>
 
                             <div id="health-block" class="hidden" style="margin-top: 25px; border-top: 1px dashed var(--border-stone); padding-top: 20px;">
@@ -368,6 +387,14 @@
         </div>
         
         <span id="withdrawal-hint" class="input-hint hidden" style="margin-top:15px; text-align:center;">We map these pots to your income using a sustainable 5% annual withdrawal rate.</span>
+
+        <div id="wallet-partner-annuity" class="partner-card-tip hidden" style="margin-top: 20px;">
+            <div class="pct-content">
+                <strong>Secure Your Foundation</strong>
+                <span>Convert a portion of these savings into guaranteed income to definitively bridge this gap.</span>
+            </div>
+            <button class="pct-btn">Explore Annuities</button>
+        </div>
 
         <div class="wallet-actions" style="margin-top: 25px; text-align: center;">
             <button class="action-btn" id="wallet-apply-btn" onclick="window.applyWallet()">Apply & Continue ⌃</button>
