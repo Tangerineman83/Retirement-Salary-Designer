@@ -393,12 +393,16 @@ function updateChartsAndJourney() {
     let showDbInput = false;
     let showPotsInput = false;
     
-    document.getElementById('wallet-partner-annuity').classList.add('hidden');
-    document.getElementById('wallet-partner-portfolio').classList.add('hidden');
-    const equityCard = document.getElementById('partner-equity');
-    const healthCard = document.getElementById('partner-health');
-    equityCard.classList.add('hidden');
-    healthCard.classList.add('hidden');
+    // Safely target the wallet partner cards using optional chaining
+    const annuityCard = document.getElementById('wallet-partner-annuity');
+    const portfolioCard = document.getElementById('wallet-partner-portfolio');
+    const equityCard = document.getElementById('wallet-partner-equity');
+    const healthCard = document.getElementById('wallet-partner-health');
+    
+    annuityCard?.classList.add('hidden');
+    portfolioCard?.classList.add('hidden');
+    equityCard?.classList.add('hidden');
+    healthCard?.classList.add('hidden');
 
     // ==========================================
     // STEP 1: CORE LOGIC
@@ -430,11 +434,11 @@ function updateChartsAndJourney() {
             if (potsGap <= 0) {
                 potsRemaining -= dbGap;
                 coreMsg = `Your savings drawdown bridges your remaining Core gap. Consider securing an annuity.`;
-                document.getElementById('wallet-partner-annuity').classList.remove('hidden');
+                annuityCard?.classList.remove('hidden');
             } else {
                 potsRemaining = 0;
                 coreMsg = `Even with your savings, you have a Core shortfall. Consider securing an annuity.`;
-                document.getElementById('wallet-partner-annuity').classList.remove('hidden');
+                annuityCard?.classList.remove('hidden');
             }
         }
     }
@@ -484,7 +488,7 @@ function updateChartsAndJourney() {
                     potsRemaining -= homeGap;
                     homeGap = 0;
                     homeMsg = `Your savings drawdown covers your Home costs.`;
-                    document.getElementById('wallet-partner-portfolio').classList.remove('hidden');
+                    portfolioCard?.classList.remove('hidden');
                 } else {
                     potsRemaining = 0;
                     homeMsg = `You have a Home shortfall.`;
@@ -528,8 +532,8 @@ function updateChartsAndJourney() {
         }
         document.getElementById('tips-p3-text').innerHTML = lifeMsg;
 
-        if (state.tenure === 'owner' || state.tenure === 'mortgage') equityCard.classList.remove('hidden');
-        if (state.living >= 50 || doCareSpike) healthCard.classList.remove('hidden');
+        if (state.tenure === 'owner' || state.tenure === 'mortgage') equityCard?.classList.remove('hidden');
+        if (state.living >= 50 || doCareSpike) healthCard?.classList.remove('hidden');
     }
 
     const wallet = document.getElementById('wealth-wallet');
@@ -595,9 +599,9 @@ function updateChartsAndJourney() {
 
     if (exhaustionAge !== -1 && exhaustionAge <= 90 && state.unlockedStep >= 3) {
         document.getElementById('tips-p3-text').innerHTML += `<br><br><strong style="color:var(--accent-orange);">End of Credits Warning:</strong> Based on this shape, your wealth pots will fully deplete by <strong>Age ${exhaustionAge}</strong>.`;
-        if(state.tenure === 'owner' || state.tenure === 'mortgage') equityCard.classList.add('pulse-alert');
+        if(state.tenure === 'owner' || state.tenure === 'mortgage') equityCard?.classList.add('pulse-alert');
     } else {
-        equityCard.classList.remove('pulse-alert');
+        equityCard?.classList.remove('pulse-alert');
     }
 
     charts.mainBar.data.labels = labels;
