@@ -1,5 +1,5 @@
 Chart.register(ChartDataLabels);
-Chart.register(window['chartjs-plugin-annotation']);
+// Annotation plugin removed entirely to disable 'pot empty' lines
 
 let rldConfig = null;
 let locationBenchmarks = null;
@@ -41,6 +41,11 @@ const palette = {
 function setHTMLSafe(id, htmlString) {
     const el = document.getElementById(id);
     if(el) el.innerHTML = htmlString;
+}
+
+function setTextSafe(id, textString) {
+    const el = document.getElementById(id);
+    if(el) el.innerText = textString;
 }
 
 function setValueSafe(id, val) {
@@ -493,6 +498,7 @@ function updateChartsAndJourney() {
     let potsTotal = (state.pensionPot || 0) + (state.otherSavings || 0);
     let gPots = potsTotal * drawdownRate;
 
+    // -- CORE CALC --
     let reqCore = currentValues.essentials;
     let cSpUsed = Math.min(reqCore, gSp); gSp -= cSpUsed; reqCore -= cSpUsed;
     let grossCoreGap = reqCore; 
@@ -501,6 +507,7 @@ function updateChartsAndJourney() {
     let cPotsUsed = Math.min(reqCore, gPots); gPots -= cPotsUsed; reqCore -= cPotsUsed;
     let nCore = reqCore; 
 
+    // -- HOME CALC --
     let reqHome = (state.unlockedStep >= 2) ? currentValues.home : 0;
     let hSpUsed = Math.min(reqHome, gSp); gSp -= hSpUsed; reqHome -= hSpUsed;
     let grossHomeGap = reqHome;
@@ -509,6 +516,7 @@ function updateChartsAndJourney() {
     let hPotsUsed = Math.min(reqHome, gPots); gPots -= hPotsUsed; reqHome -= hPotsUsed;
     let nHome = reqHome;
 
+    // -- LIFESTYLE CALC --
     let preLifeRem = gSp + gDb + gPots; 
     let reqLife = (state.unlockedStep >= 3) ? currentValues.living : 0;
     let lSpUsed = Math.min(reqLife, gSp); gSp -= lSpUsed; reqLife -= lSpUsed;
@@ -557,16 +565,16 @@ function updateChartsAndJourney() {
             if (cDbUsed > 0 || cPotsUsed > 0) coreEdit?.classList.remove('hidden');
             else coreEdit?.classList.add('hidden');
 
-            setHTMLSafe('core-success-val', `£${Math.round(currentValues.essentials).toLocaleString()}`);
+            setTextSafe('core-success-val', `£${Math.round(currentValues.essentials).toLocaleString()}`);
             
             if (cPotsUsed > 0) {
-                setHTMLSafe('core-success-desc', "Your State Pension, DB Pension, and Savings securely cover your Core needs.");
+                setTextSafe('core-success-desc', "Your State Pension, DB Pension, and Savings securely cover your Core needs.");
                 coreAnnuity?.classList.remove('hidden');
             } else if (cDbUsed > 0) {
-                setHTMLSafe('core-success-desc', "Your State Pension and DB Pension fully cover your Core needs.");
+                setTextSafe('core-success-desc', "Your State Pension and DB Pension fully cover your Core needs.");
                 coreAnnuity?.classList.add('hidden');
             } else {
-                setHTMLSafe('core-success-desc', "Your State Pension fully covers your Core needs.");
+                setTextSafe('core-success-desc', "Your State Pension fully covers your Core needs.");
                 coreAnnuity?.classList.add('hidden');
             }
         } else {
@@ -588,12 +596,14 @@ function updateChartsAndJourney() {
         const homePrompt = document.getElementById('home-text-prompt');
         const homeBanner = document.getElementById('home-success-banner');
         const homeEdit = document.getElementById('home-edit-container');
-        const homePortfolio = document.getElementById('home-partner-portfolio');
+        const homeAnnuity = document.getElementById('home-partner-annuity');
+        const homeEquityBlock = document.getElementById('home-equity-block');
 
         if (state.walletOpenPillar === 2) {
             homeBanner?.classList.add('hidden');
             homeEdit?.classList.add('hidden');
-            homePortfolio?.classList.add('hidden');
+            homeAnnuity?.classList.add('hidden');
+            homeEquityBlock?.classList.add('hidden');
             homePrompt?.classList.remove('hidden');
             
             setHTMLSafe('tips-p2-text', `Your remaining income leaves a Home gap of <strong>£${Math.round(grossHomeGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`);
@@ -601,28 +611,38 @@ function updateChartsAndJourney() {
             if (nHome <= 0 && currentValues.home > 0) { 
                 homePrompt?.classList.add('hidden');
                 homeBanner?.classList.remove('hidden');
+                homeEquityBlock?.classList.add('hidden');
 
                 if (hDbUsed > 0 || hPotsUsed > 0) homeEdit?.classList.remove('hidden');
                 else homeEdit?.classList.add('hidden');
 
-                setHTMLSafe('home-success-val', `£${Math.round(currentValues.home).toLocaleString()}`);
+                setTextSafe('home-success-val', `£${Math.round(currentValues.home).toLocaleString()}`);
                 
                 if (hPotsUsed > 0) {
-                    setHTMLSafe('home-success-desc', "Your savings drawdown bridges your Home costs.");
-                    homePortfolio?.classList.remove('hidden');
+                    setTextSafe('home-success-desc', "Your savings drawdown bridges your Home costs.");
+                    homeAnnuity?.classList.remove('hidden');
                 } else if (hDbUsed > 0) {
-                    setHTMLSafe('home-success-desc', "Your DB Pension bridges your Home costs.");
-                    homePortfolio?.classList.add('hidden');
+                    setTextSafe('home-success-desc', "Your DB Pension bridges your Home costs.");
+                    homeAnnuity?.classList.add('hidden');
                 } else {
-                    setHTMLSafe('home-success-desc', "Your regular income seamlessly covers your Home costs.");
-                    homePortfolio?.classList.add('hidden');
+                    setTextSafe('home-success-desc', "Your regular income seamlessly covers your Home costs.");
+                    homeAnnuity?.classList.add('hidden');
                 }
             } else {
                 homePrompt?.classList.remove('hidden');
                 homeBanner?.classList.add('hidden');
                 homeEdit?.classList.remove('hidden');
-                homePortfolio?.classList.add('hidden');
+                homeAnnuity?.classList.add('hidden');
                 setHTMLSafe('tips-p2-text', `You have an unbridged Home shortfall of <strong>£${Math.round(nHome).toLocaleString()}</strong>.`);
+
+                let estHomeEquityIncome = 0;
+                if (state.tenure === 'owner' || state.tenure === 'mortgage') {
+                    estHomeEquityIncome = (state.homeValue * 0.30) * drawdownRate;
+                    homeEquityBlock?.classList.remove('hidden');
+                    setHTMLSafe('home-equity-desc', `Releasing 30% of your property wealth could generate an estimated <strong>£${Math.round(estHomeEquityIncome).toLocaleString()}/yr</strong> to help bridge this gap.`);
+                } else {
+                    homeEquityBlock?.classList.add('hidden');
+                }
             }
         }
         
@@ -669,18 +689,18 @@ function updateChartsAndJourney() {
                 lifeBanner?.classList.remove('hidden');
                 lifeEdit?.classList.remove('hidden');
                 
-                setHTMLSafe('lifestyle-success-val', `£${Math.round(currentValues.living).toLocaleString()}`);
+                setTextSafe('lifestyle-success-val', `£${Math.round(currentValues.living).toLocaleString()}`);
                 
                 if(btnLifeEdit) {
                     if (lDbUsed > 0 || lPotsUsed > 0) btnLifeEdit.innerText = "Edit Assets ⌄";
                     else btnLifeEdit.innerText = "Add Assets to Boost Surplus ⌄";
                 }
 
-                if (lPotsUsed > 0) setHTMLSafe('lifestyle-success-desc', "Your savings successfully fund your chosen lifestyle.");
-                else setHTMLSafe('lifestyle-success-desc', "Your guaranteed income fully covers your chosen lifestyle.");
+                if (lPotsUsed > 0) setTextSafe('lifestyle-success-desc', "Your savings successfully fund your chosen lifestyle.");
+                else setTextSafe('lifestyle-success-desc', "Your guaranteed income fully covers your chosen lifestyle.");
 
                 surplusBlock?.classList.remove('hidden');
-                setHTMLSafe('surplus-amount', `£${Math.round(gSp + gDb + gPots).toLocaleString()}`); 
+                setTextSafe('surplus-amount', `£${Math.round(gSp + gDb + gPots).toLocaleString()}`); 
 
                 equityBlock?.classList.add('hidden');
                 shapeBlock?.classList.add('hidden');
@@ -720,6 +740,7 @@ function updateChartsAndJourney() {
     // EXECUTE WEALTH WALLET INJECTION & ASSET CARDS
     // -----------------------------------------------------
     const walletEl = document.getElementById('wealth-wallet');
+    const annuityCardWallet = document.getElementById('wallet-partner-annuity');
     
     if (walletTarget !== "") {
         let activeNetGap = (state.walletOpenPillar === 1) ? nCore : (state.walletOpenPillar === 2) ? nHome : nLife;
@@ -740,6 +761,8 @@ function updateChartsAndJourney() {
             setHTMLSafe('wallet-dynamic-desc', `Your guaranteed income falls short here. Input your assets below to cover the difference.`);
         }
         
+        let showPotsCard = state.revealedAssets.includes('pots') || (state.walletOpenPillar === 1 && cPotsUsed > 0) || (state.walletOpenPillar === 2 && hPotsUsed > 0);
+        
         if (state.revealedAssets.includes('pots')) {
             document.getElementById('pots-card')?.classList.remove('hidden');
             document.getElementById('btn-reveal-pots')?.classList.add('hidden');
@@ -758,19 +781,28 @@ function updateChartsAndJourney() {
             document.getElementById('btn-reveal-savings')?.classList.remove('hidden');
         }
 
+        if (activeNetGap > 0 && showPotsCard) {
+            if (walletTarget === 'core-wallet-slot' || walletTarget === 'home-wallet-slot') {
+                annuityCardWallet?.classList.remove('hidden');
+            } else {
+                annuityCardWallet?.classList.add('hidden');
+            }
+        } else {
+            annuityCardWallet?.classList.add('hidden');
+        }
+
         if (walletEl && walletEl.parentElement?.id !== walletTarget) {
             document.getElementById(walletTarget)?.appendChild(walletEl);
         }
         walletEl?.classList.remove('hidden');
     } else {
         walletEl?.classList.add('hidden');
+        annuityCardWallet?.classList.add('hidden');
     }
 
     // -----------------------------------------------------
     // CHART HORIZON TRAJECTORY (Real-Terms Inflation math)
     // -----------------------------------------------------
-    let runningPot = potsTotal;
-    let exhaustionAge = -1;
     let baseInf = 0.025; 
 
     for (let age = state.age; age <= endAge; age++) {
@@ -796,22 +828,6 @@ function updateChartsAndJourney() {
             if (pillar === 'living') lSum += projectedVal;
         }
 
-        const totalNetNeed = eSum + hSum + lSum;
-        const shortfallYearly = totalNetNeed - (projectedSp + state.dbPension);
-        
-        if (shortfallYearly > 0) {
-            let grossShortfall = shortfallYearly;
-            const pa = rldConfig?.tax?.personalAllowance ?? 12570;
-            const basicRate = rldConfig?.tax?.basicRate ?? 0.20;
-            
-            if (totalNetNeed > pa) grossShortfall = shortfallYearly / (1 - basicRate); 
-            
-            runningPot -= grossShortfall;
-            if (runningPot <= 0 && exhaustionAge === -1 && potsTotal > 0) {
-                exhaustionAge = age;
-            }
-        }
-
         dataE.push(eSum);
         dataH.push(hSum);
         dataL.push(lSum);
@@ -822,13 +838,6 @@ function updateChartsAndJourney() {
         charts.mainBar.data.datasets[0].data = dataE;
         charts.mainBar.data.datasets[1].data = dataH;
         charts.mainBar.data.datasets[2].data = dataL;
-        
-        if (exhaustionAge !== -1 && exhaustionAge <= 90) {
-            charts.mainBar.options.plugins.annotation.annotations.emptyLine.value = (exhaustionAge - state.age);
-            charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = true;
-        } else {
-            charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = false;
-        }
         charts.mainBar.update();
     }
 }
@@ -846,8 +855,7 @@ function createBarChart(ctxId, displayLegend) {
             plugins: { 
                 legend: { display: displayLegend, position: 'bottom', labels: { boxWidth: 12, font: { family: 'Space Grotesk'} } },
                 datalabels: { display: false },
-                tooltip: { backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 }, padding: 12, callbacks: { label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; } } },
-                annotation: { annotations: { emptyLine: { type: 'line', scaleID: 'x', value: 0, borderColor: palette.orange, borderWidth: 2, borderDash: [5, 5], display: false, label: { display: true, content: 'Pot Empty', position: 'start', backgroundColor: palette.orange, color: '#fff', font: { family: 'Space Grotesk', size: 11 } } } } }
+                tooltip: { backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 }, padding: 12, callbacks: { label: function(context) { return ` ${context.dataset.label}: £${Math.round(context.raw).toLocaleString()}`; } } }
             } 
         }
     });
