@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initApp() {
     setupCharts();
     setupListeners();
-    calculateAll(); 
+    calculateAll(); // Safe execution on boot to populate baseline immediately
 }
 
 window.toggleSection = function(bodyId, headerElement) {
@@ -78,6 +78,7 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
+    // Auto-advance logic if they are applying from the latest available step
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
@@ -89,17 +90,21 @@ window.advanceStep = function(targetStep) {
     
     if (targetStep === 2) {
         const homeSection = document.getElementById('pillar-home');
-        homeSection.classList.remove('locked-step');
-        document.getElementById('body-home').classList.remove('collapsed');
-        document.getElementById('step-action-1').classList.add('hidden'); 
-        homeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if(homeSection) {
+            homeSection.classList.remove('locked-step');
+            document.getElementById('body-home')?.classList.remove('collapsed');
+            document.getElementById('step-action-1')?.classList.add('hidden'); 
+            homeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
     else if (targetStep === 3) {
         const lifeSection = document.getElementById('pillar-living');
-        lifeSection.classList.remove('locked-step');
-        document.getElementById('body-living').classList.remove('collapsed');
-        document.getElementById('step-action-2').classList.add('hidden');
-        lifeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if(lifeSection) {
+            lifeSection.classList.remove('locked-step');
+            document.getElementById('body-living')?.classList.remove('collapsed');
+            document.getElementById('step-action-2')?.classList.add('hidden');
+            lifeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
     
     calculateAll();
@@ -114,6 +119,12 @@ function triggerPulse(elementId) {
     }
 }
 
+// Helper to safely write HTML without crashing if element is missing
+function setHTMLSafe(id, htmlString) {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = htmlString;
+}
+
 function updatePostcodeReadout() {
     const pcInput = document.getElementById('meas-postcode').value.trim();
     const hint = document.getElementById('postcode-hint');
@@ -122,8 +133,8 @@ function updatePostcodeReadout() {
     const alphaMatch = pcInput.match(/^[A-Z]+/i);
     
     if (alphaMatch && locationBenchmarks) {
-        document.getElementById('main-journey-flow').classList.add('revealed-flow');
-        document.getElementById('main-journey-flow').classList.remove('hidden-flow');
+        document.getElementById('main-journey-flow')?.classList.add('revealed-flow');
+        document.getElementById('main-journey-flow')?.classList.remove('hidden-flow');
 
         const areaCode = alphaMatch[0].toUpperCase();
         const districtData = locationBenchmarks.districts[areaCode];
@@ -138,7 +149,7 @@ function updatePostcodeReadout() {
             else if (pct < 0) relText = `is <strong>${Math.abs(pct)}% below</strong>`;
             else relText = `<strong>matches</strong>`;
 
-            hint.innerHTML = `Est. local income (${districtData.region}) ${relText} the national average.`;
+            if(hint) hint.innerHTML = `Est. local income (${districtData.region}) ${relText} the national average.`;
             
             state.essentials = districtData.slider_positions.core;
             state.home = districtData.slider_positions.home;
@@ -153,7 +164,7 @@ function updatePostcodeReadout() {
 
             state.tenure = impliedTenure;
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
-            document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`).classList.add('active');
+            document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`)?.classList.add('active');
 
             let bRent = rldConfig?.benchmarks?.home?.shelter?.rent || {staples: 12000, signature: 22000, designer: 35000};
             let impliedRentAnnual = (state.home <= 50) ? (bRent.staples + ((bRent.signature - bRent.staples) * (state.home / 50))) : (bRent.signature + ((bRent.designer - bRent.signature) * ((state.home - 50) / 50)));
@@ -174,17 +185,17 @@ function updatePostcodeReadout() {
                 const avgPropPrice = localAvg * 8.5; 
                 propText = ` The average property price in this area is estimated at <strong>£${Math.round(avgPropPrice).toLocaleString()}</strong>.`;
             }
-            document.getElementById('p2-tenure-display').innerHTML = `As you live in the <strong>${districtData.region}</strong> area and based on your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>.${propText} We've styled your Home baseline using this data.`;
+            setHTMLSafe('p2-tenure-display', `As you live in the <strong>${districtData.region}</strong> area and based on your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>.${propText} We've styled your Home baseline using this data.`);
             
             handleTenureUI(false); 
             calculateAll(); 
 
         } else {
-            hint.innerHTML = `Area not mapped. We will use the National Average.`;
+            if(hint) hint.innerHTML = `Area not mapped. We will use the National Average.`;
             calculateAll();
         }
     } else {
-        hint.innerHTML = '';
+        if(hint) hint.innerHTML = '';
     }
 }
 
@@ -219,7 +230,7 @@ function setupListeners() {
 
     ['essentials', 'home', 'living'].forEach(pillar => {
         const slider = document.getElementById(`slider-${pillar}`);
-        slider.addEventListener('input', (e) => {
+        slider?.addEventListener('input', (e) => {
             let val = parseInt(e.target.value);
             if (val > -1 && val < 5) val = 0;
             if (val > 46 && val < 54) val = 50;
@@ -234,59 +245,8 @@ function setupListeners() {
         });
     });
 
-    document.getElementById('toggle-travel').addEventListener('change', calculateAll);
-    document.getElementById('toggle-care').addEventListener('change', calculateAll);
-
-    const tooltip = document.getElementById('smart-tooltip');
-    let tooltipTimeout;
-    const hideTooltip = () => tooltip.classList.remove('show');
-
-    document.querySelectorAll('.pers-input').forEach(input => {
-        input.addEventListener('input', (e) => window.extrapolate(e.target.dataset.pillar));
-        const showInputTooltip = (e) => {
-            clearTimeout(tooltipTimeout);
-            if(e.target.disabled || e.target.closest('.hidden')) return;
-
-            const cat = e.target.dataset.cat;
-            const pillar = e.target.dataset.pillar;
-            const freq = parseInt(e.target.dataset.freq) || parseInt(document.getElementById(`freq-${pillar}`).value);
-            
-            let b = pillar === 'home' && cat === 'shelter' 
-                ? rldConfig.benchmarks.home.shelter[state.tenure] 
-                : rldConfig.benchmarks[pillar][cat];
-
-            const name = rldConfig.benchmarks[pillar][cat].name;
-            const st = Math.round(b.staples / freq); 
-            const si = Math.round(b.signature / freq);
-            const de = Math.round(b.designer / freq);
-
-            tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
-            const rect = e.target.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
-            tooltip.classList.add('show');
-        };
-        input.addEventListener('mouseenter', showInputTooltip);
-        input.addEventListener('focus', showInputTooltip);
-        input.addEventListener('mouseleave', hideTooltip);
-        input.addEventListener('blur', hideTooltip);
-    });
-
-    document.querySelectorAll('.tt-trigger').forEach(label => {
-        const showLabelTooltip = (e) => {
-            clearTimeout(tooltipTimeout);
-            const desc = e.currentTarget.dataset.desc;
-            tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
-            const rect = e.currentTarget.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
-            tooltip.classList.add('show');
-        };
-        label.addEventListener('mouseenter', showLabelTooltip);
-        label.addEventListener('touchstart', showLabelTooltip, {passive: true});
-        label.addEventListener('mouseleave', hideTooltip);
-        label.addEventListener('touchend', () => tooltipTimeout = setTimeout(hideTooltip, 2500));
-    });
+    document.getElementById('toggle-travel')?.addEventListener('change', calculateAll);
+    document.getElementById('toggle-care')?.addEventListener('change', calculateAll);
 }
 
 function handleTenureUI(updateText = true) {
@@ -296,10 +256,10 @@ function handleTenureUI(updateText = true) {
     const displayReadout = document.getElementById('p2-tenure-display');
     const shelterInput = document.getElementById('input-shelter');
 
-    ownerInputs.classList.add('hidden');
-    mortgageInputs.classList.add('hidden');
-    rentInputs.classList.add('hidden');
-    shelterInput.disabled = true;
+    ownerInputs?.classList.add('hidden');
+    mortgageInputs?.classList.add('hidden');
+    rentInputs?.classList.add('hidden');
+    if(shelterInput) shelterInput.disabled = true;
 
     let bRent = rldConfig?.benchmarks?.home?.shelter?.rent || {staples: 12000, signature: 22000, designer: 35000};
     let impliedRentAnnual = (state.home <= 50) ? (bRent.staples + ((bRent.signature - bRent.staples) * (state.home / 50))) : (bRent.signature + ((bRent.designer - bRent.signature) * ((state.home - 50) / 50)));
@@ -308,26 +268,26 @@ function handleTenureUI(updateText = true) {
     let impliedMortAnnual = (state.home <= 50) ? (bMort.staples + ((bMort.signature - bMort.staples) * (state.home / 50))) : (bMort.signature + ((bMort.designer - bMort.signature) * ((state.home - 50) / 50)));
 
     if (state.tenure === 'owner') {
-        ownerInputs.classList.remove('hidden');
-        if(updateText) displayReadout.innerHTML = `You own your home outright. We've styled your Home baseline using the details provided above.`;
-        shelterInput.value = '';
+        ownerInputs?.classList.remove('hidden');
+        if(updateText && displayReadout) displayReadout.innerHTML = `You own your home outright. We've styled your Home baseline using the details provided above.`;
+        if(shelterInput) shelterInput.value = '';
     } else if (state.tenure === 'mortgage') {
-        mortgageInputs.classList.remove('hidden');
-        if(updateText) displayReadout.innerHTML = `You have a mortgage. We've populated a default monthly payment based on your slider, but you can adjust it below.`;
+        mortgageInputs?.classList.remove('hidden');
+        if(updateText && displayReadout) displayReadout.innerHTML = `You have a mortgage. We've populated a default monthly payment based on your slider, but you can adjust it below.`;
         if(!state.mortgagePmt) state.mortgagePmt = Math.round(impliedMortAnnual / 12);
         document.getElementById('meas-mortgage-pmt').value = state.mortgagePmt;
-        shelterInput.value = state.mortgagePmt;
+        if(shelterInput) shelterInput.value = state.mortgagePmt;
     } else {
-        rentInputs.classList.remove('hidden');
-        if(updateText) displayReadout.innerHTML = `You are renting. We've populated a default monthly rent based on your slider, but you can adjust it below.`;
+        rentInputs?.classList.remove('hidden');
+        if(updateText && displayReadout) displayReadout.innerHTML = `You are renting. We've populated a default monthly rent based on your slider, but you can adjust it below.`;
         if(!state.rentPmt) state.rentPmt = Math.round(impliedRentAnnual / 12);
         document.getElementById('meas-rent-pmt').value = state.rentPmt;
-        shelterInput.value = state.rentPmt;
+        if(shelterInput) shelterInput.value = state.rentPmt;
     }
 }
 
 window.extrapolate = function(pillar) {
-    const defaultFreq = parseInt(document.getElementById(`freq-${pillar}`).value);
+    const defaultFreq = parseInt(document.getElementById(`freq-${pillar}`)?.value || 12);
     const inputs = document.querySelectorAll(`.pers-input[data-pillar="${pillar}"]`);
     
     let totalSliderScore = 0;
@@ -406,35 +366,37 @@ function calculateAll() {
     currentValues.tax = tax;
 
     ['essentials', 'home', 'living'].forEach(p => {
-        document.getElementById(`val-${p}`).innerText = `£${Math.round(currentValues[p]).toLocaleString()}`;
+        const el = document.getElementById(`val-${p}`);
+        if(el) el.innerText = `£${Math.round(currentValues[p]).toLocaleString()}`;
     });
     
-    document.getElementById('display-salary').innerText = `£${Math.round(gross).toLocaleString()}`;
-    triggerPulse('display-salary');
-    document.getElementById('display-net').innerText = `£${Math.round(currentValues.net).toLocaleString()}`;
-    document.getElementById('display-tax').innerText = `+£${Math.round(tax).toLocaleString()}`;
+    const dSal = document.getElementById('display-salary');
+    if(dSal) { dSal.innerText = `£${Math.round(gross).toLocaleString()}`; triggerPulse('display-salary'); }
+    
+    const dNet = document.getElementById('display-net');
+    if(dNet) dNet.innerText = `£${Math.round(currentValues.net).toLocaleString()}`;
+    
+    const dTax = document.getElementById('display-tax');
+    if(dTax) dTax.innerText = `+£${Math.round(tax).toLocaleString()}`;
 
     updateChartsAndJourney();
 }
 
 function updateChartsAndJourney() {
-    charts.polar.data.datasets[0].data = [state.essentials, state.home, state.living];
-    charts.polar.update();
+    if(charts.polar) {
+        charts.polar.data.datasets[0].data = [state.essentials, state.home, state.living];
+        charts.polar.update();
+    }
 
     const endAge = 95;
     const labels = [];
     const dataE = []; const dataH = []; const dataL = [];
     
-    const doTravelTaper = document.getElementById('toggle-travel').checked;
-    const doCareSpike = document.getElementById('toggle-care').checked;
+    const doTravelTaper = document.getElementById('toggle-travel')?.checked || false;
+    const doCareSpike = document.getElementById('toggle-care')?.checked || false;
 
-    const spAge = 67; 
-    const spBase = rldConfig?.assumptions?.statePension ?? 11973; 
-    const projectedSp = spBase; 
+    const projectedSp = rldConfig?.assumptions?.statePension ?? 11973; 
     const drawdownRate = rldConfig?.assumptions?.drawdownRate ?? 0.05; 
-
-    document.getElementById('sp-amount-val').innerText = `£${Math.round(projectedSp).toLocaleString()}`;
-    document.getElementById('sp-age-val').innerText = spAge;
 
     // -----------------------------------------------------
     // CALCULATE NET GAPS PROGRESSIVELY
@@ -444,44 +406,36 @@ function updateChartsAndJourney() {
     let potsTotal = (state.pensionPot || 0) + (state.otherSavings || 0);
     let gPots = potsTotal * drawdownRate;
 
-    // -- CORE CALC --
     let reqCore = currentValues.essentials;
     let cSpUsed = Math.min(reqCore, gSp); gSp -= cSpUsed; reqCore -= cSpUsed;
-    let grossCoreGap = reqCore; // Math before manual assets
-    
     let cDbUsed = Math.min(reqCore, gDb); gDb -= cDbUsed; reqCore -= cDbUsed;
     let cPotsUsed = Math.min(reqCore, gPots); gPots -= cPotsUsed; reqCore -= cPotsUsed;
     let nCore = reqCore; 
 
-    // -- HOME CALC --
     let reqHome = (state.unlockedStep >= 2) ? currentValues.home : 0;
     let hSpUsed = Math.min(reqHome, gSp); gSp -= hSpUsed; reqHome -= hSpUsed;
-    let grossHomeGap = reqHome; // Math before manual assets
-    
     let hDbUsed = Math.min(reqHome, gDb); gDb -= hDbUsed; reqHome -= hDbUsed;
     let hPotsUsed = Math.min(reqHome, gPots); gPots -= hPotsUsed; reqHome -= hPotsUsed;
     let nHome = reqHome;
 
-    // -- LIFESTYLE CALC --
     let preLifeRem = gSp + gDb + gPots; 
     let reqLife = (state.unlockedStep >= 3) ? currentValues.living : 0;
     let lSpUsed = Math.min(reqLife, gSp); gSp -= lSpUsed; reqLife -= lSpUsed;
-    let grossLifeGap = reqLife;
-    
     let lDbUsed = Math.min(reqLife, gDb); gDb -= lDbUsed; reqLife -= lDbUsed;
     let lPotsUsed = Math.min(reqLife, gPots); gPots -= lPotsUsed; reqLife -= lPotsUsed;
     let nLife = reqLife;
 
     // -----------------------------------------------------
-    // SMART WALLET AUTO-CLOSE LOGIC (Crucial Fix)
+    // SMART WALLET AUTO-CLOSE LOGIC
     // -----------------------------------------------------
     // If the State Pension naturally covers the pillar completely, the wallet shouldn't exist here.
+    let grossCoreGap = Math.max(0, currentValues.essentials - projectedSp);
+    let remSpForHome = Math.max(0, projectedSp - currentValues.essentials);
+    let grossHomeGap = Math.max(0, currentValues.home - remSpForHome);
+
     if (state.walletOpenPillar === 1 && grossCoreGap <= 0) state.walletOpenPillar = null;
     if (state.walletOpenPillar === 2 && grossHomeGap <= 0) state.walletOpenPillar = null;
 
-    // -----------------------------------------------------
-    // SMART WALLET AUTO-OPEN LOGIC
-    // -----------------------------------------------------
     if (state.walletOpenPillar === null) {
         if (nCore > 0) state.walletOpenPillar = 1;
         else if (nHome > 0 && state.unlockedStep >= 2) state.walletOpenPillar = 2;
@@ -502,48 +456,44 @@ function updateChartsAndJourney() {
     const coreAnnuity = document.getElementById('core-partner-annuity');
 
     if (state.walletOpenPillar === 1) {
-        coreBanner.classList.add('hidden');
-        coreEdit.classList.add('hidden');
-        coreAnnuity.classList.add('hidden');
-        corePrompt.classList.remove('hidden');
+        coreBanner?.classList.add('hidden');
+        coreEdit?.classList.add('hidden');
+        coreAnnuity?.classList.add('hidden');
+        corePrompt?.classList.remove('hidden');
         
-        if (nCore <= 0) {
-            document.getElementById('tips-p1-text').innerHTML = `You have successfully bridged the gap. Click <strong>Apply & Continue ⌃</strong> below to proceed.`;
-        } else {
-            let initialGap = Math.max(0, currentValues.essentials - projectedSp);
-            document.getElementById('tips-p1-text').innerHTML = `Your guaranteed income falls short of your Core needs by <strong>£${Math.round(initialGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`;
-        }
+        let initialGap = Math.max(0, currentValues.essentials - projectedSp);
+        setHTMLSafe('tips-p1-text', `Your guaranteed income falls short of your Core needs by <strong>£${Math.round(initialGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`);
     } else {
         if (nCore <= 0 && currentValues.essentials > 0) {
-            corePrompt.classList.add('hidden');
-            coreBanner.classList.remove('hidden');
+            corePrompt?.classList.add('hidden');
+            coreBanner?.classList.remove('hidden');
             
-            if (cDbUsed > 0 || cPotsUsed > 0) coreEdit.classList.remove('hidden');
-            else coreEdit.classList.add('hidden');
+            if (cDbUsed > 0 || cPotsUsed > 0) coreEdit?.classList.remove('hidden');
+            else coreEdit?.classList.add('hidden');
 
-            document.getElementById('core-success-val').innerText = `£${Math.round(currentValues.essentials).toLocaleString()}`;
+            setHTMLSafe('core-success-val', `£${Math.round(currentValues.essentials).toLocaleString()}`);
             
             if (cPotsUsed > 0) {
-                document.getElementById('core-success-desc').innerText = "Your State Pension, DB Pension, and Savings securely cover your Core needs.";
-                coreAnnuity.classList.remove('hidden');
+                setHTMLSafe('core-success-desc', "Your State Pension, DB Pension, and Savings securely cover your Core needs.");
+                coreAnnuity?.classList.remove('hidden');
             } else if (cDbUsed > 0) {
-                document.getElementById('core-success-desc').innerText = "Your State Pension and DB Pension fully cover your Core needs.";
-                coreAnnuity.classList.add('hidden');
+                setHTMLSafe('core-success-desc', "Your State Pension and DB Pension fully cover your Core needs.");
+                coreAnnuity?.classList.add('hidden');
             } else {
-                document.getElementById('core-success-desc').innerText = "Your State Pension fully covers your Core needs.";
-                coreAnnuity.classList.add('hidden');
+                setHTMLSafe('core-success-desc', "Your State Pension fully covers your Core needs.");
+                coreAnnuity?.classList.add('hidden');
             }
         } else {
-            corePrompt.classList.remove('hidden');
-            coreBanner.classList.add('hidden');
-            coreEdit.classList.remove('hidden');
-            coreAnnuity.classList.add('hidden');
-            document.getElementById('tips-p1-text').innerHTML = `You have an unbridged Core shortfall of <strong>£${Math.round(nCore).toLocaleString()}</strong>.`;
+            corePrompt?.classList.remove('hidden');
+            coreBanner?.classList.add('hidden');
+            coreEdit?.classList.remove('hidden');
+            coreAnnuity?.classList.add('hidden');
+            setHTMLSafe('tips-p1-text', `You have an unbridged Core shortfall of <strong>£${Math.round(nCore).toLocaleString()}</strong>.`);
         }
     }
     
-    if (state.unlockedStep === 1 && state.walletOpenPillar !== 1) document.getElementById('step-action-1').classList.remove('hidden');
-    else document.getElementById('step-action-1').classList.add('hidden');
+    if (state.unlockedStep === 1 && state.walletOpenPillar !== 1) document.getElementById('step-action-1')?.classList.remove('hidden');
+    else document.getElementById('step-action-1')?.classList.add('hidden');
 
     // -----------------------------------------------------
     // 2. HOME RENDER
@@ -555,48 +505,44 @@ function updateChartsAndJourney() {
         const homePortfolio = document.getElementById('home-partner-portfolio');
 
         if (state.walletOpenPillar === 2) {
-            homeBanner.classList.add('hidden');
-            homeEdit.classList.add('hidden');
-            homePortfolio.classList.add('hidden');
-            homePrompt.classList.remove('hidden');
+            homeBanner?.classList.add('hidden');
+            homeEdit?.classList.add('hidden');
+            homePortfolio?.classList.add('hidden');
+            homePrompt?.classList.remove('hidden');
             
-            if (nHome <= 0) {
-                document.getElementById('tips-p2-text').innerHTML = `You have successfully bridged the gap. Click <strong>Apply & Continue ⌃</strong> below to proceed.`;
-            } else {
-                let initialHomeGap = Math.max(0, currentValues.home - Math.max(0, projectedSp - currentValues.essentials));
-                document.getElementById('tips-p2-text').innerHTML = `Your remaining income leaves a Home gap of <strong>£${Math.round(initialHomeGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`;
-            }
+            let initialHomeGap = Math.max(0, currentValues.home - Math.max(0, projectedSp - currentValues.essentials));
+            setHTMLSafe('tips-p2-text', `Your remaining income leaves a Home gap of <strong>£${Math.round(initialHomeGap).toLocaleString()}</strong>. Use the wallet below to allocate assets.`);
         } else {
             if (nHome <= 0 && currentValues.home > 0) { 
-                homePrompt.classList.add('hidden');
-                homeBanner.classList.remove('hidden');
+                homePrompt?.classList.add('hidden');
+                homeBanner?.classList.remove('hidden');
 
-                if (hDbUsed > 0 || hPotsUsed > 0) homeEdit.classList.remove('hidden');
-                else homeEdit.classList.add('hidden');
+                if (hDbUsed > 0 || hPotsUsed > 0) homeEdit?.classList.remove('hidden');
+                else homeEdit?.classList.add('hidden');
 
-                document.getElementById('home-success-val').innerText = `£${Math.round(currentValues.home).toLocaleString()}`;
+                setHTMLSafe('home-success-val', `£${Math.round(currentValues.home).toLocaleString()}`);
                 
                 if (hPotsUsed > 0) {
-                    document.getElementById('home-success-desc').innerText = "Your savings drawdown bridges your Home costs.";
-                    homePortfolio.classList.remove('hidden');
+                    setHTMLSafe('home-success-desc', "Your savings drawdown bridges your Home costs.");
+                    homePortfolio?.classList.remove('hidden');
                 } else if (hDbUsed > 0) {
-                    document.getElementById('home-success-desc').innerText = "Your DB Pension bridges your Home costs.";
-                    homePortfolio.classList.add('hidden');
+                    setHTMLSafe('home-success-desc', "Your DB Pension bridges your Home costs.");
+                    homePortfolio?.classList.add('hidden');
                 } else {
-                    document.getElementById('home-success-desc').innerText = "Your regular income seamlessly covers your Home costs.";
-                    homePortfolio.classList.add('hidden');
+                    setHTMLSafe('home-success-desc', "Your regular income seamlessly covers your Home costs.");
+                    homePortfolio?.classList.add('hidden');
                 }
             } else {
-                homePrompt.classList.remove('hidden');
-                homeBanner.classList.add('hidden');
-                homeEdit.classList.remove('hidden');
-                homePortfolio.classList.add('hidden');
-                document.getElementById('tips-p2-text').innerHTML = `You have an unbridged Home shortfall of <strong>£${Math.round(nHome).toLocaleString()}</strong>.`;
+                homePrompt?.classList.remove('hidden');
+                homeBanner?.classList.add('hidden');
+                homeEdit?.classList.remove('hidden');
+                homePortfolio?.classList.add('hidden');
+                setHTMLSafe('tips-p2-text', `You have an unbridged Home shortfall of <strong>£${Math.round(nHome).toLocaleString()}</strong>.`);
             }
         }
         
-        if (state.unlockedStep === 2 && state.walletOpenPillar !== 2) document.getElementById('step-action-2').classList.remove('hidden');
-        else document.getElementById('step-action-2').classList.add('hidden');
+        if (state.unlockedStep === 2 && state.walletOpenPillar !== 2) document.getElementById('step-action-2')?.classList.remove('hidden');
+        else document.getElementById('step-action-2')?.classList.add('hidden');
     }
 
     // -----------------------------------------------------
@@ -612,42 +558,40 @@ function updateChartsAndJourney() {
         const btnLifeEdit = document.getElementById('btn-life-edit');
 
         if (state.walletOpenPillar === 3) {
-            lifeBanner.classList.add('hidden');
-            lifeEdit.classList.add('hidden');
-            lifePrompt.classList.remove('hidden');
-            document.getElementById('surplus-block').classList.add('hidden');
-            document.getElementById('tips-p3-intro').innerHTML = `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`;
+            lifeBanner?.classList.add('hidden');
+            lifeEdit?.classList.add('hidden');
+            lifePrompt?.classList.remove('hidden');
+            document.getElementById('surplus-block')?.classList.add('hidden');
             
-            if (nLife <= 0) {
-                document.getElementById('tips-p3-text').innerHTML = `You have successfully funded your Lifestyle. Click <strong>Apply & Continue ⌃</strong> below.`;
-            } else {
-                document.getElementById('tips-p3-text').innerHTML = `Your preferred Lifestyle exceeds your resources by <strong>£${Math.round(nLife).toLocaleString()}</strong>. Use the wallet or reshape your timeline above.`;
-            }
+            setHTMLSafe('tips-p3-intro', `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`);
+            setHTMLSafe('tips-p3-text', `Your preferred Lifestyle exceeds your resources by <strong>£${Math.round(nLife).toLocaleString()}</strong>. Use the wallet or reshape your timeline above.`);
         } else {
-            document.getElementById('tips-p3-intro').innerHTML = `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`;
+            setHTMLSafe('tips-p3-intro', `You have a remaining projected income of <strong>£${Math.round(preLifeRem).toLocaleString()}</strong> per year to design your lifestyle.`);
             
             if (nLife <= 0 && currentValues.living > 0) {
-                lifePrompt.classList.add('hidden');
-                lifeBanner.classList.remove('hidden');
-                lifeEdit.classList.remove('hidden');
-                document.getElementById('lifestyle-success-val').innerText = `£${Math.round(currentValues.living).toLocaleString()}`;
+                lifePrompt?.classList.add('hidden');
+                lifeBanner?.classList.remove('hidden');
+                lifeEdit?.classList.remove('hidden');
                 
-                if (lDbUsed > 0 || lPotsUsed > 0) btnLifeEdit.innerText = "Edit Assets ⌄";
-                else btnLifeEdit.innerText = "Add Assets to Boost Surplus ⌄";
+                setHTMLSafe('lifestyle-success-val', `£${Math.round(currentValues.living).toLocaleString()}`);
+                
+                if(btnLifeEdit) {
+                    if (lDbUsed > 0 || lPotsUsed > 0) btnLifeEdit.innerText = "Edit Assets ⌄";
+                    else btnLifeEdit.innerText = "Add Assets to Boost Surplus ⌄";
+                }
 
-                if (lPotsUsed > 0) document.getElementById('lifestyle-success-desc').innerText = "Your savings successfully fund your chosen lifestyle.";
-                else document.getElementById('lifestyle-success-desc').innerText = "Your guaranteed income fully covers your chosen lifestyle.";
+                if (lPotsUsed > 0) setHTMLSafe('lifestyle-success-desc', "Your savings successfully fund your chosen lifestyle.");
+                else setHTMLSafe('lifestyle-success-desc', "Your guaranteed income fully covers your chosen lifestyle.");
 
-                let currentRem = gSp + gDb + gPots; 
-                document.getElementById('surplus-block').classList.remove('hidden');
-                document.getElementById('surplus-amount').innerText = `£${Math.round(currentRem).toLocaleString()}`;
+                document.getElementById('surplus-block')?.classList.remove('hidden');
+                setHTMLSafe('surplus-amount', `£${Math.round(gSp + gDb + gPots).toLocaleString()}`); 
             } else {
-                lifePrompt.classList.remove('hidden');
-                lifeBanner.classList.add('hidden');
-                lifeEdit.classList.remove('hidden');
-                btnLifeEdit.innerText = "Edit Assets ⌄";
-                document.getElementById('surplus-block').classList.add('hidden');
-                document.getElementById('tips-p3-text').innerHTML = `You have an unbridged Lifestyle shortfall of <strong>£${Math.round(nLife).toLocaleString()}</strong>.`;
+                lifePrompt?.classList.remove('hidden');
+                lifeBanner?.classList.add('hidden');
+                lifeEdit?.classList.remove('hidden');
+                if(btnLifeEdit) btnLifeEdit.innerText = "Edit Assets ⌄";
+                document.getElementById('surplus-block')?.classList.add('hidden');
+                setHTMLSafe('tips-p3-text', `You have an unbridged Lifestyle shortfall of <strong>£${Math.round(nLife).toLocaleString()}</strong>.`);
             }
         }
 
@@ -667,46 +611,45 @@ function updateChartsAndJourney() {
         let activeNetGap = (state.walletOpenPillar === 1) ? nCore : (state.walletOpenPillar === 2) ? nHome : nLife;
         let usedAssets = (state.walletOpenPillar === 1) ? (cDbUsed + cPotsUsed) : (state.walletOpenPillar === 2) ? (hDbUsed + hPotsUsed) : (lDbUsed + lPotsUsed);
         
+        const titleEl = document.getElementById('wallet-dynamic-title');
+        
         if (activeNetGap <= 0) {
             if (usedAssets === 0 && state.walletOpenPillar === 3) {
-                document.getElementById('wallet-dynamic-title').innerHTML = `Boost Your Surplus <span style="color:var(--accent-sage)">↑</span>`;
-                document.getElementById('wallet-dynamic-title').style.color = "var(--text-espresso)";
-                document.getElementById('wallet-dynamic-desc').innerText = `Your needs are covered. Add your assets below to see your total retirement surplus.`;
+                if(titleEl) { titleEl.innerHTML = `Boost Your Surplus <span style="color:var(--accent-sage)">↑</span>`; titleEl.style.color = "var(--text-espresso)"; }
+                setHTMLSafe('wallet-dynamic-desc', `Your needs are covered. Add your assets below to see your total retirement surplus.`);
             } else {
-                document.getElementById('wallet-dynamic-title').innerHTML = `Gap Bridged <span style="color:var(--accent-sage)">✓</span>`;
-                document.getElementById('wallet-dynamic-title').style.color = "var(--text-espresso)";
-                document.getElementById('wallet-dynamic-desc').innerText = `Your assets successfully cover this need. Click 'Apply' to continue.`;
+                if(titleEl) { titleEl.innerHTML = `Gap Bridged <span style="color:var(--accent-sage)">✓</span>`; titleEl.style.color = "var(--text-espresso)"; }
+                setHTMLSafe('wallet-dynamic-desc', `Your assets successfully cover this need. Click 'Apply' to continue.`);
             }
         } else {
-            document.getElementById('wallet-dynamic-title').innerText = `Bridge the Gap: £${Math.round(activeNetGap).toLocaleString()}`;
-            document.getElementById('wallet-dynamic-title').style.color = "var(--accent-orange)";
-            document.getElementById('wallet-dynamic-desc').innerText = `Your guaranteed income falls short here. Input your assets below to cover the difference.`;
+            if(titleEl) { titleEl.innerText = `Bridge the Gap: £${Math.round(activeNetGap).toLocaleString()}`; titleEl.style.color = "var(--accent-orange)"; }
+            setHTMLSafe('wallet-dynamic-desc', `Your guaranteed income falls short here. Input your assets below to cover the difference.`);
         }
         
         if (state.revealedAssets.includes('pots')) {
-            document.getElementById('pots-card').classList.remove('hidden');
-            document.getElementById('btn-reveal-pots').classList.add('hidden');
-            document.getElementById('withdrawal-hint').classList.remove('hidden');
+            document.getElementById('pots-card')?.classList.remove('hidden');
+            document.getElementById('btn-reveal-pots')?.classList.add('hidden');
+            document.getElementById('withdrawal-hint')?.classList.remove('hidden');
         } else {
-            document.getElementById('pots-card').classList.add('hidden');
-            document.getElementById('btn-reveal-pots').classList.remove('hidden');
-            document.getElementById('withdrawal-hint').classList.add('hidden');
+            document.getElementById('pots-card')?.classList.add('hidden');
+            document.getElementById('btn-reveal-pots')?.classList.remove('hidden');
+            document.getElementById('withdrawal-hint')?.classList.add('hidden');
         }
 
         if (state.revealedAssets.includes('savings')) {
-            document.getElementById('savings-card').classList.remove('hidden');
-            document.getElementById('btn-reveal-savings').classList.add('hidden');
+            document.getElementById('savings-card')?.classList.remove('hidden');
+            document.getElementById('btn-reveal-savings')?.classList.add('hidden');
         } else {
-            document.getElementById('savings-card').classList.add('hidden');
-            document.getElementById('btn-reveal-savings').classList.remove('hidden');
+            document.getElementById('savings-card')?.classList.add('hidden');
+            document.getElementById('btn-reveal-savings')?.classList.remove('hidden');
         }
 
-        if (walletEl.parentElement?.id !== walletTarget) {
-            document.getElementById(walletTarget).appendChild(walletEl);
+        if (walletEl && walletEl.parentElement?.id !== walletTarget) {
+            document.getElementById(walletTarget)?.appendChild(walletEl);
         }
-        walletEl.classList.remove('hidden');
+        walletEl?.classList.remove('hidden');
     } else {
-        walletEl.classList.add('hidden');
+        walletEl?.classList.add('hidden');
     }
 
     // -----------------------------------------------------
@@ -758,28 +701,33 @@ function updateChartsAndJourney() {
     }
 
     if (exhaustionAge !== -1 && exhaustionAge <= 90 && state.unlockedStep >= 3) {
-        document.getElementById('tips-p3-text').innerHTML += `<br><br><strong style="color:var(--accent-orange);">End of Credits Warning:</strong> Based on this shape, your wealth pots will fully deplete by <strong>Age ${exhaustionAge}</strong>.`;
+        let p3TextEl = document.getElementById('tips-p3-text');
+        if(p3TextEl) p3TextEl.innerHTML += `<br><br><strong style="color:var(--accent-orange);">End of Credits Warning:</strong> Based on this shape, your wealth pots will fully deplete by <strong>Age ${exhaustionAge}</strong>.`;
         if(state.tenure === 'owner' || state.tenure === 'mortgage') equityCard?.classList.add('pulse-alert');
     } else {
         equityCard?.classList.remove('pulse-alert');
     }
 
-    charts.mainBar.data.labels = labels;
-    charts.mainBar.data.datasets[0].data = dataE;
-    charts.mainBar.data.datasets[1].data = dataH;
-    charts.mainBar.data.datasets[2].data = dataL;
-    
-    if (exhaustionAge !== -1 && exhaustionAge <= 90) {
-        charts.mainBar.options.plugins.annotation.annotations.emptyLine.value = (exhaustionAge - state.age);
-        charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = true;
-    } else {
-        charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = false;
+    if(charts.mainBar) {
+        charts.mainBar.data.labels = labels;
+        charts.mainBar.data.datasets[0].data = dataE;
+        charts.mainBar.data.datasets[1].data = dataH;
+        charts.mainBar.data.datasets[2].data = dataL;
+        
+        if (exhaustionAge !== -1 && exhaustionAge <= 90) {
+            charts.mainBar.options.plugins.annotation.annotations.emptyLine.value = (exhaustionAge - state.age);
+            charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = true;
+        } else {
+            charts.mainBar.options.plugins.annotation.annotations.emptyLine.display = false;
+        }
+        charts.mainBar.update();
     }
-    charts.mainBar.update();
 }
 
 function createBarChart(ctxId, displayLegend) {
-    const ctx = document.getElementById(ctxId).getContext('2d');
+    const el = document.getElementById(ctxId);
+    if(!el) return null;
+    const ctx = el.getContext('2d');
     return new Chart(ctx, {
         type: 'bar',
         data: { labels: [], datasets: [{ label: 'Core', backgroundColor: palette.sage, data: [] }, { label: 'Home', backgroundColor: palette.dusk, data: [] }, { label: 'Lifestyle', backgroundColor: palette.orange, data: [] }] },
@@ -797,15 +745,18 @@ function createBarChart(ctxId, displayLegend) {
 }
 
 function setupCharts() {
-    const ctxPolar = document.getElementById('polarChart').getContext('2d');
-    charts.polar = new Chart(ctxPolar, {
-        type: 'polarArea',
-        data: { labels: ['Core', 'Home', 'Lifestyle'], datasets: [{ data: [50, 50, 50], backgroundColor: [palette.sage, palette.dusk, palette.orange], borderColor: [palette.sage, palette.dusk, palette.orange], borderWidth: 1 }] },
-        options: { 
-            responsive: true, maintainAspectRatio: false, layout: { padding: 0 },
-            scales: { r: { min: -20, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
-            plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { color: '#F9F8F6', font: { family: 'Space Grotesk', weight: '600', size: 10 }, textAlign: 'center', formatter: function(value, context) { return context.chart.data.labels[context.dataIndex]; } } } 
-        }
-    });
+    const polarEl = document.getElementById('polarChart');
+    if(polarEl) {
+        const ctxPolar = polarEl.getContext('2d');
+        charts.polar = new Chart(ctxPolar, {
+            type: 'polarArea',
+            data: { labels: ['Core', 'Home', 'Lifestyle'], datasets: [{ data: [50, 50, 50], backgroundColor: [palette.sage, palette.dusk, palette.orange], borderColor: [palette.sage, palette.dusk, palette.orange], borderWidth: 1 }] },
+            options: { 
+                responsive: true, maintainAspectRatio: false, layout: { padding: 0 },
+                scales: { r: { min: -20, max: 100, ticks: { display: false }, grid: { color: 'rgba(255,255,255,0.1)' } } },
+                plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { color: '#F9F8F6', font: { family: 'Space Grotesk', weight: '600', size: 10 }, textAlign: 'center', formatter: function(value, context) { return context.chart.data.labels[context.dataIndex]; } } } 
+            }
+        });
+    }
     charts.mainBar = createBarChart('mainStackedChart', true);
 }
