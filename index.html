@@ -92,10 +92,13 @@
 
                         <div class="designer-tips">
                             <h4 class="tips-title">Core Coverage</h4>
-                            <p class="tips-text" id="tips-p1-text"></p>
+                            <p class="tips-text" id="tips-p1-text">Loading insights...</p>
                             
                             <div class="step-action-container hidden" id="step-action-1">
-                                <button class="action-btn" onclick="advanceStep(2)">Continue to Home Design →</button>
+                                <div class="chevron-action" onclick="advanceStep(2)">
+                                    <span>Next: Review Home</span>
+                                    <div class="chevron-icon">⌄</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -165,10 +168,13 @@
 
                         <div class="designer-tips">
                             <h4 class="tips-title">Home Coverage</h4>
-                            <p class="tips-text" id="tips-p2-text"></p>
+                            <p class="tips-text" id="tips-p2-text">Loading insights...</p>
                             
                             <div class="step-action-container hidden" id="step-action-2">
-                                <button class="action-btn" onclick="advanceStep(3)">Continue to Lifestyle →</button>
+                                <div class="chevron-action" onclick="advanceStep(3)">
+                                    <span>Next: Review Lifestyle</span>
+                                    <div class="chevron-icon">⌄</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -207,7 +213,13 @@
 
                         <div class="designer-tips" id="p3-final-review">
                             <h4 class="tips-title">Lifestyle Coverage</h4>
-                            <p class="tips-text" id="tips-p3-text"></p>
+                            <p class="tips-text" id="tips-p3-text">Loading insights...</p>
+                        </div>
+                        
+                        <div id="surplus-block" class="designer-tips hidden" style="border-color: var(--accent-sage);">
+                            <h4 class="tips-title" style="color: var(--accent-sage);">Surplus Detected</h4>
+                            <p class="tips-text">You have a projected surplus of <strong id="surplus-amount" style="font-size:1.2rem;">£0</strong> per year.</p>
+                            <p class="tips-text" style="margin-top:10px;">You are in a fantastic position to boost your lifestyle further, accelerate your retirement date, or consider legacy planning and charitable giving.</p>
                         </div>
                     </div>
                 </section>
@@ -235,11 +247,11 @@
 
             <div id="wealth-wallet" class="wealth-wallet hidden">
                 <h4 class="tips-title" id="wallet-dynamic-title" style="color:var(--accent-orange);">Bridge the Gap</h4>
-                <p class="wallet-desc" id="wallet-dynamic-desc">Your guaranteed income falls short. Let's look at your other assets.</p>
+                <p class="wallet-desc" id="wallet-dynamic-desc">Your guaranteed income falls short here. Please input any other assets to cover the difference.</p>
                 
                 <div class="input-grid" style="grid-template-columns: 1fr; gap: 15px;">
                     <div id="db-box" class="hidden">
-                        <label>Do you have a Defined Benefit pension? (£/yr) <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
+                        <label>Defined Benefit Pension (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
                     </div>
                     
                     <div id="pots-box" class="hidden">
