@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retirement Salary Designer | Streaming UX</title>
+    <title>Retirement Salary Designer | Sequential UX</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,7 +76,7 @@
                         <div class="personalize-panel" id="pers-essentials">
                             <div class="panel-header">
                                 <span class="panel-desc">Enter known spending needs and we’ll work out the rest:</span>
-                                <select class="freq-select" id="freq-essentials" onchange="extrapolate('essentials')">
+                                <select class="freq-select" id="freq-essentials" onchange="window.extrapolate('essentials')">
                                     <option value="52">Weekly</option>
                                     <option value="12" selected>Monthly</option>
                                     <option value="1">Annually</option>
@@ -94,20 +94,14 @@
                             <h4 class="tips-title">Core Coverage</h4>
                             <p class="tips-text" id="tips-p1-text"></p>
                             
-                            <div id="core-wallet-slot"></div>
-
-                            <div class="partner-card-tip hidden" id="partner-annuity">
-                                <div class="pct-content">
-                                    <strong>Secure Your Foundation</strong>
-                                    <span>You have savings available, but lack guaranteed regular income. Explore lifetime annuity options to securely bridge your Core gap.</span>
-                                </div>
-                                <button class="pct-btn">Explore Annuities</button>
+                            <div class="step-action-container hidden" id="step-action-1">
+                                <button class="action-btn" onclick="advanceStep(2)">Continue to Home Design →</button>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <section class="pillar-section" id="pillar-home">
+                <section class="pillar-section locked-step" id="pillar-home">
                     <div class="pillar-header" onclick="toggleSection('body-home', this)">
                         <h2>II. Home <span class="sub-header-text">(Running the building)</span></h2>
                         <div style="display:flex; align-items:center; gap:15px;">
@@ -116,7 +110,7 @@
                         </div>
                     </div>
                     
-                    <div class="pillar-body" id="body-home">
+                    <div class="pillar-body collapsed" id="body-home">
                         <div class="dynamic-status-readout" id="p2-tenure-display"></div>
 
                         <div class="tenure-wrapper">
@@ -155,7 +149,7 @@
                         <div class="personalize-panel" id="pers-home">
                             <div class="panel-header">
                                 <span class="panel-desc">Enter known spending needs and we’ll work out the rest:</span>
-                                <select class="freq-select" id="freq-home" onchange="extrapolate('home')">
+                                <select class="freq-select" id="freq-home" onchange="window.extrapolate('home')">
                                     <option value="12" selected>Monthly</option>
                                     <option value="1">Annually</option>
                                 </select>
@@ -173,29 +167,29 @@
                             <h4 class="tips-title">Home Coverage</h4>
                             <p class="tips-text" id="tips-p2-text"></p>
                             
-                            <div id="home-wallet-slot"></div>
-                            
-                            <div class="partner-card-tip hidden" id="partner-portfolio">
-                                <div class="pct-content">
-                                    <strong>Generate Reliable Income</strong>
-                                    <span>Connect with a partner to build an income-generating portfolio that funds your Home costs.</span>
-                                </div>
-                                <button class="pct-btn">Explore Portfolios</button>
+                            <div class="step-action-container hidden" id="step-action-2">
+                                <button class="action-btn" onclick="advanceStep(3)">Continue to Lifestyle →</button>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <section class="pillar-section" id="pillar-living">
+                <section class="pillar-section locked-step" id="pillar-living">
                     <div class="pillar-header" onclick="toggleSection('body-living', this)">
-                        <h2>III. Living <span class="sub-header-text">(Enjoying the years)</span></h2>
+                        <h2>III. Lifestyle <span class="sub-header-text">(Designing your retirement life)</span></h2>
                         <div style="display:flex; align-items:center; gap:15px;">
                             <span class="live-price" id="val-living">£0</span>
                             <button class="collapse-icon">▼</button>
                         </div>
                     </div>
                     
-                    <div class="pillar-body" id="body-living">
+                    <div class="pillar-body collapsed" id="body-living">
+                        
+                        <div class="designer-tips" style="margin-top: 0; margin-bottom: 25px; border-color: var(--accent-sage);">
+                            <h4 class="tips-title" style="color: var(--accent-sage);">What's Left to Fund?</h4>
+                            <p class="tips-text" id="tips-p3-intro">Calculating your remaining capital...</p>
+                        </div>
+
                         <div class="slider-container">
                             <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50">
                             <div class="slider-labels">
@@ -205,46 +199,16 @@
                             </div>
                         </div>
 
-                        <div class="designer-tips">
-                            <h4 class="tips-title">Living Coverage</h4>
+                        <div class="chapter-toggles" style="margin-top: 40px;">
+                            <span class="panel-desc" style="display:block; margin-bottom:10px;"><strong>Shape your retirement timeline:</strong> See how adjusting your future plans stretches your capital today.</span>
+                            <label class="toggle-row"><input type="checkbox" id="toggle-travel"> Ease back on long-haul travel in later years (Age 75+)</label>
+                            <label class="toggle-row"><input type="checkbox" id="toggle-care"> Reserve a fund for later-life care or healthcare (Age 80+)</label>
+                        </div>
+
+                        <div class="designer-tips" id="p3-final-review">
+                            <h4 class="tips-title">Lifestyle Coverage</h4>
                             <p class="tips-text" id="tips-p3-text"></p>
-                            
-                            <div id="lifestyle-wallet-slot"></div>
-                            
-                            <div class="chapter-toggles" style="margin-top: 25px;">
-                                <label class="toggle-row action-toggle">
-                                    <input type="checkbox" id="toggle-travel"> 
-                                    <span>Click to see how reducing your travel spend over time could help your money last longer.</span>
-                                </label>
-                                <label class="toggle-row action-toggle">
-                                    <input type="checkbox" id="toggle-care"> 
-                                    <span>Help me fund for later life healthcare needs.</span>
-                                </label>
-                            </div>
-
-                            <div class="partner-card-tip hidden" id="partner-equity" style="margin-top: 15px;">
-                                <div class="pct-content">
-                                    <strong>Help me release income from my home</strong>
-                                    <span id="equity-impact-text">Unlock value from your home to support your living standard in retirement.</span>
-                                </div>
-                                <button class="pct-btn">Explore Options</button>
-                            </div>
-
-                            <div class="partner-card-tip hidden" id="partner-health" style="margin-top: 15px;">
-                                <div class="pct-content">
-                                    <strong>Protect Your Living Standard</strong>
-                                    <span id="health-impact-text">Explore premium healthcare and later-life protection plans to secure your independence.</span>
-                                </div>
-                                <button class="pct-btn">Explore Healthcare</button>
-                            </div>
                         </div>
-                        
-                        <div id="surplus-block" class="designer-tips hidden" style="border-color: var(--accent-sage);">
-                            <h4 class="tips-title" style="color: var(--accent-sage);">Surplus Detected</h4>
-                            <p class="tips-text">You have a projected surplus of <strong id="surplus-amount" style="font-size:1.2rem;">£0</strong> per year.</p>
-                            <p class="tips-text" style="margin-top:10px;">You are in a fantastic position to boost your living standard further, accelerate your retirement date, or consider legacy planning.</p>
-                        </div>
-
                     </div>
                 </section>
 
@@ -270,21 +234,56 @@
             </div>
 
             <div id="wealth-wallet" class="wealth-wallet hidden">
-                <h4 class="tips-title" style="color:var(--text-espresso); margin-bottom: 20px;">Your Assets & Savings</h4>
+                <h4 class="tips-title" id="wallet-dynamic-title" style="color:var(--accent-orange);">Bridge the Gap</h4>
+                <p class="wallet-desc" id="wallet-dynamic-desc">Your guaranteed income falls short. Let's look at your other assets.</p>
                 
-                <div id="db-box" style="margin-bottom:20px;">
-                    <label>Defined Benefit Pension (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
+                <div class="input-grid" style="grid-template-columns: 1fr; gap: 15px;">
+                    <div id="db-box" class="hidden">
+                        <label>Do you have a Defined Benefit pension? (£/yr) <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
+                    </div>
+                    
+                    <div id="pots-box" class="hidden">
+                        <label>Total Pension Pots Built Up (£) <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
+                        <label style="margin-top:15px;">Other Individual Savings (£) <input type="number" id="meas-savings" class="seamless-input" placeholder="£0"></label>
+                        <span class="input-hint" style="margin-top:8px;">We estimate a sustainable 6% annual withdrawal rate.</span>
+                    </div>
                 </div>
-                
-                <div id="pots-box">
-                    <label>Pension Pots Built Up (£): <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
-                    <label style="margin-top:15px;">Other Individual Savings (£): <input type="number" id="meas-savings" class="seamless-input" placeholder="£0"></label>
-                    <span class="input-hint" style="margin-top:8px;">We apply a sustainable 6% annual withdrawal rate.</span>
+
+                <div id="wallet-partner-annuity" class="partner-card-tip hidden" style="margin-top: 20px;">
+                    <div class="pct-content">
+                        <strong>Secure Your Foundation</strong>
+                        <span>Convert savings into guaranteed income to definitively bridge this gap.</span>
+                    </div>
+                    <button class="pct-btn">Explore Annuities</button>
+                </div>
+
+                <div id="wallet-partner-portfolio" class="partner-card-tip hidden" style="margin-top: 20px;">
+                    <div class="pct-content">
+                        <strong>Generate Reliable Income</strong>
+                        <span>Build an income-generating portfolio that funds your Home costs.</span>
+                    </div>
+                    <button class="pct-btn">Explore Portfolios</button>
+                </div>
+
+                <div id="wallet-partner-equity" class="partner-card-tip hidden" style="margin-top: 20px;">
+                    <div class="pct-content">
+                        <strong>Release Property Value</strong>
+                        <span>Unlock equity from your home to dramatically boost your Lifestyle.</span>
+                    </div>
+                    <button class="pct-btn">Explore Options</button>
+                </div>
+
+                <div id="wallet-partner-health" class="partner-card-tip hidden" style="margin-top: 20px;">
+                    <div class="pct-content">
+                        <strong>Later Life Healthcare</strong>
+                        <span>Explore premium protection plans to secure your independence.</span>
+                    </div>
+                    <button class="pct-btn">Explore Healthcare</button>
                 </div>
             </div>
 
             <div class="chart-card">
-                <h3>Life Chapters</h3>
+                <h3>Retirement Horizon</h3>
                 <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
                 <div class="main-chart-wrapper">
                     <canvas id="mainStackedChart"></canvas>
