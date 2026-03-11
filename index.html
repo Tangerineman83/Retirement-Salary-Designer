@@ -40,18 +40,6 @@
             </div>
 
             <div id="main-journey-flow" class="hidden-flow">
-                
-                <div id="sp-premiere" class="sp-banner">
-                    <div class="sp-text">
-                        <h3>Your Guaranteed Foundation</h3>
-                        <p>Based on your age, your State Pension will begin at age <strong id="sp-age-val">67</strong>.</p>
-                        <p class="sp-subtext">Calculated using the current full rate, presented in today's terms.</p>
-                    </div>
-                    <div class="sp-amount-block">
-                        <span class="sp-label">Projected Annual Amount</span>
-                        <span class="sp-value" id="sp-amount-val">£0</span>
-                    </div>
-                </div>
 
                 <section class="pillar-section" id="pillar-essentials">
                     <div class="pillar-header" onclick="toggleSection('body-essentials', this)">
@@ -91,9 +79,26 @@
                         </div>
 
                         <div class="designer-tips">
-                            <h4 class="tips-title">Core Coverage</h4>
-                            <p class="tips-text" id="tips-p1-text"></p>
                             
+                            <div id="core-success-banner" class="success-banner hidden">
+                                <div class="sb-text">
+                                    <h3>Core Needs Covered <span style="color:var(--accent-sage)">✓</span></h3>
+                                    <p id="core-success-desc"></p>
+                                </div>
+                                <div class="sb-amount-block">
+                                    <span class="sb-label">Allocated</span>
+                                    <span class="sb-value" id="core-success-val">£0</span>
+                                </div>
+                            </div>
+
+                            <div id="core-partner-annuity" class="partner-card-tip hidden" style="margin-bottom: 25px;">
+                                <div class="pct-content">
+                                    <strong>Secure Your Foundation</strong>
+                                    <span>You are drawing from savings. Convert a portion into guaranteed income to definitively bridge this gap.</span>
+                                </div>
+                                <button class="pct-btn">Explore Annuities</button>
+                            </div>
+
                             <div id="core-wallet-slot"></div>
 
                             <div class="step-action-container hidden" id="step-action-1">
@@ -169,9 +174,26 @@
                         </div>
 
                         <div class="designer-tips">
-                            <h4 class="tips-title">Home Coverage</h4>
-                            <p class="tips-text" id="tips-p2-text"></p>
                             
+                            <div id="home-success-banner" class="success-banner hidden">
+                                <div class="sb-text">
+                                    <h3>Home Needs Covered <span style="color:var(--accent-sage)">✓</span></h3>
+                                    <p id="home-success-desc"></p>
+                                </div>
+                                <div class="sb-amount-block">
+                                    <span class="sb-label">Allocated</span>
+                                    <span class="sb-value" id="home-success-val">£0</span>
+                                </div>
+                            </div>
+
+                            <div id="home-partner-portfolio" class="partner-card-tip hidden" style="margin-bottom: 25px;">
+                                <div class="pct-content">
+                                    <strong>Generate Reliable Income</strong>
+                                    <span>You are drawing heavily on savings. Build an income-generating portfolio to sustainably fund your Home costs.</span>
+                                </div>
+                                <button class="pct-btn">Explore Portfolios</button>
+                            </div>
+
                             <div id="home-wallet-slot"></div>
                             
                             <div class="step-action-container hidden" id="step-action-2">
@@ -216,8 +238,17 @@
                         </div>
 
                         <div class="designer-tips" id="p3-final-review">
-                            <h4 class="tips-title">Lifestyle Coverage</h4>
-                            <p class="tips-text" id="tips-p3-text"></p>
+                            
+                            <div id="lifestyle-success-banner" class="success-banner hidden">
+                                <div class="sb-text">
+                                    <h3>Lifestyle Fully Funded <span style="color:var(--accent-sage)">✓</span></h3>
+                                    <p id="lifestyle-success-desc"></p>
+                                </div>
+                                <div class="sb-amount-block">
+                                    <span class="sb-label">Allocated</span>
+                                    <span class="sb-value" id="lifestyle-success-val">£0</span>
+                                </div>
+                            </div>
                             
                             <div id="lifestyle-wallet-slot"></div>
 
@@ -287,30 +318,24 @@
                 <h5>1. Defined Benefit Pension</h5>
                 <p>Do you have a guaranteed annual pension from a previous employer?</p>
                 <label>Annual Amount (£): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
+                <button class="text-btn" id="btn-reveal-pots" onclick="window.revealAsset('pots')" style="margin-top:15px; font-size:0.8rem;">+ Add Pension Pots</button>
             </div>
             
-            <div id="pots-card" class="asset-card">
+            <div id="pots-card" class="asset-card hidden">
                 <h5>2. Pension Pots</h5>
                 <p>Total value of accumulated defined contribution pension pots.</p>
                 <label>Total Value (£): <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
+                <button class="text-btn" id="btn-reveal-savings" onclick="window.revealAsset('savings')" style="margin-top:15px; font-size:0.8rem;">+ Add Other Savings</button>
             </div>
 
-            <div id="savings-card" class="asset-card">
+            <div id="savings-card" class="asset-card hidden">
                 <h5>3. Other Savings</h5>
                 <p>ISAs, cash, or other investments available to draw from.</p>
                 <label>Total Value (£): <input type="number" id="meas-savings" class="seamless-input" placeholder="£0"></label>
             </div>
         </div>
         
-        <span id="withdrawal-hint" class="input-hint" style="margin-top:15px; text-align:center;">We map these pots to your income using a sustainable 6% annual withdrawal rate.</span>
-
-        <div id="wallet-partner-annuity" class="partner-card-tip hidden" style="margin-top: 20px;">
-            <div class="pct-content">
-                <strong>Secure Your Foundation</strong>
-                <span>Convert savings into guaranteed income to definitively bridge this gap.</span>
-            </div>
-            <button class="pct-btn">Explore Annuities</button>
-        </div>
+        <span id="withdrawal-hint" class="input-hint hidden" style="margin-top:15px; text-align:center;">We map these pots to your income using a sustainable 5% annual withdrawal rate.</span>
     </div>
 
 </div>
