@@ -82,7 +82,7 @@
                             
                             <div id="core-text-prompt">
                                 <h4 class="tips-title">Core Coverage</h4>
-                                <p class="tips-text" id="tips-p1-text">Loading insights...</p>
+                                <p class="tips-text" id="tips-p1-text"></p>
                             </div>
 
                             <div id="core-wallet-slot"></div>
@@ -186,7 +186,7 @@
                             
                             <div id="home-text-prompt">
                                 <h4 class="tips-title">Home Coverage</h4>
-                                <p class="tips-text" id="tips-p2-text">Loading insights...</p>
+                                <p class="tips-text" id="tips-p2-text"></p>
                             </div>
 
                             <div id="home-wallet-slot"></div>
@@ -282,29 +282,30 @@
                             </div>
 
                             <div id="shape-block" class="chapter-toggles hidden" style="margin-top: 25px;">
-                                <span class="panel-desc" style="display:block; margin-bottom:10px;"><strong>Shape your retirement timeline:</strong> Still have a gap? See how adjusting future plans stretches your capital today.</span>
-                                <label class="toggle-row"><input type="checkbox" id="toggle-travel"> Ease back on long-haul travel in later years (Age 75+)</label>
-                                <label class="toggle-row"><input type="checkbox" id="toggle-care"> Reserve a fund for later-life care or healthcare (Age 80+)</label>
+                                <span class="panel-desc" style="display:block; margin-bottom:10px;"><strong>Shape your retirement timeline:</strong> Still have a gap? Prioritise your spending to stretch your capital.</span>
+                                <label class="toggle-row"><input type="checkbox" id="toggle-travel"> Prioritise travel in the first 10 years of retirement</label>
                             </div>
 
-                            <div id="health-block" class="hidden" style="margin-top: 25px; border-top: 1px dashed var(--border-stone); padding-top: 20px;">
-                                <h4 class="tips-title" style="color:var(--accent-sage);">Protect Your Independence</h4>
-                                <p class="tips-text">Your lifestyle is fully supported. Consider securing private healthcare to protect your later-life needs.</p>
-                                <div class="partner-card-tip" id="partner-health" style="margin-top: 15px;">
-                                    <div class="pct-content">
-                                        <strong>Later Life Healthcare</strong>
-                                        <span>Explore premium protection plans to secure your independence.</span>
+                            <div id="surplus-health-block" class="hidden" style="margin-top: 25px; border-top: 1px dashed var(--border-stone); padding-top: 20px;">
+                                <div id="surplus-block" style="margin-bottom: 25px;">
+                                    <h4 class="tips-title" style="color: var(--accent-sage);">Surplus Detected</h4>
+                                    <p class="tips-text">You have a projected surplus of <strong id="surplus-amount" style="font-size:1.2rem;">£0</strong> per year.</p>
+                                    <p class="tips-text" style="margin-top:10px;">You are in a fantastic position to boost your lifestyle further, accelerate your retirement date, or consider legacy planning.</p>
+                                </div>
+                                
+                                <div id="health-block">
+                                    <h4 class="tips-title" style="color:var(--accent-sage);">Protect Your Independence</h4>
+                                    <p class="tips-text">With your lifestyle fully supported, consider securing private healthcare to protect your later-life needs.</p>
+                                    <div class="partner-card-tip" id="partner-health" style="margin-top: 15px;">
+                                        <div class="pct-content">
+                                            <strong>Later Life Healthcare</strong>
+                                            <span>Explore premium protection plans to secure your independence.</span>
+                                        </div>
+                                        <button class="pct-btn">Explore Healthcare</button>
                                     </div>
-                                    <button class="pct-btn">Explore Healthcare</button>
                                 </div>
                             </div>
 
-                        </div>
-                        
-                        <div id="surplus-block" class="designer-tips hidden" style="border-color: var(--accent-sage); margin-top: 25px;">
-                            <h4 class="tips-title" style="color: var(--accent-sage);">Surplus Detected</h4>
-                            <p class="tips-text">You have a projected surplus of <strong id="surplus-amount" style="font-size:1.2rem;">£0</strong> per year.</p>
-                            <p class="tips-text" style="margin-top:10px;">You are in a fantastic position to boost your lifestyle further, accelerate your retirement date, or consider legacy planning.</p>
                         </div>
                     </div>
                 </section>
@@ -348,7 +349,7 @@
         <div class="asset-cards-container">
             <div id="db-card" class="asset-card">
                 <h5>1. Defined Benefit Pension</h5>
-                <p>Do you have a guaranteed annual pension from a previous employer?</p>
+                <p>Do you have a secure annual pension from a previous employer?</p>
                 <label>Annual Amount (£): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
                 <button class="text-btn" id="btn-reveal-pots" onclick="window.revealAsset('pots')" style="margin-top:15px; font-size:0.8rem;">+ Add Pension Pots</button>
             </div>
