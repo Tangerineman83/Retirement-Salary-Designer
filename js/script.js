@@ -106,8 +106,8 @@ function updatePostcodeReadout() {
         
         if (districtData) {
             const localAvg = districtData.avg_disposable_income;
-            
             const pct = Math.round(((localAvg / natAvg) - 1) * 100);
+            
             let relText = "";
             if (pct > 0) relText = `is <strong>${pct}% above</strong>`;
             else if (pct < 0) relText = `is <strong>${Math.abs(pct)}% below</strong>`;
@@ -115,7 +115,13 @@ function updatePostcodeReadout() {
 
             hint.innerHTML = `Est. local income (${districtData.region}) ${relText} the national average.`;
             
-            const avgPropPrice = localAvg * 8.5; 
+            state.essentials = districtData.slider_positions.core;
+            state.home = districtData.slider_positions.home;
+            state.living = districtData.slider_positions.lifestyle;
+            document.getElementById('slider-essentials').value = state.essentials;
+            document.getElementById('slider-home').value = state.home;
+            document.getElementById('slider-living').value = state.living;
+
             let impliedTenure = 'owner';
             if (state.age < 55) impliedTenure = 'mortgage';
             else if (districtData.imd_decile <= 4) impliedTenure = 'rent';
@@ -124,38 +130,15 @@ function updatePostcodeReadout() {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`).classList.add('active');
 
-            // Auto-Snap Sliders 
-            state.essentials = districtData.slider_positions.core;
-            state.home = districtData.slider_positions.home;
-            state.living = districtData.slider_positions.lifestyle;
-            document.getElementById('slider-essentials').value = state.essentials;
-            document.getElementById('slider-home').value = state.home;
-            document.getElementById('slider-living').value = state.living;
-
-            // Auto-Populate Rent or Mortgage Input fields with the location-implied cost
-            let bRent = rldConfig.benchmarks.home.shelter.rent;
-            let impliedRentAnnual = (state.home <= 50) ? (bRent.staples + ((bRent.signature - bRent.staples) * (state.home / 50))) : (bRent.signature + ((bRent.designer - bRent.signature) * ((state.home - 50) / 50)));
+            handleTenureUI(false); 
             
-            let bMort = rldConfig.benchmarks.home.shelter.mortgage;
-            let impliedMortAnnual = (state.home <= 50) ? (bMort.staples + ((bMort.signature - bMort.staples) * (state.home / 50))) : (bMort.signature + ((bMort.designer - bMort.signature) * ((state.home - 50) / 50)));
-
-            if (impliedTenure === 'rent') {
-                state.rentPmt = Math.round(impliedRentAnnual / 12);
-                document.getElementById('meas-rent-pmt').value = state.rentPmt;
-            } else if (impliedTenure === 'mortgage') {
-                state.mortgagePmt = Math.round(impliedMortAnnual / 12);
-                document.getElementById('meas-mortgage-pmt').value = state.mortgagePmt;
-            }
-
-            // Cleaned Readout (Removes property price if Renter)
+            const avgPropPrice = localAvg * 8.5; 
             let propText = "";
             if (impliedTenure === 'owner' || impliedTenure === 'mortgage') {
                 propText = ` The average property price in this area is estimated at <strong>£${Math.round(avgPropPrice).toLocaleString()}</strong>.`;
             }
-            const displayReadout = document.getElementById('p2-tenure-display');
-            displayReadout.innerHTML = `As you live in the <strong>${districtData.region}</strong> area and based on your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>.${propText} We've styled your Home baseline using this data.`;
+            document.getElementById('p2-tenure-display').innerHTML = `As you live in the <strong>${districtData.region}</strong> area and based on your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>.${propText} We've styled your Home baseline using this data.`;
             
-            handleTenureUI(false); 
             calculateAll(); 
 
         } else {
@@ -169,7 +152,7 @@ function updatePostcodeReadout() {
 
 function setupListeners() {
     document.getElementById('meas-age').addEventListener('change', (e) => { 
-        state.age = parseInt(e.target.value) || 67; 
+        state.age = parseInt(e.target.value) || 60; 
         updatePostcodeReadout(); 
         calculateAll(); 
     });
@@ -205,6 +188,10 @@ function setupListeners() {
             if (val > 95 && val <= 100) val = 100;
             slider.value = val;
             state[pillar] = val;
+            
+            // Re-calc implied rents if slider moves
+            if(pillar === 'home') handleTenureUI(false);
+            
             calculateAll();
             triggerPulse(`val-${pillar}`); 
         });
@@ -212,6 +199,57 @@ function setupListeners() {
 
     document.getElementById('toggle-travel').addEventListener('change', calculateAll);
     document.getElementById('toggle-care').addEventListener('change', calculateAll);
+
+    const tooltip = document.getElementById('smart-tooltip');
+    let tooltipTimeout;
+    const hideTooltip = () => tooltip.classList.remove('show');
+
+    document.querySelectorAll('.pers-input').forEach(input => {
+        input.addEventListener('input', (e) => window.extrapolate(e.target.dataset.pillar));
+        const showInputTooltip = (e) => {
+            clearTimeout(tooltipTimeout);
+            if(e.target.disabled || e.target.closest('.hidden')) return;
+
+            const cat = e.target.dataset.cat;
+            const pillar = e.target.dataset.pillar;
+            const freq = parseInt(e.target.dataset.freq) || parseInt(document.getElementById(`freq-${pillar}`).value);
+            
+            let b = pillar === 'home' && cat === 'shelter' 
+                ? rldConfig.benchmarks.home.shelter[state.tenure] 
+                : rldConfig.benchmarks[pillar][cat];
+
+            const name = rldConfig.benchmarks[pillar][cat].name;
+            const st = Math.round(b.staples / freq); 
+            const si = Math.round(b.signature / freq);
+            const de = Math.round(b.designer / freq);
+
+            tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
+            const rect = e.target.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
+            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
+            tooltip.classList.add('show');
+        };
+        input.addEventListener('mouseenter', showInputTooltip);
+        input.addEventListener('focus', showInputTooltip);
+        input.addEventListener('mouseleave', hideTooltip);
+        input.addEventListener('blur', hideTooltip);
+    });
+
+    document.querySelectorAll('.tt-trigger').forEach(label => {
+        const showLabelTooltip = (e) => {
+            clearTimeout(tooltipTimeout);
+            const desc = e.currentTarget.dataset.desc;
+            tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
+            const rect = e.currentTarget.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
+            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
+            tooltip.classList.add('show');
+        };
+        label.addEventListener('mouseenter', showLabelTooltip);
+        label.addEventListener('touchstart', showLabelTooltip, {passive: true});
+        label.addEventListener('mouseleave', hideTooltip);
+        label.addEventListener('touchend', () => tooltipTimeout = setTimeout(hideTooltip, 2500));
+    });
 }
 
 function handleTenureUI(updateText = true) {
@@ -226,18 +264,29 @@ function handleTenureUI(updateText = true) {
     rentInputs.classList.add('hidden');
     shelterInput.disabled = true;
 
+    // Auto-calculate implied shelter costs based on the active Home slider
+    let bRent = rldConfig.benchmarks.home.shelter.rent;
+    let impliedRentAnnual = (state.home <= 50) ? (bRent.staples + ((bRent.signature - bRent.staples) * (state.home / 50))) : (bRent.signature + ((bRent.designer - bRent.signature) * ((state.home - 50) / 50)));
+    
+    let bMort = rldConfig.benchmarks.home.shelter.mortgage;
+    let impliedMortAnnual = (state.home <= 50) ? (bMort.staples + ((bMort.signature - bMort.staples) * (state.home / 50))) : (bMort.signature + ((bMort.designer - bMort.signature) * ((state.home - 50) / 50)));
+
     if (state.tenure === 'owner') {
         ownerInputs.classList.remove('hidden');
         if(updateText) displayReadout.innerHTML = `You own your home outright. We've styled your Home baseline using the details provided above.`;
         shelterInput.value = '';
     } else if (state.tenure === 'mortgage') {
         mortgageInputs.classList.remove('hidden');
-        if(updateText) displayReadout.innerHTML = `You have a mortgage. We've styled your Home baseline using the details provided above.`;
-        shelterInput.value = state.mortgagePmt || '';
+        if(updateText) displayReadout.innerHTML = `You have a mortgage. We've populated a default monthly payment based on your slider, but you can adjust it below.`;
+        if(!state.mortgagePmt) state.mortgagePmt = Math.round(impliedMortAnnual / 12);
+        document.getElementById('meas-mortgage-pmt').value = state.mortgagePmt;
+        shelterInput.value = state.mortgagePmt;
     } else {
         rentInputs.classList.remove('hidden');
-        if(updateText) displayReadout.innerHTML = `You are renting. We've styled your Home baseline using the details provided above.`;
-        shelterInput.value = state.rentPmt || '';
+        if(updateText) displayReadout.innerHTML = `You are renting. We've populated a default monthly rent based on your slider, but you can adjust it below.`;
+        if(!state.rentPmt) state.rentPmt = Math.round(impliedRentAnnual / 12);
+        document.getElementById('meas-rent-pmt').value = state.rentPmt;
+        shelterInput.value = state.rentPmt;
     }
 }
 
@@ -346,165 +395,146 @@ function updateChartsAndJourney() {
     const spAge = 67; 
     const spBase = rldConfig?.assumptions?.statePension ?? 11973; 
     const projectedSp = spBase; 
-    const drawdownRate = rldConfig?.assumptions?.drawdownRate ?? 0.06;
+    const drawdownRate = rldConfig?.assumptions?.drawdownRate ?? 0.05; 
 
     document.getElementById('sp-amount-val').innerText = `£${Math.round(projectedSp).toLocaleString()}`;
     document.getElementById('sp-age-val').innerText = spAge;
 
-    let spRem = projectedSp;
-    let dbRem = state.dbPension;
+    // -----------------------------------------------------
+    // 1. IDENTIFY THE WALLET ANCHOR (GROSS GAPS)
+    // -----------------------------------------------------
+    let gSp = projectedSp;
+    let gCore = Math.max(0, currentValues.essentials - gSp);
+    gSp = Math.max(0, gSp - currentValues.essentials);
+    let gHome = Math.max(0, currentValues.home - gSp);
+    gSp = Math.max(0, gSp - currentValues.home);
+    let gLife = Math.max(0, currentValues.living - gSp);
+
+    let walletTarget = "";
+    if (state.unlockedStep === 1 && gCore > 0) walletTarget = 'core-wallet-slot';
+    else if (state.unlockedStep === 2 && (gCore > 0 || gHome > 0)) walletTarget = 'home-wallet-slot';
+    else if (state.unlockedStep === 3 && (gCore > 0 || gHome > 0 || gLife > 0)) walletTarget = 'lifestyle-wallet-slot';
+
+    // -----------------------------------------------------
+    // 2. CALCULATE NET GAPS (AFTER DB & POTS)
+    // -----------------------------------------------------
+    let nSp = projectedSp;
+    let nDb = state.dbPension;
     let potsTotal = state.pensionPot + state.otherSavings;
-    let potsRem = potsTotal * drawdownRate;
+    let nPots = potsTotal * drawdownRate;
 
-    let walletTarget = (state.unlockedStep === 1) ? 'core-wallet-slot' : (state.unlockedStep === 2) ? 'home-wallet-slot' : 'lifestyle-wallet-slot';
-    let walletTitle = "";
-    let walletDesc = "";
+    let nCore = Math.max(0, currentValues.essentials - nSp);
+    nSp = Math.max(0, nSp - currentValues.essentials);
+    let cDbUsed = Math.min(nCore, nDb); nCore -= cDbUsed; nDb -= cDbUsed;
+    let cPotsUsed = Math.min(nCore, nPots); nCore -= cPotsUsed; nPots -= cPotsUsed;
 
-    // Evaluate Core
-    let coreCost = currentValues.essentials;
-    if (spRem >= coreCost) {
-        spRem -= coreCost;
-        document.getElementById('tips-p1-text').innerHTML = `Your State Pension fully covers your Core needs.`;
+    let nHome = Math.max(0, currentValues.home - nSp);
+    nSp = Math.max(0, nSp - currentValues.home);
+    let hDbUsed = Math.min(nHome, nDb); nHome -= hDbUsed; nDb -= hDbUsed;
+    let hPotsUsed = Math.min(nHome, nPots); nHome -= hPotsUsed; nPots -= hPotsUsed;
+
+    let nLife = Math.max(0, currentValues.living - nSp);
+    nSp = Math.max(0, nSp - currentValues.living);
+    let lDbUsed = Math.min(nLife, nDb); nLife -= lDbUsed; nDb -= lDbUsed;
+    let lPotsUsed = Math.min(nLife, nPots); nLife -= lPotsUsed; nPots -= lPotsUsed;
+
+    // -----------------------------------------------------
+    // 3. EXECUTE WALLET UI & FOCUS SAFEGUARD
+    // -----------------------------------------------------
+    const walletEl = document.getElementById('wealth-wallet');
+    const annuityCard = document.getElementById('wallet-partner-annuity');
+    const portfolioCard = document.getElementById('wallet-partner-portfolio');
+    
+    if (walletTarget !== "") {
+        // Evaluate the remaining gap relevant to the current step
+        let activeNetGap = 0;
+        if (state.unlockedStep === 1) activeNetGap = nCore;
+        else if (state.unlockedStep === 2) activeNetGap = nHome + nCore;
+        else if (state.unlockedStep === 3) activeNetGap = nLife + nHome + nCore;
+
+        if (activeNetGap > 0) {
+            document.getElementById('wallet-dynamic-title').innerHTML = `Bridge the Gap: £${Math.round(activeNetGap).toLocaleString()}`;
+            document.getElementById('wallet-dynamic-desc').innerText = `Your guaranteed income falls short. Input your assets below to cover the difference.`;
+            document.getElementById('wallet-dynamic-title').style.color = "var(--accent-orange)";
+        } else {
+            document.getElementById('wallet-dynamic-title').innerHTML = `Needs Covered <span style="color:var(--accent-sage)">✓</span>`;
+            document.getElementById('wallet-dynamic-desc').innerText = `Your entered assets successfully cover your needs up to this point.`;
+            document.getElementById('wallet-dynamic-title').style.color = "var(--text-espresso)";
+        }
+
+        // Only appendChild if the wallet is NOT already in the correct slot. This prevents the input jitter.
+        if (walletEl.parentElement.id !== walletTarget) {
+            document.getElementById(walletTarget).appendChild(walletEl);
+        }
+        walletEl.classList.remove('hidden');
+
+        if (cPotsUsed > 0 || hPotsUsed > 0) annuityCard?.classList.remove('hidden');
+        else annuityCard?.classList.add('hidden');
+
+        if (hPotsUsed > 0) portfolioCard?.classList.remove('hidden');
+        else portfolioCard?.classList.add('hidden');
+
     } else {
-        let gap = coreCost - spRem;
-        spRem = 0;
-        if (dbRem >= gap) {
-            dbRem -= gap;
-            document.getElementById('tips-p1-text').innerHTML = `Your State Pension and DB Pension fully cover your Core needs.`;
-        } else {
-            gap -= dbRem;
-            dbRem = 0;
-            if (potsRem >= gap) {
-                potsRem -= gap;
-                document.getElementById('tips-p1-text').innerHTML = `Your savings drawdown successfully covers your remaining Core gap.`;
-            } else {
-                potsRem = 0;
-                document.getElementById('tips-p1-text').innerHTML = `You have a Core shortfall of £${Math.round(gap).toLocaleString()}.`;
-            }
-        }
+        walletEl.classList.add('hidden');
+        annuityCard?.classList.add('hidden');
+        portfolioCard?.classList.add('hidden');
     }
 
-    // Evaluate Home
+    // -----------------------------------------------------
+    // 4. UPDATE PILLAR TEXT & PROGRESSION CHEVRONS
+    // -----------------------------------------------------
+    // CORE
+    if (gCore <= 0) {
+        document.getElementById('tips-p1-text').innerHTML = `Your State Pension fully covers your Core needs.`;
+    } else if (nCore <= 0) {
+        document.getElementById('tips-p1-text').innerHTML = `Your added assets successfully cover your Core needs.`;
+    } else {
+        document.getElementById('tips-p1-text').innerHTML = `You have a Core shortfall of £${Math.round(nCore).toLocaleString()}.`;
+    }
+    if (state.unlockedStep === 1) document.getElementById('step-action-1').classList.remove('hidden');
+
+    // HOME
     if (state.unlockedStep >= 2) {
-        let homeCost = currentValues.home;
-        if (spRem >= homeCost) {
-            spRem -= homeCost;
-            document.getElementById('tips-p2-text').innerHTML = `Your remaining regular income fully covers your Home costs.`;
+        if (gHome <= 0 && gCore <= 0) {
+            document.getElementById('tips-p2-text').innerHTML = `Your regular income fully covers your Home costs.`;
+        } else if (nHome <= 0) {
+            document.getElementById('tips-p2-text').innerHTML = `Your added assets cover your Home costs.`;
         } else {
-            let gap = homeCost - spRem;
-            spRem = 0;
-            if (dbRem >= gap) {
-                dbRem -= gap;
-                document.getElementById('tips-p2-text').innerHTML = `Your remaining DB Pension covers your Home costs.`;
-            } else {
-                gap -= dbRem;
-                dbRem = 0;
-                if (potsRem >= gap) {
-                    potsRem -= gap;
-                    document.getElementById('tips-p2-text').innerHTML = `Your savings drawdown covers your Home costs.`;
-                } else {
-                    potsRem = 0;
-                    document.getElementById('tips-p2-text').innerHTML = `You have a Home shortfall of £${Math.round(gap).toLocaleString()}.`;
-                }
-            }
+            document.getElementById('tips-p2-text').innerHTML = `You have a Home shortfall of £${Math.round(nHome).toLocaleString()}.`;
         }
+        if (state.unlockedStep === 2) document.getElementById('step-action-2').classList.remove('hidden');
     }
 
-    // Evaluate Lifestyle
+    // LIFESTYLE
+    const equityCard = document.getElementById('partner-equity');
+    const healthCard = document.getElementById('partner-health');
+
     if (state.unlockedStep >= 3) {
-        let lifeCost = currentValues.living;
-        let totalRem = spRem + dbRem + potsRem;
-        document.getElementById('tips-p3-intro').innerHTML = `You have a remaining projected income of <strong>£${Math.round(totalRem).toLocaleString()}</strong> per year to design your lifestyle.`;
+        let currentRem = (projectedSp + state.dbPension + (potsTotal * drawdownRate)) - currentValues.essentials - currentValues.home;
+        document.getElementById('tips-p3-intro').innerHTML = `You have a remaining projected income of <strong>£${Math.max(0, Math.round(currentRem)).toLocaleString()}</strong> per year to design your lifestyle.`;
         
-        if (totalRem >= lifeCost) {
+        if (nLife <= 0) {
             document.getElementById('tips-p3-text').innerHTML = `You have sufficient wealth to fully fund your desired Lifestyle!`;
             document.getElementById('surplus-block').classList.remove('hidden');
-            document.getElementById('surplus-amount').innerText = `£${Math.round(totalRem - lifeCost).toLocaleString()}`;
+            document.getElementById('surplus-amount').innerText = `£${Math.round(currentRem - currentValues.living).toLocaleString()}`;
         } else {
-            let gap = lifeCost - totalRem;
-            document.getElementById('tips-p3-text').innerHTML = `Your preferred Lifestyle exceeds your resources by £${Math.round(gap).toLocaleString()}. Consider reshaping your timeline using the toggles above.`;
+            document.getElementById('tips-p3-text').innerHTML = `Your preferred Lifestyle exceeds your resources by £${Math.round(nLife).toLocaleString()}. Consider reshaping your timeline using the toggles above.`;
             document.getElementById('surplus-block').classList.add('hidden');
         }
-    }
 
-    // Calculate Exact Gross Unbridged Gaps for the Wallet Display
-    let unbridgedGap = 0;
-    let currentGapName = "";
-    let globalSp = projectedSp;
-    let globalDb = state.dbPension;
-    let globalPots = potsTotal * drawdownRate;
+        if (state.tenure === 'owner' || state.tenure === 'mortgage') equityCard?.classList.remove('hidden');
+        else equityCard?.classList.add('hidden');
 
-    let cGap = currentValues.essentials - globalSp;
-    globalSp = Math.max(0, globalSp - currentValues.essentials);
-    let hGap = currentValues.home - globalSp;
-    globalSp = Math.max(0, globalSp - currentValues.home);
-    let lGap = currentValues.living - globalSp;
-
-    if (cGap > 0) {
-        let remGap = cGap - globalDb - globalPots;
-        if (remGap > 0) {
-            unbridgedGap = remGap;
-            currentGapName = "Core";
-        }
-    }
-    if (unbridgedGap === 0 && hGap > 0 && state.unlockedStep >= 2) {
-        let remGap = hGap - globalDb - globalPots;
-        if (remGap > 0) {
-            unbridgedGap = remGap;
-            currentGapName = "Home";
-        }
-    }
-    if (unbridgedGap === 0 && lGap > 0 && state.unlockedStep >= 3) {
-        let remGap = lGap - globalDb - globalPots;
-        if (remGap > 0) {
-            unbridgedGap = remGap;
-            currentGapName = "Lifestyle";
-        }
-    }
-
-    if (unbridgedGap > 0) {
-        walletTitle = `Bridge your ${currentGapName} Gap: £${Math.round(unbridgedGap).toLocaleString()}`;
-        walletDesc = `Your guaranteed income falls short here. Please input your assets below.`;
-    } else {
-        walletTitle = `Gap Bridged <span style="color:var(--accent-sage)">✓</span>`;
-        walletDesc = `Your entered assets successfully cover your needs. You can add more savings below to build a surplus.`;
-    }
-    
-    document.getElementById('wallet-dynamic-title').innerHTML = walletTitle;
-    document.getElementById('wallet-dynamic-desc').innerHTML = walletDesc;
-
-    // Anchor Wallet in HTML
-    const walletEl = document.getElementById('wealth-wallet');
-    document.getElementById(walletTarget).appendChild(walletEl);
-    walletEl.classList.remove('hidden');
-
-    // Contextual Partner Cards
-    const annuityCard = document.getElementById('wallet-partner-annuity');
-    if (cGap > globalDb || hGap > globalDb) {
-        annuityCard?.classList.remove('hidden');
-    } else {
-        annuityCard?.classList.add('hidden');
-    }
-    
-    const equityCard = document.getElementById('partner-equity');
-    if (state.unlockedStep >= 3 && (state.tenure === 'owner' || state.tenure === 'mortgage')) {
-        equityCard?.classList.remove('hidden');
+        if (state.living >= 50 || doCareSpike) healthCard?.classList.remove('hidden');
+        else healthCard?.classList.add('hidden');
     } else {
         equityCard?.classList.add('hidden');
-    }
-
-    const healthCard = document.getElementById('partner-health');
-    if (state.unlockedStep >= 3 && (state.living >= 50 || doCareSpike)) {
-        healthCard?.classList.remove('hidden');
-    } else {
         healthCard?.classList.add('hidden');
     }
 
-    // Always show action button to allow user progression
-    if(state.unlockedStep === 1) document.getElementById('step-action-1').classList.remove('hidden');
-    if(state.unlockedStep === 2) document.getElementById('step-action-2').classList.remove('hidden');
-
-    // Chart Horizon Trajectory
+    // -----------------------------------------------------
+    // 5. CHART HORIZON TRAJECTORY
+    // -----------------------------------------------------
     let runningPot = potsTotal;
     let exhaustionAge = -1;
 
