@@ -82,7 +82,7 @@
                             
                             <div id="core-text-prompt">
                                 <h4 class="tips-title">Core Coverage</h4>
-                                <p class="tips-text" id="tips-p1-text"></p>
+                                <p class="tips-text" id="tips-p1-text">Loading insights...</p>
                             </div>
 
                             <div id="core-wallet-slot"></div>
@@ -142,10 +142,10 @@
 
                             <div id="tenure-dynamic-inputs" style="margin-top: 20px;">
                                 <div id="tenure-owner-inputs" class="input-grid hidden">
-                                    <label>Current Home Value (£): <input type="number" id="meas-home-value" class="seamless-input" placeholder="£0"></label>
+                                    <label>Estimated Home Value (£): <input type="number" id="meas-home-value" class="seamless-input" placeholder="£0"></label>
                                 </div>
                                 <div id="tenure-mortgage-inputs" class="input-grid hidden">
-                                    <label>Current Home Value (£): <input type="number" id="meas-home-value-mortgage" class="seamless-input" placeholder="£0"></label>
+                                    <label>Estimated Home Value (£): <input type="number" id="meas-home-value-mortgage" class="seamless-input" placeholder="£0"></label>
                                     <label>Monthly Mortgage (£): <input type="number" id="meas-mortgage-pmt" class="pers-input seamless-input" data-cat="shelter" data-pillar="home" data-freq="12" placeholder="£0"></label>
                                     <label>Mortgage Payoff Age: <input type="number" id="meas-mortgage-age" class="seamless-input" value="75" min="50" max="100"></label>
                                 </div>
@@ -186,7 +186,7 @@
                             
                             <div id="home-text-prompt">
                                 <h4 class="tips-title">Home Coverage</h4>
-                                <p class="tips-text" id="tips-p2-text"></p>
+                                <p class="tips-text" id="tips-p2-text">Loading insights...</p>
                             </div>
 
                             <div id="home-wallet-slot"></div>
@@ -235,12 +235,7 @@
                     
                     <div class="pillar-body collapsed" id="body-living">
                         
-                        <div class="designer-tips" style="margin-top: 0; margin-bottom: 25px; border-color: var(--accent-sage);">
-                            <h4 class="tips-title" style="color: var(--accent-sage);">What's Left to Fund?</h4>
-                            <p class="tips-text" id="tips-p3-intro"></p>
-                        </div>
-
-                        <div class="slider-container">
+                        <div class="slider-container" style="margin-top: 40px;">
                             <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50">
                             <div class="slider-labels">
                                 <div class="label-group tt-trigger" data-desc="Local leisure, free bus pass, 1 UK holiday, reliant entirely on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
@@ -249,16 +244,11 @@
                             </div>
                         </div>
 
-                        <div class="chapter-toggles" style="margin-top: 40px;">
-                            <span class="panel-desc" style="display:block; margin-bottom:10px;"><strong>Shape your retirement timeline:</strong> See how adjusting your future plans stretches your capital today.</span>
-                            <label class="toggle-row"><input type="checkbox" id="toggle-travel"> Ease back on long-haul travel in later years (Age 75+)</label>
-                            <label class="toggle-row"><input type="checkbox" id="toggle-care"> Reserve a fund for later-life care or healthcare (Age 80+)</label>
-                        </div>
-
                         <div class="designer-tips" style="background:transparent; border:none; padding:10px 0 0 0;" id="p3-final-review">
                             
-                            <div id="life-text-prompt">
-                                <h4 class="tips-title">Lifestyle Coverage</h4>
+                            <div id="life-text-prompt" class="hidden">
+                                <h4 class="tips-title" style="color: var(--accent-orange);">Funding Gap Detected</h4>
+                                <p class="tips-text" id="tips-p3-intro" style="margin-bottom: 10px;"></p>
                                 <p class="tips-text" id="tips-p3-text"></p>
                             </div>
                             
@@ -279,27 +269,42 @@
                                 <button id="btn-life-edit" class="text-btn" onclick="window.openWallet(3)">Edit Assets ⌄</button>
                             </div>
 
-                            <div class="partner-card-tip hidden" id="partner-equity" style="margin-bottom: 15px;">
-                                <div class="pct-content">
-                                    <strong>Property Management & Equity Release</strong>
-                                    <span>Unlock value from your home to support your lifestyle in retirement.</span>
+                            <div id="equity-block" class="hidden" style="margin-top: 25px; border-top: 1px dashed var(--border-stone); padding-top: 20px;">
+                                <h4 class="tips-title" style="color:var(--text-espresso);">Consider Property Wealth</h4>
+                                <p class="tips-text" id="equity-desc"></p>
+                                <div class="partner-card-tip" id="partner-equity" style="margin-top: 15px;">
+                                    <div class="pct-content">
+                                        <strong>Property Management & Equity Release</strong>
+                                        <span>Unlock value from your home to support your lifestyle in retirement.</span>
+                                    </div>
+                                    <button class="pct-btn">Explore Options</button>
                                 </div>
-                                <button class="pct-btn">Explore Options</button>
                             </div>
 
-                            <div class="partner-card-tip hidden" id="partner-health" style="margin-bottom: 15px;">
-                                <div class="pct-content">
-                                    <strong>Protect Your Lifestyle</strong>
-                                    <span>Explore premium healthcare and later-life protection plans to secure your independence.</span>
-                                </div>
-                                <button class="pct-btn">Explore Healthcare</button>
+                            <div id="shape-block" class="chapter-toggles hidden" style="margin-top: 25px;">
+                                <span class="panel-desc" style="display:block; margin-bottom:10px;"><strong>Shape your retirement timeline:</strong> Still have a gap? See how adjusting future plans stretches your capital today.</span>
+                                <label class="toggle-row"><input type="checkbox" id="toggle-travel"> Ease back on long-haul travel in later years (Age 75+)</label>
+                                <label class="toggle-row"><input type="checkbox" id="toggle-care"> Reserve a fund for later-life care or healthcare (Age 80+)</label>
                             </div>
+
+                            <div id="health-block" class="hidden" style="margin-top: 25px; border-top: 1px dashed var(--border-stone); padding-top: 20px;">
+                                <h4 class="tips-title" style="color:var(--accent-sage);">Protect Your Independence</h4>
+                                <p class="tips-text">Your lifestyle is fully supported. Consider securing private healthcare to protect your later-life needs.</p>
+                                <div class="partner-card-tip" id="partner-health" style="margin-top: 15px;">
+                                    <div class="pct-content">
+                                        <strong>Later Life Healthcare</strong>
+                                        <span>Explore premium protection plans to secure your independence.</span>
+                                    </div>
+                                    <button class="pct-btn">Explore Healthcare</button>
+                                </div>
+                            </div>
+
                         </div>
                         
-                        <div id="surplus-block" class="designer-tips hidden" style="border-color: var(--accent-sage);">
+                        <div id="surplus-block" class="designer-tips hidden" style="border-color: var(--accent-sage); margin-top: 25px;">
                             <h4 class="tips-title" style="color: var(--accent-sage);">Surplus Detected</h4>
                             <p class="tips-text">You have a projected surplus of <strong id="surplus-amount" style="font-size:1.2rem;">£0</strong> per year.</p>
-                            <p class="tips-text" style="margin-top:10px;">You are in a fantastic position to boost your lifestyle further, accelerate your retirement date, or consider legacy planning and charitable giving.</p>
+                            <p class="tips-text" style="margin-top:10px;">You are in a fantastic position to boost your lifestyle further, accelerate your retirement date, or consider legacy planning.</p>
                         </div>
                     </div>
                 </section>
@@ -327,7 +332,7 @@
 
             <div class="chart-card">
                 <h3>Retirement Horizon</h3>
-                <p class="chart-desc">Your projected needs spanning the Active, Comfort, and Legacy eras.</p>
+                <p class="chart-desc">Your projected needs modeled with real-term long-term inflation adjustments.</p>
                 <div class="main-chart-wrapper">
                     <canvas id="mainStackedChart"></canvas>
                 </div>
