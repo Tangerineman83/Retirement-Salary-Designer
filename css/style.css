@@ -86,6 +86,7 @@ h1 { font-size: 2.2rem; }
 .toggle-btn.active { background: var(--text-espresso); color: var(--bg-oatmilk); border-color: var(--text-espresso); }
 
 .dynamic-status-readout { background: var(--bg-oatmilk); border-left: 3px solid var(--accent-sage); padding: 12px 15px; font-size: 0.85rem; color: var(--text-espresso); border-radius: 0 8px 8px 0; margin-bottom: 25px; line-height: 1.5;}
+.dynamic-status-readout:empty { display: none; }
 
 /* Sliders */
 .slider-container { position: relative; margin: 30px 40px 70px 40px; } 
