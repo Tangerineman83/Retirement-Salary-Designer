@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1"></script>
 </head>
 <body>
 
@@ -82,7 +81,7 @@
                             
                             <div id="core-text-prompt">
                                 <h4 class="tips-title">Core Coverage</h4>
-                                <p class="tips-text" id="tips-p1-text">Loading insights...</p>
+                                <p class="tips-text" id="tips-p1-text"></p>
                             </div>
 
                             <div id="core-wallet-slot"></div>
@@ -94,7 +93,7 @@
                                 </div>
                                 <div class="sb-amount-block">
                                     <span class="sb-label" id="core-banner-label">Allocated</span>
-                                    <span class="sb-value" id="core-success-val">£0/yr</span>
+                                    <span class="sb-value" id="core-success-val">£0</span>
                                 </div>
                             </div>
                             
@@ -206,12 +205,12 @@
                                 <button class="text-btn" onclick="window.openWallet(2)">Edit Assets ⌄</button>
                             </div>
 
-                            <div id="home-partner-portfolio" class="partner-card-tip hidden" style="margin-bottom: 25px;">
+                            <div id="home-partner-annuity" class="partner-card-tip hidden" style="margin-bottom: 25px;">
                                 <div class="pct-content">
-                                    <strong>Generate Reliable Income</strong>
-                                    <span>You are drawing heavily on savings. Build an income-generating portfolio to sustainably fund your Home costs.</span>
+                                    <strong>Secure Your Foundation</strong>
+                                    <span>You are drawing from savings. Convert a portion into guaranteed annual income to sustainably fund your Home costs.</span>
                                 </div>
-                                <button class="pct-btn">Explore Portfolios</button>
+                                <button class="pct-btn">Explore Annuities</button>
                             </div>
 
                             <div id="home-equity-block" class="hidden" style="margin-bottom: 25px; border-top: 1px dashed var(--border-stone); padding-top: 20px;">
@@ -249,7 +248,7 @@
                         
                         <div class="designer-tips" style="margin-top: 0; margin-bottom: 25px; border-color: var(--accent-sage);">
                             <h4 class="tips-title" style="color: var(--accent-sage);">What's Left to Fund?</h4>
-                            <p class="tips-text" id="tips-p3-intro"></p>
+                            <p class="tips-text" id="tips-p3-intro">Calculating your remaining capital...</p>
                         </div>
 
                         <div class="slider-container">
