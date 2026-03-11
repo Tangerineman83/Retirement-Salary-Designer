@@ -5,7 +5,7 @@ let rldConfig = null;
 let locationBenchmarks = null;
 
 let state = { 
-    unlockedStep: 1, // Tracking the sequential journey (1=Core, 2=Home, 3=Lifestyle)
+    unlockedStep: 1, 
     age: 60, 
     postcode: '',
     dbPension: 0,
@@ -66,7 +66,7 @@ window.advanceStep = function(targetStep) {
         const homeSection = document.getElementById('pillar-home');
         homeSection.classList.remove('locked-step');
         document.getElementById('body-home').classList.remove('collapsed');
-        document.getElementById('step-action-1').classList.add('hidden'); // Hide the button once clicked
+        document.getElementById('step-action-1').classList.add('hidden'); 
         homeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     else if (targetStep === 3) {
@@ -125,7 +125,7 @@ function updatePostcodeReadout() {
             document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`).classList.add('active');
 
             const displayReadout = document.getElementById('p2-tenure-display');
-            displayReadout.innerHTML = `<strong>Curated for you:</strong> Based on <strong>${districtData.region}</strong> and your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>. The average property price in this area is estimated at <strong>£${Math.round(avgPropPrice).toLocaleString()}</strong>. We've styled your Home baseline using this data.`;
+            displayReadout.innerHTML = `Based on <strong>${districtData.region}</strong> and your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>. The average property price in this area is estimated at <strong>£${Math.round(avgPropPrice).toLocaleString()}</strong>. We've styled your Home baseline using this data.`;
 
             state.essentials = districtData.slider_positions.core;
             state.home = districtData.slider_positions.home;
@@ -336,13 +336,15 @@ function calculateAll() {
 
     const gross = currentValues.essentials + currentValues.home + currentValues.living;
     let tax = 0;
-    const pa = rldConfig.tax.personalAllowance;
+    
+    const pa = rldConfig?.tax?.personalAllowance ?? 12570;
+    const basicRate = rldConfig?.tax?.basicRate ?? 0.20;
+    const higherThresh = rldConfig?.tax?.higherRateThreshold ?? 50270;
+    const higherRate = rldConfig?.tax?.higherRate ?? 0.40;
 
     if (gross > pa) {
-        if (gross <= rldConfig.tax.higherRateThreshold) { tax = (gross - pa) * rldConfig.tax.basicRate; } 
-        else {
-            tax = ((rldConfig.tax.higherRateThreshold - pa) * rldConfig.tax.basicRate) + ((gross - rldConfig.tax.higherRateThreshold) * rldConfig.tax.higherRate);
-        }
+        if (gross <= higherThresh) { tax = (gross - pa) * basicRate; } 
+        else { tax = ((higherThresh - pa) * basicRate) + ((gross - higherThresh) * higherRate); }
     }
 
     currentValues.gross = gross;
@@ -373,8 +375,9 @@ function updateChartsAndJourney() {
     const doCareSpike = document.getElementById('toggle-care').checked;
 
     const spAge = 67; 
-    const spBase = rldConfig.assumptions.statePension || 11973; 
+    const spBase = rldConfig?.assumptions?.statePension ?? 11973; 
     const projectedSp = spBase; 
+    const drawdownRate = rldConfig?.assumptions?.drawdownRate ?? 0.06;
 
     document.getElementById('sp-amount-val').innerText = `£${Math.round(projectedSp).toLocaleString()}`;
     document.getElementById('sp-age-val').innerText = spAge;
@@ -382,7 +385,7 @@ function updateChartsAndJourney() {
     let spRemaining = projectedSp;
     let dbRemaining = state.dbPension;
     let potsTotal = state.pensionPot + state.otherSavings;
-    let potsRemaining = potsTotal * 0.06;
+    let potsRemaining = potsTotal * drawdownRate;
 
     let walletTitle = "";
     let walletDesc = "";
@@ -390,7 +393,6 @@ function updateChartsAndJourney() {
     let showDbInput = false;
     let showPotsInput = false;
     
-    // Hide partner cards by default
     document.getElementById('wallet-partner-annuity').classList.add('hidden');
     document.getElementById('wallet-partner-portfolio').classList.add('hidden');
     const equityCard = document.getElementById('partner-equity');
@@ -403,59 +405,52 @@ function updateChartsAndJourney() {
     // ==========================================
     let coreGap = currentValues.essentials - spRemaining;
     let coreMsg = "";
-    let canAdvanceToHome = false;
 
     if (coreGap <= 0) {
         spRemaining -= currentValues.essentials;
         coreMsg = `Your State Pension fully covers your Core needs.`;
-        canAdvanceToHome = true;
     } else {
         spRemaining = 0;
         showWallet = true;
         showDbInput = true;
         walletTitle = "Bridge your Core Gap";
-        walletDesc = `Your guaranteed income falls short of your Core needs by £${Math.round(coreGap).toLocaleString()}. Do you have a DB pension?`;
+        walletDesc = `Your guaranteed income falls short of your Core needs by £${Math.round(coreGap).toLocaleString()}. Check below to add your DB Pension or Savings.`;
         
         let dbGap = coreGap - dbRemaining;
         if (dbGap <= 0) {
             dbRemaining -= coreGap;
             coreMsg = `Your State Pension and DB Pension fully cover your Core needs.`;
             showWallet = false; 
-            canAdvanceToHome = true;
         } else {
             dbRemaining = 0;
             showPotsInput = true;
-            walletDesc = `Even with your DB Pension, you have a gap of £${Math.round(dbGap).toLocaleString()}. Do you have savings or pension pots?`;
+            walletDesc = `Even with your DB Pension, you have a gap of £${Math.round(dbGap).toLocaleString()}. Check below to see if your pots and savings cover this.`;
             
             let potsGap = dbGap - potsRemaining;
             if (potsGap <= 0) {
                 potsRemaining -= dbGap;
-                coreMsg = `Your savings drawdown bridges your remaining Core gap.`;
+                coreMsg = `Your savings drawdown bridges your remaining Core gap. Consider securing an annuity.`;
                 document.getElementById('wallet-partner-annuity').classList.remove('hidden');
-                canAdvanceToHome = true;
             } else {
                 potsRemaining = 0;
                 coreMsg = `Even with your savings, you have a Core shortfall. Consider securing an annuity.`;
                 document.getElementById('wallet-partner-annuity').classList.remove('hidden');
-                canAdvanceToHome = true; // Unblock them anyway as requested
             }
         }
     }
     document.getElementById('tips-p1-text').innerHTML = coreMsg;
     
-    if(canAdvanceToHome && state.unlockedStep === 1) {
+    // Always let them advance from Step 1
+    if(state.unlockedStep === 1) {
         document.getElementById('step-action-1').classList.remove('hidden');
-    } else {
-        document.getElementById('step-action-1').classList.add('hidden');
     }
 
     // ==========================================
-    // STEP 2: HOME LOGIC (Only evaluates if step >= 2)
+    // STEP 2: HOME LOGIC
     // ==========================================
     if (state.unlockedStep >= 2) {
         let homeMsg = "";
         let homeGap = currentValues.home;
-        let canAdvanceToLifestyle = false;
 
         if (spRemaining >= homeGap) {
             spRemaining -= homeGap;
@@ -477,14 +472,12 @@ function updateChartsAndJourney() {
 
         if (homeGap === 0) {
             homeMsg = `Your remaining regular income fully covers your Home costs.`;
-            canAdvanceToLifestyle = true;
         } else {
-            // Override wallet focus to Home if there's a gap here
             showWallet = true;
             showDbInput = true;
             showPotsInput = true;
             walletTitle = "Bridge your Home Gap";
-            walletDesc = `Your regular income leaves a Home gap of £${Math.round(homeGap).toLocaleString()}. Add your Pots or Savings.`;
+            walletDesc = `Your regular income leaves a Home gap of £${Math.round(homeGap).toLocaleString()}. Add your Pots or Savings in the panel below.`;
 
             if (potsTotal > 0) {
                 if (potsRemaining >= homeGap) {
@@ -492,28 +485,23 @@ function updateChartsAndJourney() {
                     homeGap = 0;
                     homeMsg = `Your savings drawdown covers your Home costs.`;
                     document.getElementById('wallet-partner-portfolio').classList.remove('hidden');
-                    canAdvanceToLifestyle = true;
                 } else {
                     potsRemaining = 0;
                     homeMsg = `You have a Home shortfall.`;
-                    canAdvanceToLifestyle = true; // Unblock them
                 }
             } else {
                 homeMsg = `You have a Home shortfall.`;
-                canAdvanceToLifestyle = true; // Unblock them
             }
         }
         document.getElementById('tips-p2-text').innerHTML = homeMsg;
         
-        if(canAdvanceToLifestyle && state.unlockedStep === 2) {
+        if(state.unlockedStep === 2) {
             document.getElementById('step-action-2').classList.remove('hidden');
-        } else {
-            document.getElementById('step-action-2').classList.add('hidden');
         }
     }
 
     // ==========================================
-    // STEP 3: LIFESTYLE LOGIC (Only evaluates if step >= 3)
+    // STEP 3: LIFESTYLE LOGIC
     // ==========================================
     if (state.unlockedStep >= 3) {
         let lifeMsg = "";
@@ -534,7 +522,7 @@ function updateChartsAndJourney() {
             showDbInput = true; 
             showPotsInput = true;
             walletTitle = "Fund your Lifestyle";
-            walletDesc = `Your income leaves a Lifestyle gap of £${Math.round(lifeGap).toLocaleString()}. Add any other assets to cover the difference.`;
+            walletDesc = `Your income leaves a Lifestyle gap of £${Math.round(lifeGap).toLocaleString()}. Add any other assets below to cover the difference.`;
             
             document.getElementById('surplus-block').classList.add('hidden');
         }
@@ -544,7 +532,6 @@ function updateChartsAndJourney() {
         if (state.living >= 50 || doCareSpike) healthCard.classList.remove('hidden');
     }
 
-    // EXECUTE WEALTH WALLET UI STATE
     const wallet = document.getElementById('wealth-wallet');
     if (showWallet) {
         document.getElementById('wallet-dynamic-title').innerText = walletTitle;
@@ -561,7 +548,6 @@ function updateChartsAndJourney() {
         wallet.classList.add('hidden');
     }
 
-    // CHART HORIZON TRAJECTORY
     let runningPot = potsTotal;
     let exhaustionAge = -1;
 
@@ -591,8 +577,10 @@ function updateChartsAndJourney() {
         
         if (shortfallYearly > 0) {
             let grossShortfall = shortfallYearly;
-            const pa = rldConfig.tax.personalAllowance;
-            if (totalNetNeed > pa) grossShortfall = shortfallYearly / (1 - rldConfig.tax.basicRate); 
+            const pa = rldConfig?.tax?.personalAllowance ?? 12570;
+            const basicRate = rldConfig?.tax?.basicRate ?? 0.20;
+            
+            if (totalNetNeed > pa) grossShortfall = shortfallYearly / (1 - basicRate); 
             
             runningPot -= grossShortfall;
             if (runningPot <= 0 && exhaustionAge === -1 && potsTotal > 0) {
