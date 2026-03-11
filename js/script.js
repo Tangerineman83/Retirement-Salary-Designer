@@ -124,8 +124,9 @@ function updatePostcodeReadout() {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`).classList.add('active');
 
+            // TEXT UPDATED: Removed "Based on" reference
             const displayReadout = document.getElementById('p2-tenure-display');
-            displayReadout.innerHTML = `Based on <strong>${districtData.region}</strong> and your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>. The average property price in this area is estimated at <strong>£${Math.round(avgPropPrice).toLocaleString()}</strong>. We've styled your Home baseline using this data.`;
+            displayReadout.innerHTML = `As you live in the <strong>${districtData.region}</strong> area and based on your age, people like you typically <strong>${impliedTenure === 'owner' ? 'own their home outright' : impliedTenure === 'mortgage' ? 'own with a mortgage' : 'rent'}</strong>. The average property price in this area is estimated at <strong>£${Math.round(avgPropPrice).toLocaleString()}</strong>. We've styled your Home baseline using this data.`;
 
             state.essentials = districtData.slider_positions.core;
             state.home = districtData.slider_positions.home;
@@ -192,57 +193,6 @@ function setupListeners() {
 
     document.getElementById('toggle-travel').addEventListener('change', calculateAll);
     document.getElementById('toggle-care').addEventListener('change', calculateAll);
-
-    const tooltip = document.getElementById('smart-tooltip');
-    let tooltipTimeout;
-    const hideTooltip = () => tooltip.classList.remove('show');
-
-    document.querySelectorAll('.pers-input').forEach(input => {
-        input.addEventListener('input', (e) => window.extrapolate(e.target.dataset.pillar));
-        const showInputTooltip = (e) => {
-            clearTimeout(tooltipTimeout);
-            if(e.target.disabled || e.target.closest('.hidden')) return;
-
-            const cat = e.target.dataset.cat;
-            const pillar = e.target.dataset.pillar;
-            const freq = parseInt(e.target.dataset.freq) || parseInt(document.getElementById(`freq-${pillar}`).value);
-            
-            let b = pillar === 'home' && cat === 'shelter' 
-                ? rldConfig.benchmarks.home.shelter[state.tenure] 
-                : rldConfig.benchmarks[pillar][cat];
-
-            const name = rldConfig.benchmarks[pillar][cat].name;
-            const st = Math.round(b.staples / freq); 
-            const si = Math.round(b.signature / freq);
-            const de = Math.round(b.designer / freq);
-
-            tooltip.innerHTML = `<span class="tt-title">${name}</span>Staples: £${st} | Signature: £${si} | Designer: £${de}`;
-            const rect = e.target.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
-            tooltip.classList.add('show');
-        };
-        input.addEventListener('mouseenter', showInputTooltip);
-        input.addEventListener('focus', showInputTooltip);
-        input.addEventListener('mouseleave', hideTooltip);
-        input.addEventListener('blur', hideTooltip);
-    });
-
-    document.querySelectorAll('.tt-trigger').forEach(label => {
-        const showLabelTooltip = (e) => {
-            clearTimeout(tooltipTimeout);
-            const desc = e.currentTarget.dataset.desc;
-            tooltip.innerHTML = `<span style="color:var(--bg-oatmilk); font-family:'Space Grotesk', sans-serif; font-weight:300;">${desc}</span>`;
-            const rect = e.currentTarget.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + (rect.width / 2) + window.scrollX}px`;
-            tooltip.style.top = `${rect.top + window.scrollY - 15}px`;
-            tooltip.classList.add('show');
-        };
-        label.addEventListener('mouseenter', showLabelTooltip);
-        label.addEventListener('touchstart', showLabelTooltip, {passive: true});
-        label.addEventListener('mouseleave', hideTooltip);
-        label.addEventListener('touchend', () => tooltipTimeout = setTimeout(hideTooltip, 2500));
-    });
 }
 
 function handleTenureUI(updateText = true) {
@@ -389,15 +339,16 @@ function updateChartsAndJourney() {
 
     let walletTitle = "";
     let walletDesc = "";
+    let walletTarget = "";
     let showWallet = false;
     let showDbInput = false;
     let showPotsInput = false;
     
-    // Safely target the wallet partner cards using optional chaining
+    // Safely hide all partner cards
     const annuityCard = document.getElementById('wallet-partner-annuity');
     const portfolioCard = document.getElementById('wallet-partner-portfolio');
-    const equityCard = document.getElementById('wallet-partner-equity');
-    const healthCard = document.getElementById('wallet-partner-health');
+    const equityCard = document.getElementById('partner-equity');
+    const healthCard = document.getElementById('partner-health');
     
     annuityCard?.classList.add('hidden');
     portfolioCard?.classList.add('hidden');
@@ -416,6 +367,7 @@ function updateChartsAndJourney() {
     } else {
         spRemaining = 0;
         showWallet = true;
+        walletTarget = 'core-wallet-slot';
         showDbInput = true;
         walletTitle = "Bridge your Core Gap";
         walletDesc = `Your guaranteed income falls short of your Core needs by £${Math.round(coreGap).toLocaleString()}. Check below to add your DB Pension or Savings.`;
@@ -425,6 +377,7 @@ function updateChartsAndJourney() {
             dbRemaining -= coreGap;
             coreMsg = `Your State Pension and DB Pension fully cover your Core needs.`;
             showWallet = false; 
+            walletTarget = "";
         } else {
             dbRemaining = 0;
             showPotsInput = true;
@@ -444,7 +397,6 @@ function updateChartsAndJourney() {
     }
     document.getElementById('tips-p1-text').innerHTML = coreMsg;
     
-    // Always let them advance from Step 1
     if(state.unlockedStep === 1) {
         document.getElementById('step-action-1').classList.remove('hidden');
     }
@@ -477,11 +429,14 @@ function updateChartsAndJourney() {
         if (homeGap === 0) {
             homeMsg = `Your remaining regular income fully covers your Home costs.`;
         } else {
-            showWallet = true;
-            showDbInput = true;
-            showPotsInput = true;
-            walletTitle = "Bridge your Home Gap";
-            walletDesc = `Your regular income leaves a Home gap of £${Math.round(homeGap).toLocaleString()}. Add your Pots or Savings in the panel below.`;
+            if (!showWallet) {
+                showWallet = true;
+                walletTarget = 'home-wallet-slot';
+                showDbInput = true;
+                showPotsInput = true;
+                walletTitle = "Bridge your Home Gap";
+                walletDesc = `Your regular income leaves a Home gap of £${Math.round(homeGap).toLocaleString()}. Add your Pots or Savings in the panel below.`;
+            }
 
             if (potsTotal > 0) {
                 if (potsRemaining >= homeGap) {
@@ -522,12 +477,14 @@ function updateChartsAndJourney() {
             let lifeGap = lifeCost - totalRemaining;
             lifeMsg = `Your preferred Lifestyle exceeds your resources by £${Math.round(lifeGap).toLocaleString()}. Consider reshaping your timeline.`;
             
-            showWallet = true;
-            showDbInput = true; 
-            showPotsInput = true;
-            walletTitle = "Fund your Lifestyle";
-            walletDesc = `Your income leaves a Lifestyle gap of £${Math.round(lifeGap).toLocaleString()}. Add any other assets below to cover the difference.`;
-            
+            if (!showWallet) {
+                showWallet = true;
+                walletTarget = 'lifestyle-wallet-slot';
+                showDbInput = true; 
+                showPotsInput = true;
+                walletTitle = "Fund your Lifestyle";
+                walletDesc = `Your income leaves a Lifestyle gap of £${Math.round(lifeGap).toLocaleString()}. Add any other assets below to cover the difference.`;
+            }
             document.getElementById('surplus-block').classList.add('hidden');
         }
         document.getElementById('tips-p3-text').innerHTML = lifeMsg;
@@ -536,8 +493,12 @@ function updateChartsAndJourney() {
         if (state.living >= 50 || doCareSpike) healthCard?.classList.remove('hidden');
     }
 
+    // ==========================================
+    // DYNAMIC WALLET APPENDING
+    // ==========================================
     const wallet = document.getElementById('wealth-wallet');
-    if (showWallet) {
+    if (showWallet && walletTarget) {
+        document.getElementById(walletTarget).appendChild(wallet);
         document.getElementById('wallet-dynamic-title').innerText = walletTitle;
         document.getElementById('wallet-dynamic-desc').innerText = walletDesc;
         
@@ -552,6 +513,9 @@ function updateChartsAndJourney() {
         wallet.classList.add('hidden');
     }
 
+    // ==========================================
+    // CHART HORIZON TRAJECTORY
+    // ==========================================
     let runningPot = potsTotal;
     let exhaustionAge = -1;
 
