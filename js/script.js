@@ -27,7 +27,7 @@ let state = {
 };
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
-let charts = { polar: null, mainBar: null, macro: null, micro: null, needsMacro: null }; 
+let charts = { polar: null, mainBar: null, macro: null, needsMacro: null, micro: null }; 
 
 const palette = {
     sage: '#A3C6C4',
@@ -91,7 +91,7 @@ function initDataDashboard() {
     const natAvg = locationBenchmarks.metadata.national_average;
     const sourceText = "Source: " + (locationBenchmarks.metadata.source || "ONS Data");
     
-    // 1. Process and Sort the Data Array for Income
+    // 1. Process and Sort the Data Array for Income S-Curve
     let districtData = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
         const diff = ((d.avg_disposable_income - natAvg) / natAvg) * 100;
@@ -104,7 +104,6 @@ function initDataDashboard() {
         };
     });
 
-    // Sort lowest to highest for the S-Curve
     districtData.sort((a, b) => a.diff - b.diff);
 
     const labels = districtData.map(d => d.name);
@@ -134,7 +133,7 @@ function initDataDashboard() {
                 x: { 
                     display: true, 
                     grid: { display: false },
-                    ticks: { display: false }, 
+                    ticks: { display: false }, // Hide the 120 individual labels to keep the wave smooth
                     title: { display: true, text: 'All UK Postal Districts (Lowest to Highest Income)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
                 y: { 
@@ -185,7 +184,7 @@ function initDataDashboard() {
         };
     });
 
-    // Sort by total adjustment from lowest to highest to ensure a smooth S-curve
+    // Explicitly sort by total adjustment from lowest (greatest negative) to highest (greatest positive)
     needsDataList.sort((a, b) => a.total - b.total);
 
     const needsLabels = needsDataList.map(d => d.name);
@@ -237,7 +236,7 @@ function initDataDashboard() {
                     display: true, 
                     grid: { display: false },
                     ticks: { display: false },
-                    title: { display: true, text: 'All UK Postal Districts (Lowest to Highest Total Cost Adjustment)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    title: { display: true, text: 'All UK Postal Districts (Sorted by Total Need Adjustment)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
                 y: { 
                     stacked: true,
