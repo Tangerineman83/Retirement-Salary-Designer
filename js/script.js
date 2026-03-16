@@ -91,18 +91,15 @@ function initDataDashboard() {
     const natAvg = locationBenchmarks.metadata.national_average;
     const sourceText = "Source: " + (locationBenchmarks.metadata.source || "ONS Data");
     
-    // --- MEDIAN HOUSING COST ANCHOR ---
-    // This value pads the denominator to ensure percentage variances aren't artificially inflated.
+    // Fixed padding for the housing denominator to stabilize the percentage variances
     const MEDIAN_HOUSING_COST = 12000; 
     
-    // Helper function to calculate the true £ cost of a given pillar based on a slider value
     function getCost(pillar, sVal) {
         let t = 0;
         for (const [k, cData] of Object.entries(rldConfig.benchmarks[pillar])) {
             let b = (pillar === 'home' && k === 'shelter') ? cData['owner'] : cData;
             if(b.staples === undefined) continue;
             let v = 0;
-            // Skip dynamic shelter calculation here; we will inject the MEDIAN_HOUSING_COST instead
             if (pillar === 'home' && k === 'shelter') {
                 v = 0;
             } else {
@@ -114,13 +111,25 @@ function initDataDashboard() {
         return t;
     }
 
-    // Baseline Costs (Sliders at exactly 50)
-    const baseC = getCost('essentials', 50);
-    const baseH = getCost('home', 50) + MEDIAN_HOUSING_COST; 
-    const baseL = getCost('living', 50);
+    // --- NEW METHODOLOGY: THE TRUE MEAN BASELINE ---
+    // Instead of evaluating at slider 50, calculate the true average costs across all mapped districts
+    let sumC = 0, sumH = 0, sumL = 0;
+    const districtKeys = Object.keys(locationBenchmarks.districts);
+    const districtCount = districtKeys.length;
+
+    districtKeys.forEach(code => {
+        const d = locationBenchmarks.districts[code];
+        sumC += getCost('essentials', d.slider_positions.core);
+        sumH += (getCost('home', d.slider_positions.home) + MEDIAN_HOUSING_COST);
+        sumL += getCost('living', d.slider_positions.lifestyle);
+    });
+
+    const baseC = sumC / districtCount;
+    const baseH = sumH / districtCount;
+    const baseL = sumL / districtCount;
     const totalBaseCost = baseC + baseH + baseL;
     
-    // Baseline Ratio (Income / Cost)
+    // True National Average Purchasing Power Ratio
     const baseRatio = natAvg / totalBaseCost;
 
     // 1. Process and Sort the Data Array for Income S-Curve
@@ -283,7 +292,7 @@ function initDataDashboard() {
                     stacked: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
                     ticks: { callback: function(value) { return (value > 0 ? '+' : '') + value + '%'; }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: '% Variance from National Avg Cost', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    title: { display: true, text: '% Variance from National Mean Cost', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 }
             },
             plugins: {
@@ -381,7 +390,7 @@ function initDataDashboard() {
                 y: { 
                     grid: { color: 'rgba(0,0,0,0.05)' },
                     ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: '% Variance from National Avg', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    title: { display: true, text: '% Variance from National Mean', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 }
             },
             plugins: {
@@ -509,7 +518,6 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
-    // Explicit User Override: Always advance to the next step when they click apply
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
