@@ -27,7 +27,7 @@ let state = {
 };
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
-let charts = { polar: null, mainBar: null, macro: null, needsMacro: null, micro: null }; 
+let charts = { polar: null, mainBar: null, macro: null, needsMacro: null, ratioMacro: null, micro: null }; 
 
 const palette = {
     sage: '#A3C6C4',
@@ -91,6 +91,34 @@ function initDataDashboard() {
     const natAvg = locationBenchmarks.metadata.national_average;
     const sourceText = "Source: " + (locationBenchmarks.metadata.source || "ONS Data");
     
+    // Helper function to calculate the true £ cost of a given pillar based on a slider value
+    function getCost(pillar, sVal) {
+        let t = 0;
+        for (const [k, cData] of Object.entries(rldConfig.benchmarks[pillar])) {
+            let b = (pillar === 'home' && k === 'shelter') ? cData['owner'] : cData;
+            if(b.staples === undefined) continue;
+            let v = 0;
+            // Skip shelter cost directly, focus purely on the adjustable running/lifestyle costs
+            if (pillar === 'home' && k === 'shelter') {
+                v = 0;
+            } else {
+                if (sVal <= 50) v = b.staples + ((b.signature - b.staples) * (sVal / 50));
+                else v = b.signature + ((b.designer - b.signature) * ((sVal - 50) / 50));
+            }
+            t += v;
+        }
+        return t;
+    }
+
+    // Baseline Costs (Sliders at exactly 50)
+    const baseC = getCost('essentials', 50);
+    const baseH = getCost('home', 50);
+    const baseL = getCost('living', 50);
+    const totalBaseCost = baseC + baseH + baseL;
+    
+    // Baseline Ratio (Income / Cost)
+    const baseRatio = natAvg / totalBaseCost;
+
     // 1. Process and Sort the Data Array for Income S-Curve
     let districtData = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
@@ -170,40 +198,13 @@ function initDataDashboard() {
     });
 
     // 2.5. The Needs Adjustments Stacked Chart (Cost Variance %)
-    // Helper function to calculate the true £ cost of a given pillar based on a slider value
-    function getCost(pillar, sVal) {
-        let t = 0;
-        for (const [k, cData] of Object.entries(rldConfig.benchmarks[pillar])) {
-            let b = (pillar === 'home' && k === 'shelter') ? cData['owner'] : cData;
-            if(b.staples === undefined) continue;
-            let v = 0;
-            // Skip shelter cost directly, focus purely on the adjustable running/lifestyle costs
-            if (pillar === 'home' && k === 'shelter') {
-                v = 0;
-            } else {
-                if (sVal <= 50) v = b.staples + ((b.signature - b.staples) * (sVal / 50));
-                else v = b.signature + ((b.designer - b.signature) * ((sVal - 50) / 50));
-            }
-            t += v;
-        }
-        return t;
-    }
-
-    // Baseline Costs (Sliders at exactly 50)
-    const baseC = getCost('essentials', 50);
-    const baseH = getCost('home', 50);
-    const baseL = getCost('living', 50);
-    const totalBaseCost = baseC + baseH + baseL;
-
     let needsDataList = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
         
-        // District specific costs based on mapped slider positions
         const distC = getCost('essentials', d.slider_positions.core);
         const distH = getCost('home', d.slider_positions.home);
         const distL = getCost('living', d.slider_positions.lifestyle);
 
-        // Weighted percentage variance so the visual stacked bar perfectly equals total % variance
         const cPct = ((distC - baseC) / totalBaseCost) * 100;
         const hPct = ((distH - baseH) / totalBaseCost) * 100;
         const lPct = ((distL - baseL) / totalBaseCost) * 100;
@@ -221,7 +222,6 @@ function initDataDashboard() {
         };
     });
 
-    // Explicitly sort by total % variance from lowest (greatest negative) to highest (greatest positive)
     needsDataList.sort((a, b) => a.total - b.total);
 
     const needsLabels = needsDataList.map(d => d.name);
@@ -316,6 +316,90 @@ function initDataDashboard() {
                             
                             let rawSign = rawCost > 0 ? '+' : '';
                             return ` ${context.dataset.label}: ${sign}${val.toFixed(1)}% (${rawSign}£${Math.round(Math.abs(rawCost)).toLocaleString()})`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 2.75. Real Purchasing Power Chart (Income / Cost Ratio)
+    let ratioDataList = Object.keys(locationBenchmarks.districts).map(code => {
+        const d = locationBenchmarks.districts[code];
+        const inc = d.avg_disposable_income;
+        const distC = getCost('essentials', d.slider_positions.core);
+        const distH = getCost('home', d.slider_positions.home);
+        const distL = getCost('living', d.slider_positions.lifestyle);
+        const distTotalCost = distC + distH + distL;
+
+        const distRatio = inc / distTotalCost;
+        const ratioDiff = ((distRatio - baseRatio) / baseRatio) * 100;
+
+        return {
+            name: d.region,
+            income: inc,
+            cost: distTotalCost,
+            diff: ratioDiff
+        };
+    });
+
+    ratioDataList.sort((a, b) => a.diff - b.diff);
+
+    const ratioLabels = ratioDataList.map(d => d.name);
+    const ratioPoints = ratioDataList.map(d => d.diff);
+    const ratioColors = ratioPoints.map(d => d > 0 ? palette.orange : palette.sage);
+
+    const ctxRatio = document.getElementById('ratioMacroChart').getContext('2d');
+    charts.ratioMacro = new Chart(ctxRatio, {
+        type: 'bar',
+        data: {
+            labels: ratioLabels,
+            datasets: [{
+                label: '% Variance in Real Purchasing Power',
+                data: ratioPoints,
+                backgroundColor: ratioColors,
+                borderRadius: 4,
+                borderWidth: 0,
+                barPercentage: 0.9,
+                categoryPercentage: 1.0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { 
+                    display: true, 
+                    grid: { display: false },
+                    ticks: { display: false }, 
+                    title: { display: true, text: 'All UK Postal Districts (Lowest to Highest Purchasing Power)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                },
+                y: { 
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } },
+                    title: { display: true, text: '% Variance from National Avg', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                datalabels: { display: false },
+                subtitle: {
+                    display: true,
+                    text: sourceText,
+                    position: 'bottom',
+                    font: { family: 'Space Grotesk', size: 11, style: 'italic' },
+                    color: palette.dusk,
+                    padding: { top: 10, bottom: 0 }
+                },
+                tooltip: {
+                    backgroundColor: palette.espresso,
+                    titleFont: { family: 'Space Grotesk', size: 13 },
+                    bodyFont: { family: 'Space Grotesk', size: 12 },
+                    callbacks: {
+                        label: function(context) {
+                            let item = ratioDataList[context.dataIndex];
+                            let sign = item.diff > 0 ? '+' : '';
+                            return ` ${sign}${item.diff.toFixed(1)}% (Inc: £${item.income.toLocaleString()} | Cost: £${Math.round(item.cost).toLocaleString()})`;
                         }
                     }
                 }
@@ -977,7 +1061,7 @@ function updateChartsAndJourney() {
     }
 
     // -----------------------------------------------------
-    // 3. LIFESTYLE RENDER
+    // 3. LIFESTYLE RENDER 
     // -----------------------------------------------------
     const equityBlock = document.getElementById('equity-block');
     const healthBlock = document.getElementById('health-block');
@@ -1068,6 +1152,7 @@ function updateChartsAndJourney() {
     // EXECUTE WEALTH WALLET INJECTION & ASSET CARDS
     // -----------------------------------------------------
     const walletEl = document.getElementById('wealth-wallet');
+    const annuityCardWallet = document.getElementById('wallet-partner-annuity');
     
     if (walletTarget !== "") {
         let activeNetGap = (state.walletOpenPillar === 1) ? nCore : (state.walletOpenPillar === 2) ? nHome : nLife;
@@ -1106,12 +1191,23 @@ function updateChartsAndJourney() {
             document.getElementById('btn-reveal-savings')?.classList.remove('hidden');
         }
 
+        if (activeNetGap > 0 && (state.revealedAssets.includes('pots') || (state.walletOpenPillar === 1 && cPotsUsed > 0) || (state.walletOpenPillar === 2 && hPotsUsed > 0))) {
+            if (walletTarget === 'core-wallet-slot' || walletTarget === 'home-wallet-slot') {
+                annuityCardWallet?.classList.remove('hidden');
+            } else {
+                annuityCardWallet?.classList.add('hidden');
+            }
+        } else {
+            annuityCardWallet?.classList.add('hidden');
+        }
+
         if (walletEl && walletEl.parentElement?.id !== walletTarget) {
             document.getElementById(walletTarget)?.appendChild(walletEl);
         }
         walletEl?.classList.remove('hidden');
     } else {
         walletEl?.classList.add('hidden');
+        annuityCardWallet?.classList.add('hidden');
     }
 
     // -----------------------------------------------------
