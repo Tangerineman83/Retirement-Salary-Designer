@@ -2,6 +2,7 @@ Chart.register(ChartDataLabels);
 
 let rldConfig = null;
 let locationBenchmarks = null;
+let geojsonData = null; // Stored locally to avoid re-fetching on toggle
 
 let state = { 
     unlockedStep: 1, 
@@ -73,6 +74,7 @@ function initApp() {
 // --- VISUALISE DATA (MAP) LOGIC ---
 let mapInstance = null;
 let currentMapMode = 'nominal'; 
+let currentGeoJsonLayer = null;
 
 window.toggleMapView = function() {
     const mainLayout = document.getElementById('main-calc-layout');
@@ -95,7 +97,7 @@ window.setMapMode = function(mode) {
     renderMapData();
 }
 
-function initMap() {
+async function initMap() {
     mapInstance = L.map('uk-map').setView([54.0, -2.5], 6); 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
@@ -103,72 +105,86 @@ function initMap() {
         maxZoom: 19
     }).addTo(mapInstance);
     
-    renderMapData();
+    try {
+        const res = await fetch('data/uk_postcode_areas.geojson');
+        geojsonData = await res.json();
+        renderMapData();
+    } catch(e) {
+        console.error("GeoJSON not found.", e);
+        document.getElementById('uk-map').innerHTML = "<div style='color:white; padding: 20px; font-family: sans-serif;'>Map data loading error. Please ensure data/uk_postcode_areas.geojson is present.</div>";
+    }
 }
 
 function renderMapData() {
-    if (!locationBenchmarks || !mapInstance) return;
+    if (!locationBenchmarks || !mapInstance || !geojsonData) return;
 
-    // Clear existing layers
-    mapInstance.eachLayer((layer) => {
-        if (layer instanceof L.CircleMarker) mapInstance.removeLayer(layer);
-    });
+    if (currentGeoJsonLayer) {
+        mapInstance.removeLayer(currentGeoJsonLayer);
+    }
 
     const natAvg = locationBenchmarks.metadata.national_average;
-    
-    // Approximate lat/lngs for top postcodes to make the map instantly functional
-    // A robust app would load a full uk_postcodes.geojson here
-    const mockCoords = {
-        "AB": [57.1497, -2.0943], "AL": [51.7500, -0.3333], "B":  [52.4862, -1.8904], 
-        "BA": [51.3758, -2.3599], "BD": [53.7959, -1.7593], "BH": [50.7192, -1.8808], 
-        "BL": [53.5769, -2.4282], "BN": [50.7156, -1.8755], "BR": [51.4039, 0.0198], 
-        "BS": [51.4545, -2.5879], "BT": [54.5973, -5.9301], "CA": [54.8925, -2.9329], 
-        "CB": [52.2053, 0.1218],  "WC": [51.5145, -0.1164], "OX": [51.7520, -1.2577], 
-        "FY": [53.8175, -3.0357], "EH": [55.9533, -3.1883], "G":  [55.8642, -4.2518],
-        "L":  [53.4084, -2.9916], "M":  [53.4808, -2.2426], "N":  [51.6000, -0.1500],
-        "E":  [51.5300, -0.0200], "W":  [51.5100, -0.1500], "SW": [51.4600, -0.1500]
-    };
 
-    for (const [code, data] of Object.entries(locationBenchmarks.districts)) {
-        let coords = mockCoords[code];
-        if (!coords) coords = [50 + Math.random()*8, -5 + Math.random()*5]; // Fallback random UK point
+    currentGeoJsonLayer = L.geoJSON(geojsonData, {
+        style: function(feature) {
+            const code = feature.properties.name || feature.properties.postcodeArea;
+            const data = locationBenchmarks.districts[code];
+            
+            let color = '#4a5568'; // Default grey for missing data
+            let fillOpacity = 0.6;
 
-        const inc = data.avg_disposable_income;
-        const diff = (inc - natAvg) / natAvg;
-        
-        let color = '#4a5568';
-        if (currentMapMode === 'relative') {
-            if (diff > 0.3) color = '#ff5a36'; 
-            else if (diff > 0.1) color = '#f6b93b'; 
-            else if (diff > -0.1) color = '#8bb2af'; 
-            else color = '#6b7a8f'; 
-        } else {
-            if (inc > 50000) color = '#ff5a36'; 
-            else if (inc > 40000) color = '#f6b93b'; 
-            else if (inc > 30000) color = '#8bb2af'; 
+            if (data) {
+                const inc = data.avg_disposable_income;
+                const diff = (inc - natAvg) / natAvg;
+                
+                if (currentMapMode === 'relative') {
+                    if (diff > 0.3) color = '#ff5a36'; 
+                    else if (diff > 0.1) color = '#f6b93b'; 
+                    else if (diff > -0.1) color = '#8bb2af'; 
+                    else color = '#3182ce'; 
+                } else {
+                    if (inc > 50000) color = '#ff5a36'; 
+                    else if (inc > 40000) color = '#f6b93b'; 
+                    else if (inc > 30000) color = '#8bb2af'; 
+                    else color = '#3182ce';
+                }
+                fillOpacity = 0.8;
+            }
+
+            return {
+                fillColor: color,
+                color: color, 
+                weight: 0, // BORDERLESS
+                fillOpacity: fillOpacity
+            };
+        },
+        onEachFeature: function(feature, layer) {
+            const code = feature.properties.name || feature.properties.postcodeArea;
+            const data = locationBenchmarks.districts[code];
+            
+            if (data) {
+                const inc = data.avg_disposable_income;
+                const diff = (inc - natAvg) / natAvg;
+                const diffText = diff > 0 ? `+${(diff*100).toFixed(1)}%` : `${(diff*100).toFixed(1)}%`;
+                
+                const popupContent = `
+                    <div style="font-family:'Space Grotesk', sans-serif; color:#2B2625; padding: 5px;">
+                        <strong style="color:#FF5A36; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:5px; display:block; margin-bottom:5px;">District: ${data.region} (${code})</strong>
+                        <b>Economic Climate:</b> <span style="text-transform:capitalize;">${data.recommended_tier} Tier</span><br>
+                        <b>Disposable Income:</b> £${inc.toLocaleString()}<br>
+                        <b>Vs. National Avg:</b> ${diffText}
+                    </div>
+                `;
+                layer.bindPopup(popupContent);
+            } else {
+                layer.bindPopup(`
+                    <div style="font-family:'Space Grotesk', sans-serif; color:#2B2625; padding: 5px;">
+                        <strong style="color:#7A726E; font-size:1.1rem; display:block;">Area: ${code}</strong>
+                        <span style="color:#7A726E;">No data mapped for this region.</span>
+                    </div>
+                `);
+            }
         }
-
-        const circle = L.circleMarker(coords, {
-            radius: 18,
-            fillColor: color,
-            color: color,
-            weight: 0,
-            opacity: 0.5,
-            fillOpacity: 0.6
-        }).addTo(mapInstance);
-
-        const diffText = diff > 0 ? `+${(diff*100).toFixed(1)}%` : `${(diff*100).toFixed(1)}%`;
-        
-        const popupContent = `
-            <div style="font-family:'Space Grotesk', sans-serif; color:#2B2625; padding: 5px;">
-                <strong style="color:#FF5A36; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:5px; display:block; margin-bottom:5px;">District: ${data.region} (${code})</strong>
-                <b>Economic Climate:</b> <span style="text-transform:capitalize;">${data.recommended_tier} Tier</span><br>
-                <b>Disposable Income:</b> £${inc.toLocaleString()}<br>
-                <b>Vs. National Avg:</b> ${diffText}
-            </div>
-        `;
-        circle.bindPopup(popupContent);
-    }
+    }).addTo(mapInstance);
 }
 // ------------------------------------
 
@@ -199,7 +215,6 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
-    // Explicit User Override: Always advance to the next step when they click apply
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
@@ -356,7 +371,6 @@ function setupListeners() {
 
     document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // Ignore map toggles here
             if (e.target.id === 'btn-map-nom' || e.target.id === 'btn-map-rel') return;
             
             document.querySelectorAll('.toggle-btn:not(#btn-map-nom):not(#btn-map-rel)').forEach(b => b.classList.remove('active'));
@@ -651,7 +665,8 @@ function updateChartsAndJourney() {
         coreAnnuity?.classList.add('hidden');
         corePrompt?.classList.remove('hidden');
         
-        setHTMLSafe('tips-p1-text', `Your guaranteed annual income falls short of your Core needs by <strong>£${Math.round(grossCoreGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
+        let initialGap = Math.max(0, currentValues.essentials - projectedSp);
+        setHTMLSafe('tips-p1-text', `Your guaranteed annual income falls short of your Core needs by <strong>£${Math.round(initialGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
     } else {
         corePrompt?.classList.add('hidden');
         coreBanner?.classList.remove('hidden');
@@ -709,7 +724,8 @@ function updateChartsAndJourney() {
             homeEquityBlock?.classList.add('hidden');
             homePrompt?.classList.remove('hidden');
             
-            setHTMLSafe('tips-p2-text', `Your remaining annual income leaves a Home gap of <strong>£${Math.round(grossHomeGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
+            let initialHomeGap = Math.max(0, currentValues.home - Math.max(0, projectedSp - currentValues.essentials));
+            setHTMLSafe('tips-p2-text', `Your remaining annual income leaves a Home gap of <strong>£${Math.round(initialHomeGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
         } else {
             homePrompt?.classList.add('hidden');
             homeBanner?.classList.remove('hidden');
@@ -756,7 +772,7 @@ function updateChartsAndJourney() {
     }
 
     // -----------------------------------------------------
-    // 3. LIFESTYLE RENDER 
+    // 3. LIFESTYLE RENDER
     // -----------------------------------------------------
     const equityBlock = document.getElementById('equity-block');
     const healthBlock = document.getElementById('health-block');
@@ -787,7 +803,6 @@ function updateChartsAndJourney() {
         } else {
             
             if (nLife <= 0 && currentValues.living > 0) {
-                // FULLY FUNDED
                 lifePrompt?.classList.add('hidden');
                 lifeBanner?.classList.remove('hidden');
                 lifeEdit?.classList.remove('hidden');
@@ -818,7 +833,6 @@ function updateChartsAndJourney() {
                 healthBlock?.classList.remove('hidden'); 
 
             } else {
-                // GAP REMAINS AFTER WALLET APPLIED
                 lifePrompt?.classList.add('hidden');
                 lifeBanner?.classList.remove('hidden');
                 lifeEdit?.classList.remove('hidden');
