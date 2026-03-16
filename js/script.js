@@ -89,6 +89,7 @@ function initDataDashboard() {
     if (!locationBenchmarks) return;
 
     const natAvg = locationBenchmarks.metadata.national_average;
+    const sourceText = "Source: " + (locationBenchmarks.metadata.source || "ONS Data");
     
     // 1. Process and Sort the Data Array
     let districtData = Object.keys(locationBenchmarks.districts).map(code => {
@@ -130,15 +131,29 @@ function initDataDashboard() {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: { display: false, grid: { display: false } }, // Hide x labels to create the smooth wave
+                x: { 
+                    display: true, 
+                    grid: { display: false },
+                    ticks: { display: false }, // Hide the 120 individual labels to keep the wave smooth
+                    title: { display: true, text: 'All UK Postal Districts (Lowest to Highest Income)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                },
                 y: { 
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } }
+                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } },
+                    title: { display: true, text: '% Variance from National Avg', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 }
             },
             plugins: {
                 legend: { display: false },
                 datalabels: { display: false },
+                subtitle: {
+                    display: true,
+                    text: sourceText,
+                    position: 'bottom',
+                    font: { family: 'Space Grotesk', size: 11, style: 'italic' },
+                    color: palette.dusk,
+                    padding: { top: 10, bottom: 0 }
+                },
                 tooltip: {
                     backgroundColor: palette.espresso,
                     titleFont: { family: 'Space Grotesk', size: 13 },
@@ -187,13 +202,29 @@ function initDataDashboard() {
             scales: {
                 x: { 
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } }
+                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } },
+                    title: { display: true, text: '% Variance from National Avg', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
-                y: { grid: { display: false }, ticks: { font: { family: 'Space Grotesk', size: 11 } } }
+                y: { 
+                    grid: { display: false }, 
+                    ticks: { 
+                        autoSkip: false, // Forces all 20 individual district names to appear
+                        font: { family: 'Space Grotesk', size: 11 } 
+                    },
+                    title: { display: true, text: 'Postal Districts (Extremes)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                }
             },
             plugins: {
                 legend: { display: false },
                 datalabels: { display: false },
+                subtitle: {
+                    display: true,
+                    text: sourceText,
+                    position: 'bottom',
+                    font: { family: 'Space Grotesk', size: 11, style: 'italic' },
+                    color: palette.dusk,
+                    padding: { top: 10, bottom: 0 }
+                },
                 tooltip: {
                     backgroundColor: palette.espresso,
                     titleFont: { family: 'Space Grotesk', size: 13 },
@@ -239,7 +270,7 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
-    // Explicit User Override: Always advance to the next step when they click apply, even if a gap remains
+    // Explicit User Override: Always advance to the next step when they click apply
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
