@@ -8,12 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;600&display=swap" rel="stylesheet">
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
@@ -25,18 +21,31 @@
                 <p class="subtitle">The 2026/27 Collection</p>
             </div>
             <div>
-                <button class="text-btn" style="color: var(--accent-orange); font-size: 1rem; border: 1px solid var(--border-stone); padding: 8px 16px; border-radius: 100px;" onclick="window.toggleMapView()">Visualise Data 🗺️</button>
+                <button class="text-btn" style="color: var(--accent-orange); font-size: 1rem; border: 1px solid var(--border-stone); padding: 8px 16px; border-radius: 100px;" onclick="window.toggleDataView()">Visualise Data 📊</button>
             </div>
         </div>
     </header>
 
-    <div id="map-dashboard" class="hidden" style="height: 75vh; border-radius: 24px; overflow: hidden; position: relative; border: 1px solid var(--border-stone); box-shadow: var(--shadow-soft);">
-        <div style="position: absolute; top: 20px; left: 20px; z-index: 1000; background: rgba(45, 39, 37, 0.9); padding: 15px; border-radius: 16px; display: flex; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
-            <button class="toggle-btn active" id="btn-map-nom" onclick="window.setMapMode('nominal')" style="border-color: transparent; padding: 8px 16px; font-size: 0.85rem;">Nominal Income</button>
-            <button class="toggle-btn" id="btn-map-rel" onclick="window.setMapMode('relative')" style="border-color: transparent; padding: 8px 16px; font-size: 0.85rem;">Relative to Avg</button>
-            <button class="text-btn" onclick="window.toggleMapView()" style="color: #fff; margin-left: 10px;">✕ Close Map</button>
+    <div id="data-dashboard" class="hidden" style="background: var(--bg-card); border-radius: 24px; padding: 40px; border: 1px solid var(--border-stone); box-shadow: var(--shadow-soft);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-stone); padding-bottom: 20px; margin-bottom: 30px;">
+            <div>
+                <h3 style="font-size: 1.8rem;">UK Economic Spectrum</h3>
+                <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.95rem;">Comparing regional disposable income against the National Average.</p>
+            </div>
+            <button class="text-btn" onclick="window.toggleDataView()" style="font-size: 1rem;">✕ Close Dashboard</button>
         </div>
-        <div id="uk-map" style="width: 100%; height: 100%; background: #1a1a1a;"></div>
+
+        <div style="display: grid; grid-template-rows: 1fr 1fr; gap: 40px; height: 70vh;">
+            <div style="position: relative; height: 100%; width: 100%;">
+                <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-sage); margin-bottom: 10px;">Macro View: All Districts</h4>
+                <canvas id="macroChart"></canvas>
+            </div>
+            
+            <div style="position: relative; height: 100%; width: 100%;">
+                <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-orange); margin-bottom: 10px;">Micro View: The Regional Extremes (Top 10 vs Bottom 10)</h4>
+                <canvas id="microChart"></canvas>
+            </div>
+        </div>
     </div>
 
     <div class="main-layout" id="main-calc-layout">
