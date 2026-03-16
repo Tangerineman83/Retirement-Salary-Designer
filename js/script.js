@@ -70,6 +70,108 @@ function initApp() {
     calculateAll(); 
 }
 
+// --- VISUALISE DATA (MAP) LOGIC ---
+let mapInstance = null;
+let currentMapMode = 'nominal'; 
+
+window.toggleMapView = function() {
+    const mainLayout = document.getElementById('main-calc-layout');
+    const mapDash = document.getElementById('map-dashboard');
+    
+    if (mainLayout.classList.contains('hidden')) {
+        mainLayout.classList.remove('hidden');
+        mapDash.classList.add('hidden');
+    } else {
+        mainLayout.classList.add('hidden');
+        mapDash.classList.remove('hidden');
+        if (!mapInstance) initMap();
+    }
+}
+
+window.setMapMode = function(mode) {
+    currentMapMode = mode;
+    document.getElementById('btn-map-nom').classList.toggle('active', mode === 'nominal');
+    document.getElementById('btn-map-rel').classList.toggle('active', mode === 'relative');
+    renderMapData();
+}
+
+function initMap() {
+    mapInstance = L.map('uk-map').setView([54.0, -2.5], 6); 
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(mapInstance);
+    
+    renderMapData();
+}
+
+function renderMapData() {
+    if (!locationBenchmarks || !mapInstance) return;
+
+    // Clear existing layers
+    mapInstance.eachLayer((layer) => {
+        if (layer instanceof L.CircleMarker) mapInstance.removeLayer(layer);
+    });
+
+    const natAvg = locationBenchmarks.metadata.national_average;
+    
+    // Approximate lat/lngs for top postcodes to make the map instantly functional
+    // A robust app would load a full uk_postcodes.geojson here
+    const mockCoords = {
+        "AB": [57.1497, -2.0943], "AL": [51.7500, -0.3333], "B":  [52.4862, -1.8904], 
+        "BA": [51.3758, -2.3599], "BD": [53.7959, -1.7593], "BH": [50.7192, -1.8808], 
+        "BL": [53.5769, -2.4282], "BN": [50.7156, -1.8755], "BR": [51.4039, 0.0198], 
+        "BS": [51.4545, -2.5879], "BT": [54.5973, -5.9301], "CA": [54.8925, -2.9329], 
+        "CB": [52.2053, 0.1218],  "WC": [51.5145, -0.1164], "OX": [51.7520, -1.2577], 
+        "FY": [53.8175, -3.0357], "EH": [55.9533, -3.1883], "G":  [55.8642, -4.2518],
+        "L":  [53.4084, -2.9916], "M":  [53.4808, -2.2426], "N":  [51.6000, -0.1500],
+        "E":  [51.5300, -0.0200], "W":  [51.5100, -0.1500], "SW": [51.4600, -0.1500]
+    };
+
+    for (const [code, data] of Object.entries(locationBenchmarks.districts)) {
+        let coords = mockCoords[code];
+        if (!coords) coords = [50 + Math.random()*8, -5 + Math.random()*5]; // Fallback random UK point
+
+        const inc = data.avg_disposable_income;
+        const diff = (inc - natAvg) / natAvg;
+        
+        let color = '#4a5568';
+        if (currentMapMode === 'relative') {
+            if (diff > 0.3) color = '#ff5a36'; 
+            else if (diff > 0.1) color = '#f6b93b'; 
+            else if (diff > -0.1) color = '#8bb2af'; 
+            else color = '#6b7a8f'; 
+        } else {
+            if (inc > 50000) color = '#ff5a36'; 
+            else if (inc > 40000) color = '#f6b93b'; 
+            else if (inc > 30000) color = '#8bb2af'; 
+        }
+
+        const circle = L.circleMarker(coords, {
+            radius: 18,
+            fillColor: color,
+            color: color,
+            weight: 0,
+            opacity: 0.5,
+            fillOpacity: 0.6
+        }).addTo(mapInstance);
+
+        const diffText = diff > 0 ? `+${(diff*100).toFixed(1)}%` : `${(diff*100).toFixed(1)}%`;
+        
+        const popupContent = `
+            <div style="font-family:'Space Grotesk', sans-serif; color:#2B2625; padding: 5px;">
+                <strong style="color:#FF5A36; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:5px; display:block; margin-bottom:5px;">District: ${data.region} (${code})</strong>
+                <b>Economic Climate:</b> <span style="text-transform:capitalize;">${data.recommended_tier} Tier</span><br>
+                <b>Disposable Income:</b> £${inc.toLocaleString()}<br>
+                <b>Vs. National Avg:</b> ${diffText}
+            </div>
+        `;
+        circle.bindPopup(popupContent);
+    }
+}
+// ------------------------------------
+
 window.toggleSection = function(bodyId, headerElement) {
     const body = document.getElementById(bodyId);
     body?.classList.toggle('collapsed');
@@ -97,7 +199,7 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
-    // Explicit User Override: Always advance to the next step when they click apply, even if a gap remains
+    // Explicit User Override: Always advance to the next step when they click apply
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
@@ -254,7 +356,10 @@ function setupListeners() {
 
     document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            // Ignore map toggles here
+            if (e.target.id === 'btn-map-nom' || e.target.id === 'btn-map-rel') return;
+            
+            document.querySelectorAll('.toggle-btn:not(#btn-map-nom):not(#btn-map-rel)').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             state.tenure = e.target.dataset.tenure;
             handleTenureUI(true);
@@ -546,8 +651,7 @@ function updateChartsAndJourney() {
         coreAnnuity?.classList.add('hidden');
         corePrompt?.classList.remove('hidden');
         
-        let initialGap = Math.max(0, currentValues.essentials - projectedSp);
-        setHTMLSafe('tips-p1-text', `Your guaranteed annual income falls short of your Core needs by <strong>£${Math.round(initialGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
+        setHTMLSafe('tips-p1-text', `Your guaranteed annual income falls short of your Core needs by <strong>£${Math.round(grossCoreGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
     } else {
         corePrompt?.classList.add('hidden');
         coreBanner?.classList.remove('hidden');
@@ -605,8 +709,7 @@ function updateChartsAndJourney() {
             homeEquityBlock?.classList.add('hidden');
             homePrompt?.classList.remove('hidden');
             
-            let initialHomeGap = Math.max(0, currentValues.home - Math.max(0, projectedSp - currentValues.essentials));
-            setHTMLSafe('tips-p2-text', `Your remaining annual income leaves a Home gap of <strong>£${Math.round(initialHomeGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
+            setHTMLSafe('tips-p2-text', `Your remaining annual income leaves a Home gap of <strong>£${Math.round(grossHomeGap).toLocaleString()} per year</strong>. Use the wallet below to see how your assets can generate the extra annual income needed.`);
         } else {
             homePrompt?.classList.add('hidden');
             homeBanner?.classList.remove('hidden');
@@ -744,6 +847,7 @@ function updateChartsAndJourney() {
     // EXECUTE WEALTH WALLET INJECTION & ASSET CARDS
     // -----------------------------------------------------
     const walletEl = document.getElementById('wealth-wallet');
+    const annuityCardWallet = document.getElementById('wallet-partner-annuity');
     
     if (walletTarget !== "") {
         let activeNetGap = (state.walletOpenPillar === 1) ? nCore : (state.walletOpenPillar === 2) ? nHome : nLife;
@@ -764,6 +868,8 @@ function updateChartsAndJourney() {
             setHTMLSafe('wallet-dynamic-desc', `Your guaranteed annual income falls short here. Input your assets below to see how they can bridge this annual gap.`);
         }
         
+        let showPotsCard = state.revealedAssets.includes('pots') || (state.walletOpenPillar === 1 && cPotsUsed > 0) || (state.walletOpenPillar === 2 && hPotsUsed > 0);
+        
         if (state.revealedAssets.includes('pots')) {
             document.getElementById('pots-card')?.classList.remove('hidden');
             document.getElementById('btn-reveal-pots')?.classList.add('hidden');
@@ -782,12 +888,23 @@ function updateChartsAndJourney() {
             document.getElementById('btn-reveal-savings')?.classList.remove('hidden');
         }
 
+        if (activeNetGap > 0 && showPotsCard) {
+            if (walletTarget === 'core-wallet-slot' || walletTarget === 'home-wallet-slot') {
+                annuityCardWallet?.classList.remove('hidden');
+            } else {
+                annuityCardWallet?.classList.add('hidden');
+            }
+        } else {
+            annuityCardWallet?.classList.add('hidden');
+        }
+
         if (walletEl && walletEl.parentElement?.id !== walletTarget) {
             document.getElementById(walletTarget)?.appendChild(walletEl);
         }
         walletEl?.classList.remove('hidden');
     } else {
         walletEl?.classList.add('hidden');
+        annuityCardWallet?.classList.add('hidden');
     }
 
     // -----------------------------------------------------
