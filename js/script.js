@@ -133,7 +133,7 @@ function initDataDashboard() {
                 x: { 
                     display: true, 
                     grid: { display: false },
-                    ticks: { display: false }, // Hide the 120 individual labels to keep the wave smooth
+                    ticks: { display: false }, 
                     title: { display: true, text: 'All UK Postal Districts (Lowest to Highest Income)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
                 y: { 
@@ -169,22 +169,59 @@ function initDataDashboard() {
         }
     });
 
-    // 2.5. The Needs Adjustments Stacked Chart
+    // 2.5. The Needs Adjustments Stacked Chart (Cost Variance %)
+    // Helper function to calculate the true £ cost of a given pillar based on a slider value
+    function getCost(pillar, sVal) {
+        let t = 0;
+        for (const [k, cData] of Object.entries(rldConfig.benchmarks[pillar])) {
+            let b = (pillar === 'home' && k === 'shelter') ? cData['owner'] : cData;
+            if(b.staples === undefined) continue;
+            let v = 0;
+            // Skip shelter cost directly, focus purely on the adjustable running/lifestyle costs
+            if (pillar === 'home' && k === 'shelter') {
+                v = 0;
+            } else {
+                if (sVal <= 50) v = b.staples + ((b.signature - b.staples) * (sVal / 50));
+                else v = b.signature + ((b.designer - b.signature) * ((sVal - 50) / 50));
+            }
+            t += v;
+        }
+        return t;
+    }
+
+    // Baseline Costs (Sliders at exactly 50)
+    const baseC = getCost('essentials', 50);
+    const baseH = getCost('home', 50);
+    const baseL = getCost('living', 50);
+    const totalBaseCost = baseC + baseH + baseL;
+
     let needsDataList = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
-        const c = d.slider_positions.core - 50;
-        const h = d.slider_positions.home - 50;
-        const l = d.slider_positions.lifestyle - 50;
+        
+        // District specific costs based on mapped slider positions
+        const distC = getCost('essentials', d.slider_positions.core);
+        const distH = getCost('home', d.slider_positions.home);
+        const distL = getCost('living', d.slider_positions.lifestyle);
+
+        // Weighted percentage variance so the visual stacked bar perfectly equals total % variance
+        const cPct = ((distC - baseC) / totalBaseCost) * 100;
+        const hPct = ((distH - baseH) / totalBaseCost) * 100;
+        const lPct = ((distL - baseL) / totalBaseCost) * 100;
+        const totalPct = cPct + hPct + lPct;
+
         return {
             name: d.region,
-            core: c,
-            home: h,
-            lifestyle: l,
-            total: c + h + l
+            core: cPct,
+            home: hPct,
+            lifestyle: lPct,
+            total: totalPct,
+            rawDiffC: distC - baseC,
+            rawDiffH: distH - baseH,
+            rawDiffL: distL - baseL
         };
     });
 
-    // Explicitly sort by total adjustment from lowest (greatest negative) to highest (greatest positive)
+    // Explicitly sort by total % variance from lowest (greatest negative) to highest (greatest positive)
     needsDataList.sort((a, b) => a.total - b.total);
 
     const needsLabels = needsDataList.map(d => d.name);
@@ -236,13 +273,13 @@ function initDataDashboard() {
                     display: true, 
                     grid: { display: false },
                     ticks: { display: false },
-                    title: { display: true, text: 'All UK Postal Districts (Sorted by Total Need Adjustment)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    title: { display: true, text: 'All UK Postal Districts (Sorted by Total Cost % Variance)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
                 y: { 
                     stacked: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return (value > 0 ? '+' : '') + value; }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: 'Variance from Baseline (0)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    ticks: { callback: function(value) { return (value > 0 ? '+' : '') + value + '%'; }, font: { family: 'Space Grotesk' } },
+                    title: { display: true, text: '% Variance from National Avg Cost', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 }
             },
             plugins: {
@@ -270,7 +307,15 @@ function initDataDashboard() {
                         label: function(context) {
                             let val = context.raw;
                             let sign = val > 0 ? '+' : '';
-                            return ` ${context.dataset.label}: ${sign}${val}`;
+                            
+                            let item = needsDataList[context.dataIndex];
+                            let rawCost = 0;
+                            if(context.dataset.label.includes('Core')) rawCost = item.rawDiffC;
+                            else if(context.dataset.label.includes('Home')) rawCost = item.rawDiffH;
+                            else if(context.dataset.label.includes('Life')) rawCost = item.rawDiffL;
+                            
+                            let rawSign = rawCost > 0 ? '+' : '';
+                            return ` ${context.dataset.label}: ${sign}${val.toFixed(1)}% (${rawSign}£${Math.round(Math.abs(rawCost)).toLocaleString()})`;
                         }
                     }
                 }
@@ -932,7 +977,7 @@ function updateChartsAndJourney() {
     }
 
     // -----------------------------------------------------
-    // 3. LIFESTYLE RENDER 
+    // 3. LIFESTYLE RENDER
     // -----------------------------------------------------
     const equityBlock = document.getElementById('equity-block');
     const healthBlock = document.getElementById('health-block');
@@ -1023,7 +1068,6 @@ function updateChartsAndJourney() {
     // EXECUTE WEALTH WALLET INJECTION & ASSET CARDS
     // -----------------------------------------------------
     const walletEl = document.getElementById('wealth-wallet');
-    const annuityCardWallet = document.getElementById('wallet-partner-annuity');
     
     if (walletTarget !== "") {
         let activeNetGap = (state.walletOpenPillar === 1) ? nCore : (state.walletOpenPillar === 2) ? nHome : nLife;
@@ -1062,23 +1106,12 @@ function updateChartsAndJourney() {
             document.getElementById('btn-reveal-savings')?.classList.remove('hidden');
         }
 
-        if (activeNetGap > 0 && (state.revealedAssets.includes('pots') || (state.walletOpenPillar === 1 && cPotsUsed > 0) || (state.walletOpenPillar === 2 && hPotsUsed > 0))) {
-            if (walletTarget === 'core-wallet-slot' || walletTarget === 'home-wallet-slot') {
-                annuityCardWallet?.classList.remove('hidden');
-            } else {
-                annuityCardWallet?.classList.add('hidden');
-            }
-        } else {
-            annuityCardWallet?.classList.add('hidden');
-        }
-
         if (walletEl && walletEl.parentElement?.id !== walletTarget) {
             document.getElementById(walletTarget)?.appendChild(walletEl);
         }
         walletEl?.classList.remove('hidden');
     } else {
         walletEl?.classList.add('hidden');
-        annuityCardWallet?.classList.add('hidden');
     }
 
     // -----------------------------------------------------
