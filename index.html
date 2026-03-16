@@ -30,7 +30,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--border-stone); padding-bottom: 20px; margin-bottom: 30px;">
             <div>
                 <h3 style="font-size: 1.8rem;">UK Economic Spectrum</h3>
-                <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.95rem;">Comparing regional disposable income against the National Average.</p>
+                <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.95rem;">Comparing regional disposable income and living costs against the National Average.</p>
             </div>
             <button class="text-btn" onclick="window.toggleDataView()" style="font-size: 1rem;">✕ Close Dashboard</button>
         </div>
@@ -38,9 +38,16 @@
         <div style="display: flex; flex-direction: column; gap: 60px;">
             
             <div style="display: flex; flex-direction: column; height: 65vh; min-height: 500px;">
-                <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-sage); margin-bottom: 15px; flex-shrink: 0;">Macro View: All Districts</h4>
+                <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-sage); margin-bottom: 15px; flex-shrink: 0;">Macro View: All Districts (Income)</h4>
                 <div style="position: relative; flex: 1; width: 100%;">
                     <canvas id="macroChart"></canvas>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; height: 65vh; min-height: 500px;">
+                <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-sage); margin-bottom: 15px; flex-shrink: 0;">Macro View: Regional Needs Adjustments</h4>
+                <div style="position: relative; flex: 1; width: 100%;">
+                    <canvas id="needsMacroChart"></canvas>
                 </div>
             </div>
             
