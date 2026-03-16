@@ -2,7 +2,6 @@ Chart.register(ChartDataLabels);
 
 let rldConfig = null;
 let locationBenchmarks = null;
-let geojsonData = null; // Stored locally to avoid re-fetching on toggle
 
 let state = { 
     unlockedStep: 1, 
@@ -28,7 +27,7 @@ let state = {
 };
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
-let charts = { polar: null, mainBar: null }; 
+let charts = { polar: null, mainBar: null, macro: null, micro: null }; 
 
 const palette = {
     sage: '#A3C6C4',
@@ -71,122 +70,147 @@ function initApp() {
     calculateAll(); 
 }
 
-// --- VISUALISE DATA (MAP) LOGIC ---
-let mapInstance = null;
-let currentMapMode = 'nominal'; 
-let currentGeoJsonLayer = null;
-
-window.toggleMapView = function() {
+// --- VISUALISE DATA (DASHBOARD) LOGIC ---
+window.toggleDataView = function() {
     const mainLayout = document.getElementById('main-calc-layout');
-    const mapDash = document.getElementById('map-dashboard');
+    const dataDash = document.getElementById('data-dashboard');
     
     if (mainLayout.classList.contains('hidden')) {
         mainLayout.classList.remove('hidden');
-        mapDash.classList.add('hidden');
+        dataDash.classList.add('hidden');
     } else {
         mainLayout.classList.add('hidden');
-        mapDash.classList.remove('hidden');
-        if (!mapInstance) initMap();
+        dataDash.classList.remove('hidden');
+        if (!charts.macro) initDataDashboard();
     }
 }
 
-window.setMapMode = function(mode) {
-    currentMapMode = mode;
-    document.getElementById('btn-map-nom').classList.toggle('active', mode === 'nominal');
-    document.getElementById('btn-map-rel').classList.toggle('active', mode === 'relative');
-    renderMapData();
-}
-
-async function initMap() {
-    mapInstance = L.map('uk-map').setView([54.0, -2.5], 6); 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 19
-    }).addTo(mapInstance);
-    
-    try {
-        const res = await fetch('data/uk_postcode_areas.geojson');
-        geojsonData = await res.json();
-        renderMapData();
-    } catch(e) {
-        console.error("GeoJSON not found.", e);
-        document.getElementById('uk-map').innerHTML = "<div style='color:white; padding: 20px; font-family: sans-serif;'>Map data loading error. Please ensure data/uk_postcode_areas.geojson is present.</div>";
-    }
-}
-
-function renderMapData() {
-    if (!locationBenchmarks || !mapInstance || !geojsonData) return;
-
-    if (currentGeoJsonLayer) {
-        mapInstance.removeLayer(currentGeoJsonLayer);
-    }
+function initDataDashboard() {
+    if (!locationBenchmarks) return;
 
     const natAvg = locationBenchmarks.metadata.national_average;
+    
+    // 1. Process and Sort the Data Array
+    let districtData = Object.keys(locationBenchmarks.districts).map(code => {
+        const d = locationBenchmarks.districts[code];
+        const diff = ((d.avg_disposable_income - natAvg) / natAvg) * 100;
+        return {
+            code: code,
+            name: d.region,
+            income: d.avg_disposable_income,
+            diff: diff,
+            tier: d.recommended_tier
+        };
+    });
 
-    currentGeoJsonLayer = L.geoJSON(geojsonData, {
-        style: function(feature) {
-            const code = feature.properties.name || feature.properties.postcodeArea;
-            const data = locationBenchmarks.districts[code];
-            
-            let color = '#4a5568'; // Default grey for missing data
-            let fillOpacity = 0.6;
+    // Sort lowest to highest for the S-Curve
+    districtData.sort((a, b) => a.diff - b.diff);
 
-            if (data) {
-                const inc = data.avg_disposable_income;
-                const diff = (inc - natAvg) / natAvg;
-                
-                if (currentMapMode === 'relative') {
-                    if (diff > 0.3) color = '#ff5a36'; 
-                    else if (diff > 0.1) color = '#f6b93b'; 
-                    else if (diff > -0.1) color = '#8bb2af'; 
-                    else color = '#3182ce'; 
-                } else {
-                    if (inc > 50000) color = '#ff5a36'; 
-                    else if (inc > 40000) color = '#f6b93b'; 
-                    else if (inc > 30000) color = '#8bb2af'; 
-                    else color = '#3182ce';
-                }
-                fillOpacity = 0.8;
-            }
+    const labels = districtData.map(d => d.name);
+    const dataPoints = districtData.map(d => d.diff);
+    const colors = dataPoints.map(d => d > 0 ? palette.orange : palette.sage);
 
-            return {
-                fillColor: color,
-                color: color, 
-                weight: 0, // BORDERLESS
-                fillOpacity: fillOpacity
-            };
+    // 2. The Macro S-Curve Chart (Vertical Bar)
+    const ctxMacro = document.getElementById('macroChart').getContext('2d');
+    charts.macro = new Chart(ctxMacro, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '% Variance from National Average',
+                data: dataPoints,
+                backgroundColor: colors,
+                borderRadius: 4,
+                borderWidth: 0,
+                barPercentage: 0.9,
+                categoryPercentage: 1.0
+            }]
         },
-        onEachFeature: function(feature, layer) {
-            const code = feature.properties.name || feature.properties.postcodeArea;
-            const data = locationBenchmarks.districts[code];
-            
-            if (data) {
-                const inc = data.avg_disposable_income;
-                const diff = (inc - natAvg) / natAvg;
-                const diffText = diff > 0 ? `+${(diff*100).toFixed(1)}%` : `${(diff*100).toFixed(1)}%`;
-                
-                const popupContent = `
-                    <div style="font-family:'Space Grotesk', sans-serif; color:#2B2625; padding: 5px;">
-                        <strong style="color:#FF5A36; font-size:1.1rem; border-bottom:1px solid #ccc; padding-bottom:5px; display:block; margin-bottom:5px;">District: ${data.region} (${code})</strong>
-                        <b>Economic Climate:</b> <span style="text-transform:capitalize;">${data.recommended_tier} Tier</span><br>
-                        <b>Disposable Income:</b> £${inc.toLocaleString()}<br>
-                        <b>Vs. National Avg:</b> ${diffText}
-                    </div>
-                `;
-                layer.bindPopup(popupContent);
-            } else {
-                layer.bindPopup(`
-                    <div style="font-family:'Space Grotesk', sans-serif; color:#2B2625; padding: 5px;">
-                        <strong style="color:#7A726E; font-size:1.1rem; display:block;">Area: ${code}</strong>
-                        <span style="color:#7A726E;">No data mapped for this region.</span>
-                    </div>
-                `);
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { display: false, grid: { display: false } }, // Hide x labels to create the smooth wave
+                y: { 
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                datalabels: { display: false },
+                tooltip: {
+                    backgroundColor: palette.espresso,
+                    titleFont: { family: 'Space Grotesk', size: 13 },
+                    bodyFont: { family: 'Space Grotesk', size: 12 },
+                    callbacks: {
+                        label: function(context) {
+                            let item = districtData[context.dataIndex];
+                            let sign = item.diff > 0 ? '+' : '';
+                            return ` ${sign}${item.diff.toFixed(1)}% (£${item.income.toLocaleString()})`;
+                        }
+                    }
+                }
             }
         }
-    }).addTo(mapInstance);
+    });
+
+    // 3. The Micro Extremes Chart (Horizontal Bar)
+    // Extract Bottom 10 and Top 10
+    const bottom10 = districtData.slice(0, 10);
+    const top10 = districtData.slice(-10);
+    const extremeData = [...bottom10, ...top10]; // Combine them
+    
+    // Sort descending for the horizontal chart view
+    extremeData.sort((a, b) => b.diff - a.diff);
+
+    const microLabels = extremeData.map(d => d.name);
+    const microPoints = extremeData.map(d => d.diff);
+    const microColors = microPoints.map(d => d > 0 ? palette.orange : palette.sage);
+
+    const ctxMicro = document.getElementById('microChart').getContext('2d');
+    charts.micro = new Chart(ctxMicro, {
+        type: 'bar',
+        data: {
+            labels: microLabels,
+            datasets: [{
+                label: '% Variance',
+                data: microPoints,
+                backgroundColor: microColors,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            indexAxis: 'y', // Makes it a horizontal bar chart
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { 
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } }
+                },
+                y: { grid: { display: false }, ticks: { font: { family: 'Space Grotesk', size: 11 } } }
+            },
+            plugins: {
+                legend: { display: false },
+                datalabels: { display: false },
+                tooltip: {
+                    backgroundColor: palette.espresso,
+                    titleFont: { family: 'Space Grotesk', size: 13 },
+                    bodyFont: { family: 'Space Grotesk', size: 12 },
+                    callbacks: {
+                        label: function(context) {
+                            let val = context.raw;
+                            let sign = val > 0 ? '+' : '';
+                            return ` ${sign}${val.toFixed(1)}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
-// ------------------------------------
+// ----------------------------------------
 
 window.toggleSection = function(bodyId, headerElement) {
     const body = document.getElementById(bodyId);
@@ -215,6 +239,7 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
+    // Explicit User Override: Always advance to the next step when they click apply
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
@@ -371,9 +396,7 @@ function setupListeners() {
 
     document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            if (e.target.id === 'btn-map-nom' || e.target.id === 'btn-map-rel') return;
-            
-            document.querySelectorAll('.toggle-btn:not(#btn-map-nom):not(#btn-map-rel)').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             state.tenure = e.target.dataset.tenure;
             handleTenureUI(true);
@@ -772,7 +795,7 @@ function updateChartsAndJourney() {
     }
 
     // -----------------------------------------------------
-    // 3. LIFESTYLE RENDER
+    // 3. LIFESTYLE RENDER 
     // -----------------------------------------------------
     const equityBlock = document.getElementById('equity-block');
     const healthBlock = document.getElementById('health-block');
@@ -803,6 +826,7 @@ function updateChartsAndJourney() {
         } else {
             
             if (nLife <= 0 && currentValues.living > 0) {
+                // FULLY FUNDED
                 lifePrompt?.classList.add('hidden');
                 lifeBanner?.classList.remove('hidden');
                 lifeEdit?.classList.remove('hidden');
@@ -833,6 +857,7 @@ function updateChartsAndJourney() {
                 healthBlock?.classList.remove('hidden'); 
 
             } else {
+                // GAP REMAINS AFTER WALLET APPLIED
                 lifePrompt?.classList.add('hidden');
                 lifeBanner?.classList.remove('hidden');
                 lifeEdit?.classList.remove('hidden');
@@ -882,8 +907,6 @@ function updateChartsAndJourney() {
             setHTMLSafe('wallet-dynamic-desc', `Your guaranteed annual income falls short here. Input your assets below to see how they can bridge this annual gap.`);
         }
         
-        let showPotsCard = state.revealedAssets.includes('pots') || (state.walletOpenPillar === 1 && cPotsUsed > 0) || (state.walletOpenPillar === 2 && hPotsUsed > 0);
-        
         if (state.revealedAssets.includes('pots')) {
             document.getElementById('pots-card')?.classList.remove('hidden');
             document.getElementById('btn-reveal-pots')?.classList.add('hidden');
@@ -902,7 +925,7 @@ function updateChartsAndJourney() {
             document.getElementById('btn-reveal-savings')?.classList.remove('hidden');
         }
 
-        if (activeNetGap > 0 && showPotsCard) {
+        if (activeNetGap > 0 && (state.revealedAssets.includes('pots') || (state.walletOpenPillar === 1 && cPotsUsed > 0) || (state.walletOpenPillar === 2 && hPotsUsed > 0))) {
             if (walletTarget === 'core-wallet-slot' || walletTarget === 'home-wallet-slot') {
                 annuityCardWallet?.classList.remove('hidden');
             } else {
