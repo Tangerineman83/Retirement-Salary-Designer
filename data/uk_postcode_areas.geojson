@@ -1,1 +1,40 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "AB",
+        "description": "Aberdeen"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-2.0943, 57.1497],
+            [-2.2000, 57.2000],
+            [-2.0943, 57.1497]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "B",
+        "description": "Birmingham"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-1.8904, 52.4862],
+            [-1.9000, 52.5000],
+            [-1.8904, 52.4862]
+          ]
+        ]
+      }
+    }
+  ]
+}
 
