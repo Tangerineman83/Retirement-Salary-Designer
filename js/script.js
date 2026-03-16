@@ -27,7 +27,7 @@ let state = {
 };
 let currentValues = { essentials: 0, home: 0, living: 0, gross: 0, net: 0, tax: 0 };
 let categoryData = {}; 
-let charts = { polar: null, mainBar: null, macro: null, micro: null }; 
+let charts = { polar: null, mainBar: null, macro: null, micro: null, needsMacro: null }; 
 
 const palette = {
     sage: '#A3C6C4',
@@ -91,7 +91,7 @@ function initDataDashboard() {
     const natAvg = locationBenchmarks.metadata.national_average;
     const sourceText = "Source: " + (locationBenchmarks.metadata.source || "ONS Data");
     
-    // 1. Process and Sort the Data Array
+    // 1. Process and Sort the Data Array for Income
     let districtData = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
         const diff = ((d.avg_disposable_income - natAvg) / natAvg) * 100;
@@ -111,7 +111,7 @@ function initDataDashboard() {
     const dataPoints = districtData.map(d => d.diff);
     const colors = dataPoints.map(d => d > 0 ? palette.orange : palette.sage);
 
-    // 2. The Macro S-Curve Chart (Vertical Bar)
+    // 2. The Macro S-Curve Chart (Income)
     const ctxMacro = document.getElementById('macroChart').getContext('2d');
     charts.macro = new Chart(ctxMacro, {
         type: 'bar',
@@ -134,7 +134,7 @@ function initDataDashboard() {
                 x: { 
                     display: true, 
                     grid: { display: false },
-                    ticks: { display: false }, // Hide the 120 individual labels to keep the wave smooth
+                    ticks: { display: false }, 
                     title: { display: true, text: 'All UK Postal Districts (Lowest to Highest Income)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
                 y: { 
@@ -170,13 +170,120 @@ function initDataDashboard() {
         }
     });
 
+    // 2.5. The Needs Adjustments Stacked Chart
+    let needsDataList = Object.keys(locationBenchmarks.districts).map(code => {
+        const d = locationBenchmarks.districts[code];
+        const c = d.slider_positions.core - 50;
+        const h = d.slider_positions.home - 50;
+        const l = d.slider_positions.lifestyle - 50;
+        return {
+            name: d.region,
+            core: c,
+            home: h,
+            lifestyle: l,
+            total: c + h + l
+        };
+    });
+
+    // Sort by total adjustment from lowest to highest to ensure a smooth S-curve
+    needsDataList.sort((a, b) => a.total - b.total);
+
+    const needsLabels = needsDataList.map(d => d.name);
+    const corePoints = needsDataList.map(d => d.core);
+    const homePoints = needsDataList.map(d => d.home);
+    const lifePoints = needsDataList.map(d => d.lifestyle);
+
+    const ctxNeeds = document.getElementById('needsMacroChart').getContext('2d');
+    charts.needsMacro = new Chart(ctxNeeds, {
+        type: 'bar',
+        data: {
+            labels: needsLabels,
+            datasets: [
+                {
+                    label: 'Core Needs',
+                    data: corePoints,
+                    backgroundColor: palette.sage,
+                    borderRadius: 4,
+                    borderWidth: 0,
+                    barPercentage: 0.9,
+                    categoryPercentage: 1.0
+                },
+                {
+                    label: 'Home Needs',
+                    data: homePoints,
+                    backgroundColor: palette.dusk,
+                    borderRadius: 4,
+                    borderWidth: 0,
+                    barPercentage: 0.9,
+                    categoryPercentage: 1.0
+                },
+                {
+                    label: 'Lifestyle Needs',
+                    data: lifePoints,
+                    backgroundColor: palette.orange,
+                    borderRadius: 4,
+                    borderWidth: 0,
+                    barPercentage: 0.9,
+                    categoryPercentage: 1.0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { 
+                    stacked: true,
+                    display: true, 
+                    grid: { display: false },
+                    ticks: { display: false },
+                    title: { display: true, text: 'All UK Postal Districts (Lowest to Highest Total Cost Adjustment)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                },
+                y: { 
+                    stacked: true,
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    ticks: { callback: function(value) { return (value > 0 ? '+' : '') + value; }, font: { family: 'Space Grotesk' } },
+                    title: { display: true, text: 'Variance from Baseline (0)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                }
+            },
+            plugins: {
+                legend: { 
+                    display: true, 
+                    position: 'bottom', 
+                    labels: { boxWidth: 12, font: { family: 'Space Grotesk'} }
+                },
+                datalabels: { display: false },
+                subtitle: {
+                    display: true,
+                    text: sourceText,
+                    position: 'bottom',
+                    font: { family: 'Space Grotesk', size: 11, style: 'italic' },
+                    color: palette.dusk,
+                    padding: { top: 10, bottom: 0 }
+                },
+                tooltip: {
+                    backgroundColor: palette.espresso,
+                    titleFont: { family: 'Space Grotesk', size: 13 },
+                    bodyFont: { family: 'Space Grotesk', size: 12 },
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            let val = context.raw;
+                            let sign = val > 0 ? '+' : '';
+                            return ` ${context.dataset.label}: ${sign}${val}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
     // 3. The Micro Extremes Chart (Horizontal Bar)
-    // Extract Bottom 10 and Top 10
     const bottom10 = districtData.slice(0, 10);
     const top10 = districtData.slice(-10);
-    const extremeData = [...bottom10, ...top10]; // Combine them
+    const extremeData = [...bottom10, ...top10]; 
     
-    // Sort descending for the horizontal chart view
     extremeData.sort((a, b) => b.diff - a.diff);
 
     const microLabels = extremeData.map(d => d.name);
@@ -196,7 +303,7 @@ function initDataDashboard() {
             }]
         },
         options: {
-            indexAxis: 'y', // Makes it a horizontal bar chart
+            indexAxis: 'y', 
             responsive: true,
             maintainAspectRatio: false,
             scales: {
@@ -208,7 +315,7 @@ function initDataDashboard() {
                 y: { 
                     grid: { display: false }, 
                     ticks: { 
-                        autoSkip: false, // Forces all 20 individual district names to appear
+                        autoSkip: false, 
                         font: { family: 'Space Grotesk', size: 11 } 
                     },
                     title: { display: true, text: 'Postal Districts (Extremes)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
