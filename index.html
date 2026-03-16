@@ -52,8 +52,6 @@
             </div>
 
         </div>
-        
-        <div id="dashboard-source" style="text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 15px; font-family: 'Space Grotesk', sans-serif;"></div>
     </div>
 
     <div class="main-layout" id="main-calc-layout">
@@ -285,4 +283,148 @@
                         </div>
 
                         <div class="slider-container" style="margin-top: 40px;">
-                            <input type="range" class="blender-slider
+                            <input type="range" class="blender-slider snap-slider" id="slider-living" min="0" max="100" value="50">
+                            <div class="slider-labels">
+                                <div class="label-group tt-trigger" data-desc="Local leisure, free bus pass, 1 UK holiday, reliant entirely on NHS."><strong>Staples</strong><span>Local & NHS Core ⓘ</span></div>
+                                <div class="label-group tt-trigger" data-desc="Car ownership, European holidays, and a private healthcare diagnostic buffer."><strong>Signature</strong><span>Private Health Buffer ⓘ</span></div>
+                                <div class="label-group tt-trigger" data-desc="Premium car, long-haul travel, full PMI, and charitable giving."><strong>Designer</strong><span>Global & Comprehensive ⓘ</span></div>
+                            </div>
+                        </div>
+
+                        <div class="designer-tips" style="background:transparent; border:none; padding:10px 0 0 0;" id="p3-final-review">
+                            
+                            <div id="life-text-prompt" class="hidden">
+                                <h4 class="tips-title" style="color: var(--accent-orange);">Funding Gap Detected</h4>
+                                <p class="tips-text" id="tips-p3-text"></p>
+                            </div>
+                            
+                            <div id="lifestyle-wallet-slot"></div>
+
+                            <div id="lifestyle-success-banner" class="success-banner hidden">
+                                <div class="sb-text">
+                                    <h3 id="life-banner-title">Lifestyle Fully Funded <span style="color:var(--accent-sage)">✓</span></h3>
+                                    <p id="lifestyle-success-desc"></p>
+                                </div>
+                                <div class="sb-amount-block">
+                                    <span class="sb-label" id="life-banner-label">Allocated</span>
+                                    <span class="sb-value" id="lifestyle-success-val">£0/yr</span>
+                                </div>
+                            </div>
+                            
+                            <div id="lifestyle-edit-container" class="hidden" style="text-align: right; margin-bottom: 25px;">
+                                <button id="btn-life-edit" class="text-btn" onclick="window.openWallet(3)">Edit Assets ⌄</button>
+                            </div>
+
+                            <div id="equity-block" class="hidden" style="margin-top: 25px; border-top: 1px dashed var(--border-stone); padding-top: 20px;">
+                                <h4 class="tips-title" style="color:var(--text-espresso);">Consider Property Wealth</h4>
+                                <p class="tips-text" id="equity-desc"></p>
+                                <div class="partner-card-tip" id="partner-equity" style="margin-top: 15px;">
+                                    <div class="pct-content">
+                                        <strong>Property Management & Equity Release</strong>
+                                        <span>Unlock value from your home to support your lifestyle in retirement.</span>
+                                    </div>
+                                    <button class="pct-btn">Explore Options</button>
+                                </div>
+                            </div>
+
+                            <div id="health-block" class="hidden" style="margin-top: 25px; border-top: 1px dashed var(--border-stone); padding-top: 20px;">
+                                <h4 class="tips-title" style="color:var(--accent-sage);">Protect Your Independence</h4>
+                                <p class="tips-text">Your lifestyle is fully supported. Consider securing private healthcare to protect your later-life needs.</p>
+                                <div class="partner-card-tip" id="partner-health" style="margin-top: 15px;">
+                                    <div class="pct-content">
+                                        <strong>Later Life Healthcare</strong>
+                                        <span>Explore premium protection plans to secure your independence.</span>
+                                    </div>
+                                    <button class="pct-btn">Explore Healthcare</button>
+                                </div>
+                            </div>
+
+                            <div id="surplus-block" class="designer-tips hidden" style="border-color: var(--accent-sage); margin-top: 25px;">
+                                <h4 class="tips-title" style="color: var(--accent-sage);">Surplus Detected</h4>
+                                <p class="tips-text">You have a projected surplus of <strong id="surplus-amount" style="font-size:1.2rem;">£0/yr</strong>.</p>
+                                <p class="tips-text" style="margin-top:10px;">You are in a fantastic position to boost your lifestyle further, accelerate your retirement date, or consider legacy planning.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+            </div> 
+        </main>
+
+        <aside class="outputs-section">
+            
+            <div class="salary-dashboard" style="margin-bottom: 25px;">
+                <div class="dash-left">
+                    <div class="salary-total">
+                        <span class="sd-label">Target Gross Annual Fit</span>
+                        <span class="sd-gross" id="display-salary">£0</span>
+                    </div>
+                    <div class="salary-breakdown">
+                        <div class="sd-net">The Net Fit: <span id="display-net">£0</span></div>
+                        <div class="sd-tax">The Tax Fit: <span id="display-tax">+£0</span></div>
+                    </div>
+                </div>
+                <div class="dash-right">
+                    <canvas id="polarChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>Retirement Horizon</h3>
+                <p class="chart-desc">Your projected needs modeled with real-term inflation adjustments against a 2.5% base.</p>
+                <div class="main-chart-wrapper">
+                    <canvas id="mainStackedChart"></canvas>
+                </div>
+            </div>
+            
+        </aside>
+    </div>
+
+    <div id="wealth-wallet" class="wealth-wallet hidden">
+        <h4 class="tips-title" id="wallet-dynamic-title" style="color:var(--accent-orange);">Bridge the Annual Gap</h4>
+        <p class="wallet-desc" id="wallet-dynamic-desc"></p>
+        
+        <div class="asset-cards-container">
+            <div id="db-card" class="asset-card">
+                <h5>1. Defined Benefit Pension</h5>
+                <p>Do you have a guaranteed annual pension from a previous employer?</p>
+                <label>Annual Amount (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
+                <button class="text-btn" id="btn-reveal-pots" onclick="window.revealAsset('pots')" style="margin-top:15px; font-size:0.8rem;">+ Add Pension Pots</button>
+            </div>
+            
+            <div id="pots-card" class="asset-card hidden">
+                <h5>2. Pension Pots</h5>
+                <p>Total value of accumulated defined contribution pension pots.</p>
+                <label>Total Value (£): <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
+                <button class="text-btn" id="btn-reveal-savings" onclick="window.revealAsset('savings')" style="margin-top:15px; font-size:0.8rem;">+ Add Other Savings</button>
+            </div>
+
+            <div id="savings-card" class="asset-card hidden">
+                <h5>3. Other Savings</h5>
+                <p>ISAs, cash, or other investments available to draw from.</p>
+                <label>Total Value (£): <input type="number" id="meas-savings" class="seamless-input" placeholder="£0"></label>
+            </div>
+        </div>
+        
+        <span id="withdrawal-hint" class="input-hint hidden" style="margin-top:15px; text-align:center;">We map your pots and savings into an estimated annual income using a sustainable 5% withdrawal rate.</span>
+
+        <div id="wallet-partner-annuity" class="partner-card-tip hidden" style="margin-top: 20px;">
+            <div class="pct-content">
+                <strong>Secure Your Foundation</strong>
+                <span>Convert a portion of these savings into guaranteed income to definitively bridge this gap.</span>
+            </div>
+            <button class="pct-btn">Explore Annuities</button>
+        </div>
+
+        <div class="wallet-actions" style="margin-top: 25px; text-align: center;">
+            <button class="action-btn" id="wallet-apply-btn" onclick="window.applyWallet()">Apply & Continue ⌃</button>
+        </div>
+    </div>
+
+</div>
+
+<div id="smart-tooltip" class="smart-tooltip"></div>
+<script src="js/script.js"></script>
+</body>
+</html>
