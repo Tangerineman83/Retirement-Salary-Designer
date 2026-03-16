@@ -91,6 +91,10 @@ function initDataDashboard() {
     const natAvg = locationBenchmarks.metadata.national_average;
     const sourceText = "Source: " + (locationBenchmarks.metadata.source || "ONS Data");
     
+    // --- MEDIAN HOUSING COST ANCHOR ---
+    // This value pads the denominator to ensure percentage variances aren't artificially inflated.
+    const MEDIAN_HOUSING_COST = 12000; 
+    
     // Helper function to calculate the true £ cost of a given pillar based on a slider value
     function getCost(pillar, sVal) {
         let t = 0;
@@ -98,7 +102,7 @@ function initDataDashboard() {
             let b = (pillar === 'home' && k === 'shelter') ? cData['owner'] : cData;
             if(b.staples === undefined) continue;
             let v = 0;
-            // Skip shelter cost directly, focus purely on the adjustable running/lifestyle costs
+            // Skip dynamic shelter calculation here; we will inject the MEDIAN_HOUSING_COST instead
             if (pillar === 'home' && k === 'shelter') {
                 v = 0;
             } else {
@@ -112,7 +116,7 @@ function initDataDashboard() {
 
     // Baseline Costs (Sliders at exactly 50)
     const baseC = getCost('essentials', 50);
-    const baseH = getCost('home', 50);
+    const baseH = getCost('home', 50) + MEDIAN_HOUSING_COST; 
     const baseL = getCost('living', 50);
     const totalBaseCost = baseC + baseH + baseL;
     
@@ -202,7 +206,7 @@ function initDataDashboard() {
         const d = locationBenchmarks.districts[code];
         
         const distC = getCost('essentials', d.slider_positions.core);
-        const distH = getCost('home', d.slider_positions.home);
+        const distH = getCost('home', d.slider_positions.home) + MEDIAN_HOUSING_COST;
         const distL = getCost('living', d.slider_positions.lifestyle);
 
         const cPct = ((distC - baseC) / totalBaseCost) * 100;
@@ -328,7 +332,7 @@ function initDataDashboard() {
         const d = locationBenchmarks.districts[code];
         const inc = d.avg_disposable_income;
         const distC = getCost('essentials', d.slider_positions.core);
-        const distH = getCost('home', d.slider_positions.home);
+        const distH = getCost('home', d.slider_positions.home) + MEDIAN_HOUSING_COST;
         const distL = getCost('living', d.slider_positions.lifestyle);
         const distTotalCost = distC + distH + distL;
 
