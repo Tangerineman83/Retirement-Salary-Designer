@@ -35,16 +35,16 @@
             <button class="text-btn" onclick="window.toggleDataView()" style="font-size: 1rem;">✕ Close Dashboard</button>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 40px; height: 65vh;">
+        <div style="display: flex; flex-direction: column; gap: 60px;">
             
-            <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+            <div style="display: flex; flex-direction: column; height: 65vh; min-height: 500px;">
                 <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-sage); margin-bottom: 15px; flex-shrink: 0;">Macro View: All Districts</h4>
                 <div style="position: relative; flex: 1; width: 100%;">
                     <canvas id="macroChart"></canvas>
                 </div>
             </div>
             
-            <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+            <div style="display: flex; flex-direction: column; height: 65vh; min-height: 500px;">
                 <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-orange); margin-bottom: 15px; flex-shrink: 0;">Micro View: The Regional Extremes (Top 10 vs Bottom 10)</h4>
                 <div style="position: relative; flex: 1; width: 100%;">
                     <canvas id="microChart"></canvas>
