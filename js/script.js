@@ -203,7 +203,7 @@ function initDataDashboard() {
             },
             plugins: {
                 legend: { display: false },
-                datalabels: { display: false },
+                datalabels: { display: false }, // Explicitly disable global datalabels here
                 subtitle: {
                     display: true,
                     text: sourceText,
@@ -242,7 +242,7 @@ function initDataDashboard() {
             rawH: distH,
             rawL: distL,
             total: totalCost,
-            isPUK: false // Flag to identify real districts vs benchmark bars
+            isPUK: false 
         };
     });
 
@@ -258,16 +258,12 @@ function initDataDashboard() {
 
     needsDataList.push(...pukBenchmarks);
 
-    // Sort perfectly from lowest total cost to highest total cost. 
-    // This allows the PUK benchmarks to slide perfectly into their natural place along the S-Curve.
     needsDataList.sort((a, b) => a.total - b.total);
 
     const needsLabels = needsDataList.map(d => d.name);
     const corePoints = needsDataList.map(d => d.rawC);
     const homePoints = needsDataList.map(d => d.rawH);
     const lifePoints = needsDataList.map(d => d.rawL);
-    
-    // Create the separate dataset data strictly for the PUK bars
     const pukPoints = needsDataList.map(d => d.isPUK ? d.total : 0);
 
     const ctxNeeds = document.getElementById('needsMacroChart').getContext('2d');
@@ -283,7 +279,8 @@ function initDataDashboard() {
                     borderRadius: 4,
                     borderWidth: 0,
                     barPercentage: 0.9,
-                    categoryPercentage: 1.0
+                    categoryPercentage: 1.0,
+                    datalabels: { display: false } // Specifically turn off datalabels for Core
                 },
                 {
                     label: 'Home Needs (£)',
@@ -292,7 +289,8 @@ function initDataDashboard() {
                     borderRadius: 4,
                     borderWidth: 0,
                     barPercentage: 0.9,
-                    categoryPercentage: 1.0
+                    categoryPercentage: 1.0,
+                    datalabels: { display: false } // Specifically turn off datalabels for Home
                 },
                 {
                     label: 'Lifestyle Needs (£)',
@@ -301,22 +299,22 @@ function initDataDashboard() {
                     borderRadius: 4,
                     borderWidth: 0,
                     barPercentage: 0.9,
-                    categoryPercentage: 1.0
+                    categoryPercentage: 1.0,
+                    datalabels: { display: false } // Specifically turn off datalabels for Lifestyle
                 },
                 {
                     label: 'Pensions UK Standard (£)',
                     data: pukPoints,
-                    backgroundColor: palette.gold, // The new distinct contrast color
+                    backgroundColor: palette.gold, 
                     borderRadius: 4,
                     borderWidth: 0,
                     barPercentage: 0.9,
                     categoryPercentage: 1.0,
                     datalabels: {
-                        // Only display the label if it is actually a PUK benchmark bar (value > 0)
                         display: function(context) { return context.dataset.data[context.dataIndex] > 0; },
                         align: 'top',
                         anchor: 'end',
-                        rotation: -90, // Rotate vertically to act as a milestone marker
+                        rotation: -90, 
                         offset: 8,
                         color: palette.espresso,
                         font: { family: 'Space Grotesk', size: 10, weight: 'bold' },
@@ -328,10 +326,7 @@ function initDataDashboard() {
             ]
         },
         options: {
-            layout: {
-                // Add generous top padding so the vertical PUK labels don't get cut off
-                padding: { top: 120 } 
-            },
+            layout: { padding: { top: 120 } },
             responsive: true,
             maintainAspectRatio: false,
             scales: {
@@ -356,6 +351,7 @@ function initDataDashboard() {
                     position: 'bottom', 
                     labels: { boxWidth: 12, font: { family: 'Space Grotesk'} }
                 },
+                datalabels: { display: false }, // Catch-all safety switch
                 subtitle: {
                     display: true,
                     text: sourceText,
@@ -373,8 +369,6 @@ function initDataDashboard() {
                     callbacks: {
                         label: function(context) {
                             let val = context.raw;
-                            // Returning null completely hides this category from the tooltip if it equals 0
-                            // This ensures the "PLSA Standard" doesn't show up on normal postal district tooltips, and vice versa.
                             if (val === 0) return null; 
                             return ` ${context.dataset.label}: £${Math.round(val).toLocaleString()}`;
                         }
@@ -407,7 +401,6 @@ function initDataDashboard() {
 
     const netLabels = netDataList.map(d => d.name);
     const netPoints = netDataList.map(d => d.net);
-    // Surplus is good (Sage), Deficit is bad (Orange)
     const netColors = netPoints.map(n => n >= 0 ? palette.sage : palette.orange);
 
     const ctxRatio = document.getElementById('ratioMacroChart').getContext('2d');
@@ -443,7 +436,7 @@ function initDataDashboard() {
             },
             plugins: {
                 legend: { display: false },
-                datalabels: { display: false },
+                datalabels: { display: false }, // Explicitly disable global datalabels here
                 subtitle: {
                     display: true,
                     text: sourceText,
@@ -473,12 +466,10 @@ function initDataDashboard() {
     const top10 = districtData.slice(-10);
     const extremeData = [...bottom10, ...top10]; 
     
-    // Sort descending by Income
     extremeData.sort((a, b) => b.income - a.income);
 
     const microLabels = extremeData.map(d => d.name);
     const microPoints = extremeData.map(d => d.income);
-    // Orange for above average, Sage for below
     const microColors = microPoints.map(inc => inc > natAvg ? palette.orange : palette.sage);
 
     const ctxMicro = document.getElementById('microChart').getContext('2d');
@@ -514,7 +505,7 @@ function initDataDashboard() {
             },
             plugins: {
                 legend: { display: false },
-                datalabels: { display: false },
+                datalabels: { display: false }, // Explicitly disable global datalabels here
                 subtitle: {
                     display: true,
                     text: sourceText,
@@ -664,7 +655,6 @@ function updatePostcodeReadout() {
             state.manualHomeValue = false;
             state.baseHousePrice = localAvg * 8.5; 
             
-            // Pass true to ensure the assumption banner dynamically renders immediately
             handleTenureUI(true); 
             calculateAll(); 
 
@@ -739,7 +729,6 @@ function setupListeners() {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             state.tenure = e.target.dataset.tenure;
-            // The user manually verified/changed tenure. Turn off the assumption flag.
             state.tenureAssumed = false; 
             handleTenureUI(true);
             calculateAll();
