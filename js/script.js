@@ -19,7 +19,8 @@ let state = {
     manualHomeValue: false, 
     manualMortgagePmt: false, 
     manualRentPmt: false,     
-    tenure: 'owner', 
+    tenure: 'owner',
+    tenureAssumed: false, // Tracks if the tenure was auto-set by postcode
     mortgageEndAge: 75,
     essentials: 50, 
     home: 50, 
@@ -130,6 +131,24 @@ function initDataDashboard() {
                           (rentCost * districtData.tenure_split.rent);
         return blendedCost;
     }
+
+    let sumC = 0, sumH = 0, sumL = 0;
+    const districtKeys = Object.keys(locationBenchmarks.districts);
+    const districtCount = districtKeys.length;
+
+    districtKeys.forEach(code => {
+        const d = locationBenchmarks.districts[code];
+        sumC += getCost('essentials', d.slider_positions.core);
+        sumH += getCost('home', d.slider_positions.home) + getBlendedShelter(d, d.slider_positions.home);
+        sumL += getCost('living', d.slider_positions.lifestyle);
+    });
+
+    const baseC = sumC / districtCount;
+    const baseH = sumH / districtCount;
+    const baseL = sumL / districtCount;
+    const totalBaseCost = baseC + baseH + baseL;
+    
+    const baseRatio = natAvg / totalBaseCost;
 
     // 1. Process and Sort the Data Array for Income Chart (Raw £)
     let districtData = Object.keys(locationBenchmarks.districts).map(code => {
@@ -590,6 +609,8 @@ function updatePostcodeReadout() {
             }
 
             state.tenure = impliedTenure;
+            state.tenureAssumed = true; // Auto-set by postcode! Flag active.
+            
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`)?.classList.add('active');
 
@@ -598,7 +619,8 @@ function updatePostcodeReadout() {
             state.manualHomeValue = false;
             state.baseHousePrice = localAvg * 8.5; 
             
-            handleTenureUI(false); 
+            // Pass true to ensure the assumption banner dynamically renders immediately
+            handleTenureUI(true); 
             calculateAll(); 
 
         } else {
@@ -672,6 +694,8 @@ function setupListeners() {
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             state.tenure = e.target.dataset.tenure;
+            // The user manually verified/changed tenure. Turn off the assumption flag.
+            state.tenureAssumed = false; 
             handleTenureUI(true);
             calculateAll();
         });
@@ -779,18 +803,37 @@ function handleTenureUI(updateText = true) {
 
     if (state.tenure === 'owner') {
         ownerInputs?.classList.remove('hidden');
-        if(updateText) setHTMLSafe('p2-tenure-display', `You own your home outright. We've styled your Home baseline using the details provided above.`);
         if(shelterInput) shelterInput.value = '';
     } else if (state.tenure === 'mortgage') {
         mortgageInputs?.classList.remove('hidden');
-        if(updateText) setHTMLSafe('p2-tenure-display', `You have a mortgage. We've populated a default monthly payment based on your slider, but you can adjust it below.`);
         setValueSafe('meas-mortgage-pmt', state.mortgagePmt);
         if(shelterInput) shelterInput.value = state.mortgagePmt;
     } else {
         rentInputs?.classList.remove('hidden');
-        if(updateText) setHTMLSafe('p2-tenure-display', `You are renting. We've populated a default monthly rent based on your slider, but you can adjust it below.`);
         setValueSafe('meas-rent-pmt', state.rentPmt);
         if(shelterInput) shelterInput.value = state.rentPmt;
+    }
+
+    if (updateText) {
+        let dynamicText = "";
+        
+        if (state.tenureAssumed) {
+            let assumedAction = state.tenure === 'owner' ? 'own your home outright' : state.tenure === 'mortgage' ? 'have a mortgage' : 'are renting';
+            dynamicText = `
+                <div style="color: var(--accent-orange); padding: 12px 16px; border-radius: 8px; border: 1px dashed var(--accent-orange); background: rgba(255, 90, 54, 0.05); margin-bottom: 15px; font-size: 0.95rem;">
+                    💡 <strong>Data Assumption:</strong> Based on the 55+ demographic in your postcode, we've assumed you <strong>${assumedAction}</strong>. Please adjust this below if your situation differs, as your housing status will dramatically impact your required retirement salary.
+                </div>
+            `;
+        } else {
+            if (state.tenure === 'owner') {
+                dynamicText = `You own your home outright. We've styled your Home baseline using the details provided above.`;
+            } else if (state.tenure === 'mortgage') {
+                dynamicText = `You have a mortgage. We've populated a default monthly payment based on your slider, but you can adjust it below.`;
+            } else {
+                dynamicText = `You are renting. We've populated a default monthly rent based on your slider, but you can adjust it below.`;
+            }
+        }
+        setHTMLSafe('p2-tenure-display', dynamicText);
     }
 }
 
