@@ -91,7 +91,8 @@ function initDataDashboard() {
     const natAvg = locationBenchmarks.metadata.national_average;
     const sourceText = "Source: " + (locationBenchmarks.metadata.source || "ONS Data");
     
-    // Core pillar costs (excludes shelter)
+    const MEDIAN_HOUSING_COST = 12000; 
+    
     function getCost(pillar, sVal) {
         let t = 0;
         for (const [k, cData] of Object.entries(rldConfig.benchmarks[pillar])) {
@@ -99,7 +100,7 @@ function initDataDashboard() {
             if(b.staples === undefined) continue;
             let v = 0;
             if (pillar === 'home' && k === 'shelter') {
-                v = 0; 
+                v = 0;
             } else {
                 if (sVal <= 50) v = b.staples + ((b.signature - b.staples) * (sVal / 50));
                 else v = b.signature + ((b.designer - b.signature) * ((sVal - 50) / 50));
@@ -109,11 +110,8 @@ function initDataDashboard() {
         return t;
     }
 
-    // Dynamic Blended Housing Cost based on ONS Tenure Splits
     function getBlendedShelter(districtData, sVal) {
-        // Safe fallback if the analyst hasn't added the tenure splits to the JSON yet
         if (!districtData.tenure_split) return 12000; 
-
         const rRent = rldConfig.benchmarks.home.shelter.rent || {staples: 12000, signature: 22000, designer: 35000};
         const rMort = rldConfig.benchmarks.home.shelter.mortgage || {staples: 12000, signature: 22000, designer: 35000};
         
@@ -127,15 +125,12 @@ function initDataDashboard() {
             mortCost = rMort.signature + ((rMort.designer - rMort.signature) * ((sVal - 50) / 50));
         }
 
-        // Multiply the exact cost by the statistical probability of that housing state in the district
         let blendedCost = (0 * districtData.tenure_split.owner) + 
                           (mortCost * districtData.tenure_split.mortgage) + 
                           (rentCost * districtData.tenure_split.rent);
-                          
         return blendedCost;
     }
 
-    // --- NEW METHODOLOGY: THE TRUE MEAN BASELINE ---
     let sumC = 0, sumH = 0, sumL = 0;
     const districtKeys = Object.keys(locationBenchmarks.districts);
     const districtCount = districtKeys.length;
@@ -232,7 +227,7 @@ function initDataDashboard() {
         }
     });
 
-    // 2.5. The Needs Adjustments Stacked Chart (Cost Variance %)
+    // 2.5. The Needs Adjustments Stacked Chart (Absolute % of National Mean)
     let needsDataList = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
         
@@ -240,9 +235,10 @@ function initDataDashboard() {
         const distH = getCost('home', d.slider_positions.home) + getBlendedShelter(d, d.slider_positions.home);
         const distL = getCost('living', d.slider_positions.lifestyle);
 
-        const cPct = ((distC - baseC) / totalBaseCost) * 100;
-        const hPct = ((distH - baseH) / totalBaseCost) * 100;
-        const lPct = ((distL - baseL) / totalBaseCost) * 100;
+        // Map to absolute percentage of the national mean (e.g. 110% or 95%) so everything stays positive and stacks perfectly
+        const cPct = (distC / totalBaseCost) * 100;
+        const hPct = (distH / totalBaseCost) * 100;
+        const lPct = (distL / totalBaseCost) * 100;
         const totalPct = cPct + hPct + lPct;
 
         return {
@@ -251,12 +247,13 @@ function initDataDashboard() {
             home: hPct,
             lifestyle: lPct,
             total: totalPct,
-            rawDiffC: distC - baseC,
-            rawDiffH: distH - baseH,
-            rawDiffL: distL - baseL
+            rawC: distC,
+            rawH: distH,
+            rawL: distL
         };
     });
 
+    // Sort perfectly from lowest total cost to highest total cost
     needsDataList.sort((a, b) => a.total - b.total);
 
     const needsLabels = needsDataList.map(d => d.name);
@@ -308,13 +305,14 @@ function initDataDashboard() {
                     display: true, 
                     grid: { display: false },
                     ticks: { display: false },
-                    title: { display: true, text: 'All UK Postal Districts (Sorted by Total Cost % Variance)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    title: { display: true, text: 'All UK Postal Districts (Sorted by Total Cost %)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
                 y: { 
                     stacked: true,
+                    beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return (value > 0 ? '+' : '') + value + '%'; }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: '% Variance from National Mean Cost', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } },
+                    title: { display: true, text: 'Cost as % of National Mean', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 }
             },
             plugins: {
@@ -341,16 +339,13 @@ function initDataDashboard() {
                     callbacks: {
                         label: function(context) {
                             let val = context.raw;
-                            let sign = val > 0 ? '+' : '';
-                            
                             let item = needsDataList[context.dataIndex];
                             let rawCost = 0;
-                            if(context.dataset.label.includes('Core')) rawCost = item.rawDiffC;
-                            else if(context.dataset.label.includes('Home')) rawCost = item.rawDiffH;
-                            else if(context.dataset.label.includes('Life')) rawCost = item.rawDiffL;
+                            if(context.dataset.label.includes('Core')) rawCost = item.rawC;
+                            else if(context.dataset.label.includes('Home')) rawCost = item.rawH;
+                            else if(context.dataset.label.includes('Life')) rawCost = item.rawL;
                             
-                            let rawSign = rawCost > 0 ? '+' : '';
-                            return ` ${context.dataset.label}: ${sign}${val.toFixed(1)}% (${rawSign}£${Math.round(Math.abs(rawCost)).toLocaleString()})`;
+                            return ` ${context.dataset.label}: ${val.toFixed(1)}% of Nat. Mean (£${Math.round(rawCost).toLocaleString()})`;
                         }
                     }
                 }
@@ -612,10 +607,8 @@ function updatePostcodeReadout() {
             setValueSafe('slider-home', state.home);
             setValueSafe('slider-living', state.living);
 
-            // --- PEOPLE LIKE YOU: SMART TENURE TOGGLE ---
             let impliedTenure = 'owner';
             if (districtData.tenure_split) {
-                // If the analyst added the data, find the statistical majority
                 let maxProb = -1;
                 for (let [tenureType, prob] of Object.entries(districtData.tenure_split)) {
                     if (prob > maxProb) { 
@@ -624,7 +617,6 @@ function updatePostcodeReadout() {
                     }
                 }
             } else {
-                // Fallback if data is missing
                 if (state.age < 55) impliedTenure = 'mortgage';
                 else if (districtData.imd_decile <= 4) impliedTenure = 'rent';
             }
