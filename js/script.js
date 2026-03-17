@@ -34,7 +34,8 @@ const palette = {
     sage: '#A3C6C4',
     dusk: '#6B7A8F', 
     orange: '#FF5A36',
-    espresso: '#2B2625'
+    espresso: '#2B2625',
+    gold: '#E2B93B' // Distinct color for the Pensions UK benchmark bars
 };
 
 // --- SAFE DOM HELPERS ---
@@ -226,7 +227,7 @@ function initDataDashboard() {
         }
     });
 
-    // 2.5. The Needs Adjustments Stacked Chart (Raw £ Costs)
+    // 2.5. The Needs Adjustments Stacked Chart (Raw £ Costs + Pensions UK Benchmarks)
     let needsDataList = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
         
@@ -240,17 +241,34 @@ function initDataDashboard() {
             rawC: distC,
             rawH: distH,
             rawL: distL,
-            total: totalCost
+            total: totalCost,
+            isPUK: false // Flag to identify real districts vs benchmark bars
         };
     });
 
-    // Sort perfectly from lowest total cost to highest total cost
+    // Inject the 6 official Pensions UK Retirement Living Standards for Singles
+    const pukBenchmarks = [
+        { name: "PUK Minimum (UK)", total: 14400, rawC: 0, rawH: 0, rawL: 0, isPUK: true },
+        { name: "PUK Minimum (London)", total: 15700, rawC: 0, rawH: 0, rawL: 0, isPUK: true },
+        { name: "PUK Moderate (UK)", total: 31300, rawC: 0, rawH: 0, rawL: 0, isPUK: true },
+        { name: "PUK Moderate (London)", total: 34500, rawC: 0, rawH: 0, rawL: 0, isPUK: true },
+        { name: "PUK Comfortable (UK)", total: 43100, rawC: 0, rawH: 0, rawL: 0, isPUK: true },
+        { name: "PUK Comfortable (London)", total: 45000, rawC: 0, rawH: 0, rawL: 0, isPUK: true }
+    ];
+
+    needsDataList.push(...pukBenchmarks);
+
+    // Sort perfectly from lowest total cost to highest total cost. 
+    // This allows the PUK benchmarks to slide perfectly into their natural place along the S-Curve.
     needsDataList.sort((a, b) => a.total - b.total);
 
     const needsLabels = needsDataList.map(d => d.name);
     const corePoints = needsDataList.map(d => d.rawC);
     const homePoints = needsDataList.map(d => d.rawH);
     const lifePoints = needsDataList.map(d => d.rawL);
+    
+    // Create the separate dataset data strictly for the PUK bars
+    const pukPoints = needsDataList.map(d => d.isPUK ? d.total : 0);
 
     const ctxNeeds = document.getElementById('needsMacroChart').getContext('2d');
     charts.needsMacro = new Chart(ctxNeeds, {
@@ -284,10 +302,36 @@ function initDataDashboard() {
                     borderWidth: 0,
                     barPercentage: 0.9,
                     categoryPercentage: 1.0
+                },
+                {
+                    label: 'Pensions UK Standard (£)',
+                    data: pukPoints,
+                    backgroundColor: palette.gold, // The new distinct contrast color
+                    borderRadius: 4,
+                    borderWidth: 0,
+                    barPercentage: 0.9,
+                    categoryPercentage: 1.0,
+                    datalabels: {
+                        // Only display the label if it is actually a PUK benchmark bar (value > 0)
+                        display: function(context) { return context.dataset.data[context.dataIndex] > 0; },
+                        align: 'top',
+                        anchor: 'end',
+                        rotation: -90, // Rotate vertically to act as a milestone marker
+                        offset: 8,
+                        color: palette.espresso,
+                        font: { family: 'Space Grotesk', size: 10, weight: 'bold' },
+                        formatter: function(value, context) {
+                            return needsDataList[context.dataIndex].name;
+                        }
+                    }
                 }
             ]
         },
         options: {
+            layout: {
+                // Add generous top padding so the vertical PUK labels don't get cut off
+                padding: { top: 120 } 
+            },
             responsive: true,
             maintainAspectRatio: false,
             scales: {
@@ -296,7 +340,7 @@ function initDataDashboard() {
                     display: true, 
                     grid: { display: false },
                     ticks: { display: false },
-                    title: { display: true, text: 'All UK Postal Districts (Sorted by Total Cost £)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    title: { display: true, text: 'All UK Postal Districts & Official Benchmarks (Sorted by Total Cost £)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
                 y: { 
                     stacked: true,
@@ -312,7 +356,6 @@ function initDataDashboard() {
                     position: 'bottom', 
                     labels: { boxWidth: 12, font: { family: 'Space Grotesk'} }
                 },
-                datalabels: { display: false },
                 subtitle: {
                     display: true,
                     text: sourceText,
@@ -330,6 +373,9 @@ function initDataDashboard() {
                     callbacks: {
                         label: function(context) {
                             let val = context.raw;
+                            // Returning null completely hides this category from the tooltip if it equals 0
+                            // This ensures the "PLSA Standard" doesn't show up on normal postal district tooltips, and vice versa.
+                            if (val === 0) return null; 
                             return ` ${context.dataset.label}: £${Math.round(val).toLocaleString()}`;
                         }
                     }
@@ -521,7 +567,6 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
-    // Explicit User Override: Always advance to the next step when they click apply
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
