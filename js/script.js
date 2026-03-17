@@ -91,9 +91,7 @@ function initDataDashboard() {
     const natAvg = locationBenchmarks.metadata.national_average;
     const sourceText = "Source: " + (locationBenchmarks.metadata.source || "ONS Data");
     
-    // Fixed padding for the housing denominator to stabilize the percentage variances
-    const MEDIAN_HOUSING_COST = 12000; 
-    
+    // Core pillar costs (excludes shelter)
     function getCost(pillar, sVal) {
         let t = 0;
         for (const [k, cData] of Object.entries(rldConfig.benchmarks[pillar])) {
@@ -101,7 +99,7 @@ function initDataDashboard() {
             if(b.staples === undefined) continue;
             let v = 0;
             if (pillar === 'home' && k === 'shelter') {
-                v = 0;
+                v = 0; 
             } else {
                 if (sVal <= 50) v = b.staples + ((b.signature - b.staples) * (sVal / 50));
                 else v = b.signature + ((b.designer - b.signature) * ((sVal - 50) / 50));
@@ -111,8 +109,33 @@ function initDataDashboard() {
         return t;
     }
 
+    // Dynamic Blended Housing Cost based on ONS Tenure Splits
+    function getBlendedShelter(districtData, sVal) {
+        // Safe fallback if the analyst hasn't added the tenure splits to the JSON yet
+        if (!districtData.tenure_split) return 12000; 
+
+        const rRent = rldConfig.benchmarks.home.shelter.rent || {staples: 12000, signature: 22000, designer: 35000};
+        const rMort = rldConfig.benchmarks.home.shelter.mortgage || {staples: 12000, signature: 22000, designer: 35000};
+        
+        let rentCost = 0, mortCost = 0;
+        
+        if (sVal <= 50) {
+            rentCost = rRent.staples + ((rRent.signature - rRent.staples) * (sVal / 50));
+            mortCost = rMort.staples + ((rMort.signature - rMort.staples) * (sVal / 50));
+        } else {
+            rentCost = rRent.signature + ((rRent.designer - rRent.signature) * ((sVal - 50) / 50));
+            mortCost = rMort.signature + ((rMort.designer - rMort.signature) * ((sVal - 50) / 50));
+        }
+
+        // Multiply the exact cost by the statistical probability of that housing state in the district
+        let blendedCost = (0 * districtData.tenure_split.owner) + 
+                          (mortCost * districtData.tenure_split.mortgage) + 
+                          (rentCost * districtData.tenure_split.rent);
+                          
+        return blendedCost;
+    }
+
     // --- NEW METHODOLOGY: THE TRUE MEAN BASELINE ---
-    // Instead of evaluating at slider 50, calculate the true average costs across all mapped districts
     let sumC = 0, sumH = 0, sumL = 0;
     const districtKeys = Object.keys(locationBenchmarks.districts);
     const districtCount = districtKeys.length;
@@ -120,7 +143,7 @@ function initDataDashboard() {
     districtKeys.forEach(code => {
         const d = locationBenchmarks.districts[code];
         sumC += getCost('essentials', d.slider_positions.core);
-        sumH += (getCost('home', d.slider_positions.home) + MEDIAN_HOUSING_COST);
+        sumH += getCost('home', d.slider_positions.home) + getBlendedShelter(d, d.slider_positions.home);
         sumL += getCost('living', d.slider_positions.lifestyle);
     });
 
@@ -129,7 +152,6 @@ function initDataDashboard() {
     const baseL = sumL / districtCount;
     const totalBaseCost = baseC + baseH + baseL;
     
-    // True National Average Purchasing Power Ratio
     const baseRatio = natAvg / totalBaseCost;
 
     // 1. Process and Sort the Data Array for Income S-Curve
@@ -215,7 +237,7 @@ function initDataDashboard() {
         const d = locationBenchmarks.districts[code];
         
         const distC = getCost('essentials', d.slider_positions.core);
-        const distH = getCost('home', d.slider_positions.home) + MEDIAN_HOUSING_COST;
+        const distH = getCost('home', d.slider_positions.home) + getBlendedShelter(d, d.slider_positions.home);
         const distL = getCost('living', d.slider_positions.lifestyle);
 
         const cPct = ((distC - baseC) / totalBaseCost) * 100;
@@ -341,7 +363,7 @@ function initDataDashboard() {
         const d = locationBenchmarks.districts[code];
         const inc = d.avg_disposable_income;
         const distC = getCost('essentials', d.slider_positions.core);
-        const distH = getCost('home', d.slider_positions.home) + MEDIAN_HOUSING_COST;
+        const distH = getCost('home', d.slider_positions.home) + getBlendedShelter(d, d.slider_positions.home);
         const distL = getCost('living', d.slider_positions.lifestyle);
         const distTotalCost = distC + distH + distL;
 
@@ -518,7 +540,6 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
-    // Explicit User Override: Always advance to the next step when they click apply
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
@@ -591,9 +612,22 @@ function updatePostcodeReadout() {
             setValueSafe('slider-home', state.home);
             setValueSafe('slider-living', state.living);
 
+            // --- PEOPLE LIKE YOU: SMART TENURE TOGGLE ---
             let impliedTenure = 'owner';
-            if (state.age < 55) impliedTenure = 'mortgage';
-            else if (districtData.imd_decile <= 4) impliedTenure = 'rent';
+            if (districtData.tenure_split) {
+                // If the analyst added the data, find the statistical majority
+                let maxProb = -1;
+                for (let [tenureType, prob] of Object.entries(districtData.tenure_split)) {
+                    if (prob > maxProb) { 
+                        maxProb = prob; 
+                        impliedTenure = tenureType; 
+                    }
+                }
+            } else {
+                // Fallback if data is missing
+                if (state.age < 55) impliedTenure = 'mortgage';
+                else if (districtData.imd_decile <= 4) impliedTenure = 'rent';
+            }
 
             state.tenure = impliedTenure;
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
