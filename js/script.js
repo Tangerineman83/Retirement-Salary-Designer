@@ -20,7 +20,7 @@ let state = {
     manualMortgagePmt: false, 
     manualRentPmt: false,     
     tenure: 'owner',
-    tenureAssumed: false, // Tracks if the tenure was auto-set by postcode
+    tenureAssumed: false,
     mortgageEndAge: 75,
     essentials: 50, 
     home: 50, 
@@ -35,7 +35,7 @@ const palette = {
     dusk: '#6B7A8F', 
     orange: '#FF5A36',
     espresso: '#2B2625',
-    gold: '#E2B93B' // Distinct color for the Pensions UK benchmark bars
+    gold: '#E2B93B' 
 };
 
 // --- SAFE DOM HELPERS ---
@@ -72,7 +72,6 @@ function initApp() {
     calculateAll(); 
 }
 
-// --- VISUALISE DATA (DASHBOARD) LOGIC ---
 window.toggleDataView = function() {
     const mainLayout = document.getElementById('main-calc-layout');
     const dataDash = document.getElementById('data-dashboard');
@@ -151,25 +150,17 @@ function initDataDashboard() {
     
     const baseRatio = natAvg / totalBaseCost;
 
-    // 1. Process and Sort the Data Array for Income Chart (Raw £)
     let districtData = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
-        return {
-            code: code,
-            name: d.region,
-            income: d.avg_disposable_income,
-            tier: d.recommended_tier
-        };
+        return { code: code, name: d.region, income: d.avg_disposable_income, tier: d.recommended_tier };
     });
 
     districtData.sort((a, b) => a.income - b.income);
 
     const labels = districtData.map(d => d.name);
     const dataPoints = districtData.map(d => d.income);
-    // Orange if above national average, Sage if below
     const colors = dataPoints.map(inc => inc > natAvg ? palette.orange : palette.sage);
 
-    // 2. The Macro S-Curve Chart (Income in £)
     const ctxMacro = document.getElementById('macroChart').getContext('2d');
     charts.macro = new Chart(ctxMacro, {
         type: 'bar',
@@ -177,76 +168,33 @@ function initDataDashboard() {
             labels: labels,
             datasets: [{
                 label: 'Average Disposable Income (£)',
-                data: dataPoints,
-                backgroundColor: colors,
-                borderRadius: 4,
-                borderWidth: 0,
-                barPercentage: 0.9,
-                categoryPercentage: 1.0
+                data: dataPoints, backgroundColor: colors, borderRadius: 4, borderWidth: 0, barPercentage: 0.9, categoryPercentage: 1.0
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { 
-                    display: true, 
-                    grid: { display: false },
-                    ticks: { display: false }, 
-                    title: { display: true, text: 'All UK Postal Districts (Lowest to Highest Income)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
-                },
-                y: { 
-                    grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return '£' + value.toLocaleString(); }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: 'Average Income (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
-                }
+                x: { display: true, grid: { display: false }, ticks: { display: false }, title: { display: true, text: 'All UK Postal Districts (Lowest to Highest Income)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso } },
+                y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: function(value) { return '£' + value.toLocaleString(); }, font: { family: 'Space Grotesk' } }, title: { display: true, text: 'Average Income (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso } }
             },
             plugins: {
-                legend: { display: false },
-                datalabels: { display: false }, // Explicitly disable global datalabels here
-                subtitle: {
-                    display: true,
-                    text: sourceText,
-                    position: 'bottom',
-                    font: { family: 'Space Grotesk', size: 11, style: 'italic' },
-                    color: palette.dusk,
-                    padding: { top: 10, bottom: 0 }
-                },
-                tooltip: {
-                    backgroundColor: palette.espresso,
-                    titleFont: { family: 'Space Grotesk', size: 13 },
-                    bodyFont: { family: 'Space Grotesk', size: 12 },
-                    callbacks: {
-                        label: function(context) {
-                            let item = districtData[context.dataIndex];
-                            return ` £${item.income.toLocaleString()}`;
-                        }
-                    }
-                }
+                legend: { display: false }, datalabels: { display: false },
+                subtitle: { display: true, text: sourceText, position: 'bottom', font: { family: 'Space Grotesk', size: 11, style: 'italic' }, color: palette.dusk, padding: { top: 10, bottom: 0 } },
+                tooltip: { backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 }, callbacks: { label: function(context) { return ` £${districtData[context.dataIndex].income.toLocaleString()}`; } } }
             }
         }
     });
 
-    // 2.5. The Needs Adjustments Stacked Chart (Raw £ Costs + Pensions UK Benchmarks)
     let needsDataList = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
-        
         const distC = getCost('essentials', d.slider_positions.core);
         const distH = getCost('home', d.slider_positions.home) + getBlendedShelter(d, d.slider_positions.home);
         const distL = getCost('living', d.slider_positions.lifestyle);
         const totalCost = distC + distH + distL;
 
-        return {
-            name: d.region,
-            rawC: distC,
-            rawH: distH,
-            rawL: distL,
-            total: totalCost,
-            isPUK: false 
-        };
+        return { name: d.region, rawC: distC, rawH: distH, rawL: distL, total: totalCost, isPUK: false };
     });
 
-    // Inject the 6 official Pensions UK Retirement Living Standards for Singles
     const pukBenchmarks = [
         { name: "PUK Minimum (UK)", total: 14400, rawC: 0, rawH: 0, rawL: 0, isPUK: true },
         { name: "PUK Minimum (London)", total: 15700, rawC: 0, rawH: 0, rawL: 0, isPUK: true },
@@ -257,7 +205,6 @@ function initDataDashboard() {
     ];
 
     needsDataList.push(...pukBenchmarks);
-
     needsDataList.sort((a, b) => a.total - b.total);
 
     const needsLabels = needsDataList.map(d => d.name);
@@ -272,100 +219,32 @@ function initDataDashboard() {
         data: {
             labels: needsLabels,
             datasets: [
+                { label: 'Core Needs (£)', data: corePoints, backgroundColor: palette.sage, borderRadius: 4, borderWidth: 0, barPercentage: 0.9, categoryPercentage: 1.0, datalabels: { display: false } },
+                { label: 'Home Needs (£)', data: homePoints, backgroundColor: palette.dusk, borderRadius: 4, borderWidth: 0, barPercentage: 0.9, categoryPercentage: 1.0, datalabels: { display: false } },
+                { label: 'Lifestyle Needs (£)', data: lifePoints, backgroundColor: palette.orange, borderRadius: 4, borderWidth: 0, barPercentage: 0.9, categoryPercentage: 1.0, datalabels: { display: false } },
                 {
-                    label: 'Core Needs (£)',
-                    data: corePoints,
-                    backgroundColor: palette.sage,
-                    borderRadius: 4,
-                    borderWidth: 0,
-                    barPercentage: 0.9,
-                    categoryPercentage: 1.0,
-                    datalabels: { display: false } // Specifically turn off datalabels for Core
-                },
-                {
-                    label: 'Home Needs (£)',
-                    data: homePoints,
-                    backgroundColor: palette.dusk,
-                    borderRadius: 4,
-                    borderWidth: 0,
-                    barPercentage: 0.9,
-                    categoryPercentage: 1.0,
-                    datalabels: { display: false } // Specifically turn off datalabels for Home
-                },
-                {
-                    label: 'Lifestyle Needs (£)',
-                    data: lifePoints,
-                    backgroundColor: palette.orange,
-                    borderRadius: 4,
-                    borderWidth: 0,
-                    barPercentage: 0.9,
-                    categoryPercentage: 1.0,
-                    datalabels: { display: false } // Specifically turn off datalabels for Lifestyle
-                },
-                {
-                    label: 'Pensions UK Standard (£)',
-                    data: pukPoints,
-                    backgroundColor: palette.gold, 
-                    borderRadius: 4,
-                    borderWidth: 0,
-                    barPercentage: 0.9,
-                    categoryPercentage: 1.0,
+                    label: 'Pensions UK Standard (£)', data: pukPoints, backgroundColor: palette.gold, borderRadius: 4, borderWidth: 0, barPercentage: 0.9, categoryPercentage: 1.0,
                     datalabels: {
                         display: function(context) { return context.dataset.data[context.dataIndex] > 0; },
-                        align: 'top',
-                        anchor: 'end',
-                        rotation: -90, 
-                        offset: 8,
-                        color: palette.espresso,
-                        font: { family: 'Space Grotesk', size: 10, weight: 'bold' },
-                        formatter: function(value, context) {
-                            return needsDataList[context.dataIndex].name;
-                        }
+                        align: 'top', anchor: 'end', rotation: -90, offset: 8, color: palette.espresso, font: { family: 'Space Grotesk', size: 10, weight: 'bold' },
+                        formatter: function(value, context) { return needsDataList[context.dataIndex].name; }
                     }
                 }
             ]
         },
         options: {
             layout: { padding: { top: 120 } },
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { 
-                    stacked: true,
-                    display: true, 
-                    grid: { display: false },
-                    ticks: { display: false },
-                    title: { display: true, text: 'All UK Postal Districts & Official Benchmarks (Sorted by Total Cost £)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
-                },
-                y: { 
-                    stacked: true,
-                    beginAtZero: true,
-                    grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return '£' + value.toLocaleString(); }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: 'Regional Cost of Living (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
-                }
+                x: { stacked: true, display: true, grid: { display: false }, ticks: { display: false }, title: { display: true, text: 'All UK Postal Districts & Official Benchmarks (Sorted by Total Cost £)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso } },
+                y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: function(value) { return '£' + value.toLocaleString(); }, font: { family: 'Space Grotesk' } }, title: { display: true, text: 'Regional Cost of Living (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso } }
             },
             plugins: {
-                legend: { 
-                    display: true, 
-                    position: 'bottom', 
-                    labels: { boxWidth: 12, font: { family: 'Space Grotesk'} }
-                },
-                datalabels: { display: false }, // Catch-all safety switch
-                subtitle: {
-                    display: true,
-                    text: sourceText,
-                    position: 'bottom',
-                    font: { family: 'Space Grotesk', size: 11, style: 'italic' },
-                    color: palette.dusk,
-                    padding: { top: 10, bottom: 0 }
-                },
+                legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { family: 'Space Grotesk'} } },
+                datalabels: { display: false }, 
+                subtitle: { display: true, text: sourceText, position: 'bottom', font: { family: 'Space Grotesk', size: 11, style: 'italic' }, color: palette.dusk, padding: { top: 10, bottom: 0 } },
                 tooltip: {
-                    backgroundColor: palette.espresso,
-                    titleFont: { family: 'Space Grotesk', size: 13 },
-                    bodyFont: { family: 'Space Grotesk', size: 12 },
-                    mode: 'index',
-                    intersect: false,
+                    backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 }, mode: 'index', intersect: false,
                     callbacks: {
                         label: function(context) {
                             let val = context.raw;
@@ -378,7 +257,6 @@ function initDataDashboard() {
         }
     });
 
-    // 2.75. Real Purchasing Power Chart (Net Surplus / Deficit in £)
     let netDataList = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
         const inc = d.avg_disposable_income;
@@ -387,14 +265,7 @@ function initDataDashboard() {
         const distL = getCost('living', d.slider_positions.lifestyle);
         const distTotalCost = distC + distH + distL;
 
-        const net = inc - distTotalCost;
-
-        return {
-            name: d.region,
-            income: inc,
-            cost: distTotalCost,
-            net: net
-        };
+        return { name: d.region, income: inc, cost: distTotalCost, net: inc - distTotalCost };
     });
 
     netDataList.sort((a, b) => a.net - b.net);
@@ -406,49 +277,18 @@ function initDataDashboard() {
     const ctxRatio = document.getElementById('ratioMacroChart').getContext('2d');
     charts.ratioMacro = new Chart(ctxRatio, {
         type: 'bar',
-        data: {
-            labels: netLabels,
-            datasets: [{
-                label: 'Net Surplus / Deficit (£)',
-                data: netPoints,
-                backgroundColor: netColors,
-                borderRadius: 4,
-                borderWidth: 0,
-                barPercentage: 0.9,
-                categoryPercentage: 1.0
-            }]
-        },
+        data: { labels: netLabels, datasets: [{ label: 'Net Surplus / Deficit (£)', data: netPoints, backgroundColor: netColors, borderRadius: 4, borderWidth: 0, barPercentage: 0.9, categoryPercentage: 1.0 }] },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { 
-                    display: true, 
-                    grid: { display: false },
-                    ticks: { display: false }, 
-                    title: { display: true, text: 'All UK Postal Districts (Largest Deficit to Largest Surplus)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
-                },
-                y: { 
-                    grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return (value < 0 ? '-' : '+') + '£' + Math.abs(value).toLocaleString(); }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: 'Net Surplus or Deficit (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
-                }
+                x: { display: true, grid: { display: false }, ticks: { display: false }, title: { display: true, text: 'All UK Postal Districts (Largest Deficit to Largest Surplus)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso } },
+                y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: function(value) { return (value < 0 ? '-' : '+') + '£' + Math.abs(value).toLocaleString(); }, font: { family: 'Space Grotesk' } }, title: { display: true, text: 'Net Surplus or Deficit (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso } }
             },
             plugins: {
-                legend: { display: false },
-                datalabels: { display: false }, // Explicitly disable global datalabels here
-                subtitle: {
-                    display: true,
-                    text: sourceText,
-                    position: 'bottom',
-                    font: { family: 'Space Grotesk', size: 11, style: 'italic' },
-                    color: palette.dusk,
-                    padding: { top: 10, bottom: 0 }
-                },
+                legend: { display: false }, datalabels: { display: false },
+                subtitle: { display: true, text: sourceText, position: 'bottom', font: { family: 'Space Grotesk', size: 11, style: 'italic' }, color: palette.dusk, padding: { top: 10, bottom: 0 } },
                 tooltip: {
-                    backgroundColor: palette.espresso,
-                    titleFont: { family: 'Space Grotesk', size: 13 },
-                    bodyFont: { family: 'Space Grotesk', size: 12 },
+                    backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 },
                     callbacks: {
                         label: function(context) {
                             let item = netDataList[context.dataIndex];
@@ -461,7 +301,6 @@ function initDataDashboard() {
         }
     });
 
-    // 3. The Micro Extremes Chart (Horizontal Bar mapping Raw £ Income)
     const bottom10 = districtData.slice(0, 10);
     const top10 = districtData.slice(-10);
     const extremeData = [...bottom10, ...top10]; 
@@ -475,56 +314,17 @@ function initDataDashboard() {
     const ctxMicro = document.getElementById('microChart').getContext('2d');
     charts.micro = new Chart(ctxMicro, {
         type: 'bar',
-        data: {
-            labels: microLabels,
-            datasets: [{
-                label: 'Average Income (£)',
-                data: microPoints,
-                backgroundColor: microColors,
-                borderRadius: 4
-            }]
-        },
+        data: { labels: microLabels, datasets: [{ label: 'Average Income (£)', data: microPoints, backgroundColor: microColors, borderRadius: 4 }] },
         options: {
-            indexAxis: 'y', 
-            responsive: true,
-            maintainAspectRatio: false,
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { 
-                    grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return '£' + value.toLocaleString(); }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: 'Average Income (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
-                },
-                y: { 
-                    grid: { display: false }, 
-                    ticks: { 
-                        autoSkip: false, 
-                        font: { family: 'Space Grotesk', size: 11 } 
-                    },
-                    title: { display: true, text: 'Postal Districts (Extremes)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
-                }
+                x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { callback: function(value) { return '£' + value.toLocaleString(); }, font: { family: 'Space Grotesk' } }, title: { display: true, text: 'Average Income (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso } },
+                y: { grid: { display: false }, ticks: { autoSkip: false, font: { family: 'Space Grotesk', size: 11 } }, title: { display: true, text: 'Postal Districts (Extremes)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso } }
             },
             plugins: {
-                legend: { display: false },
-                datalabels: { display: false }, // Explicitly disable global datalabels here
-                subtitle: {
-                    display: true,
-                    text: sourceText,
-                    position: 'bottom',
-                    font: { family: 'Space Grotesk', size: 11, style: 'italic' },
-                    color: palette.dusk,
-                    padding: { top: 10, bottom: 0 }
-                },
-                tooltip: {
-                    backgroundColor: palette.espresso,
-                    titleFont: { family: 'Space Grotesk', size: 13 },
-                    bodyFont: { family: 'Space Grotesk', size: 12 },
-                    callbacks: {
-                        label: function(context) {
-                            let val = context.raw;
-                            return ` £${val.toLocaleString()}`;
-                        }
-                    }
-                }
+                legend: { display: false }, datalabels: { display: false },
+                subtitle: { display: true, text: sourceText, position: 'bottom', font: { family: 'Space Grotesk', size: 11, style: 'italic' }, color: palette.dusk, padding: { top: 10, bottom: 0 } },
+                tooltip: { backgroundColor: palette.espresso, titleFont: { family: 'Space Grotesk', size: 13 }, bodyFont: { family: 'Space Grotesk', size: 12 }, callbacks: { label: function(context) { return ` £${context.raw.toLocaleString()}`; } } }
             }
         }
     });
@@ -597,12 +397,93 @@ function triggerPulse(elementId) {
     }
 }
 
-function updatePostcodeReadout() {
-    const pcInput = document.getElementById('meas-postcode')?.value.trim();
-    const hint = document.getElementById('postcode-hint');
-    state.postcode = pcInput || '';
-    
-    const alphaMatch = state.postcode.match(/^[A-Z]+/i);
+// --- NEW: LSOA FETCH ENGINE ---
+async function fetchLSOAThenUpdate(postcode, hintEl) {
+    try {
+        const response = await fetch(`https://api.postcodes.io/postcodes/${postcode.replace(/\s+/g, '')}`);
+        if (!response.ok) throw new Error("Postcode API not found");
+        
+        const data = await response.json();
+        const lsoaName = data.result.lsoa; // e.g. "Westminster 013A"
+        const lsoaCode = data.result.codes.lsoa; // e.g. "E01004735"
+        const districtStr = data.result.postcode_district; 
+        
+        // Extract the alpha prefix (e.g. "SW" from "SW1A")
+        const areaMatch = districtStr.match(/^[A-Z]+/i);
+        if(!areaMatch) throw new Error("Could not parse district");
+        
+        const areaCode = areaMatch[0].toUpperCase();
+        const districtData = locationBenchmarks.districts[areaCode];
+        
+        if (!districtData) throw new Error("District not mapped in JSON DB");
+
+        // DETERMINISTIC HASH FUNCTION FOR MOCKING ONS INCOME
+        // We hash the LSOA string so the mock income stays consistent every time you type the same postcode
+        let hash = 0;
+        for (let i = 0; i < lsoaCode.length; i++) {
+            hash = lsoaCode.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        // Creates a variance multiplier between ~0.8x and ~1.3x of the district average
+        const pseudoRandomVariance = 0.8 + (Math.abs(hash) % 50) / 100;
+        const localIncome = Math.round(districtData.avg_disposable_income * pseudoRandomVariance);
+
+        // Update UI explicitly with LSOA data
+        hintEl.innerHTML = `<span style="color:var(--accent-sage);">📍 LSOA: ${lsoaName} | 💷 Est. Income: £${localIncome.toLocaleString()}</span> <br><em style="font-size:0.75rem;">(API fetch successful)</em>`;
+
+        document.getElementById('main-journey-flow')?.classList.add('revealed-flow');
+        document.getElementById('main-journey-flow')?.classList.remove('hidden-flow');
+
+        // Apply Local Modifier to Base Sliders
+        const modifier = localIncome / districtData.avg_disposable_income;
+
+        state.essentials = Math.min(100, Math.max(0, Math.round(districtData.slider_positions.core * modifier)));
+        state.home = Math.min(100, Math.max(0, Math.round(districtData.slider_positions.home * modifier)));
+        state.living = Math.min(100, Math.max(0, Math.round(districtData.slider_positions.lifestyle * modifier)));
+        
+        setValueSafe('slider-essentials', state.essentials);
+        setValueSafe('slider-home', state.home);
+        setValueSafe('slider-living', state.living);
+
+        // Map Tenure logic 
+        let impliedTenure = 'owner';
+        if (districtData.tenure_split) {
+            let maxProb = -1;
+            for (let [tenureType, prob] of Object.entries(districtData.tenure_split)) {
+                if (prob > maxProb) { 
+                    maxProb = prob; 
+                    impliedTenure = tenureType; 
+                }
+            }
+        } else {
+            if (state.age < 55) impliedTenure = 'mortgage';
+            else if (districtData.imd_decile <= 4) impliedTenure = 'rent';
+        }
+
+        state.tenure = impliedTenure;
+        state.tenureAssumed = true; 
+        
+        document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`)?.classList.add('active');
+
+        state.manualRentPmt = false;
+        state.manualMortgagePmt = false;
+        state.manualHomeValue = false;
+        // Base house price dynamically driven by LSOA hyper-local income
+        state.baseHousePrice = localIncome * 8.5; 
+        
+        handleTenureUI(true); 
+        calculateAll(); 
+
+    } catch (e) {
+        console.warn("LSOA Fetch failed, falling back to District Level:", e);
+        // If the API fails or postcode is weird, fallback smoothly
+        runDistrictFallback(postcode, hintEl, true);
+    }
+}
+
+// Extract standard fallback logic to keep code DRY
+function runDistrictFallback(postcode, hintEl, isFailsafe = false) {
+    const alphaMatch = postcode.match(/^[A-Z]+/i);
     
     if (alphaMatch && locationBenchmarks) {
         document.getElementById('main-journey-flow')?.classList.add('revealed-flow');
@@ -616,12 +497,10 @@ function updatePostcodeReadout() {
             const localAvg = districtData.avg_disposable_income;
             const pct = Math.round(((localAvg / natAvg) - 1) * 100);
             
-            let relText = "";
-            if (pct > 0) relText = `is <strong>${pct}% above</strong>`;
-            else if (pct < 0) relText = `is <strong>${Math.abs(pct)}% below</strong>`;
-            else relText = `<strong>matches</strong>`;
-
-            if(hint) hint.innerHTML = `Est. local income (${districtData.region}) ${relText} the national average.`;
+            let relText = pct > 0 ? `is <strong>${pct}% above</strong>` : pct < 0 ? `is <strong>${Math.abs(pct)}% below</strong>` : `<strong>matches</strong>`;
+            
+            let failsafeMsg = isFailsafe ? `<br><em style="font-size:0.75rem; color:var(--accent-orange);">⚠️ API lookup failed. Using District average.</em>` : "";
+            hintEl.innerHTML = `Est. district income (${districtData.region}) ${relText} the national average.${failsafeMsg}`;
             
             state.essentials = districtData.slider_positions.core;
             state.home = districtData.slider_positions.home;
@@ -634,10 +513,7 @@ function updatePostcodeReadout() {
             if (districtData.tenure_split) {
                 let maxProb = -1;
                 for (let [tenureType, prob] of Object.entries(districtData.tenure_split)) {
-                    if (prob > maxProb) { 
-                        maxProb = prob; 
-                        impliedTenure = tenureType; 
-                    }
+                    if (prob > maxProb) { maxProb = prob; impliedTenure = tenureType; }
                 }
             } else {
                 if (state.age < 55) impliedTenure = 'mortgage';
@@ -645,7 +521,7 @@ function updatePostcodeReadout() {
             }
 
             state.tenure = impliedTenure;
-            state.tenureAssumed = true; // Auto-set by postcode! Flag active.
+            state.tenureAssumed = true;
             
             document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`.toggle-btn[data-tenure="${impliedTenure}"]`)?.classList.add('active');
@@ -657,14 +533,30 @@ function updatePostcodeReadout() {
             
             handleTenureUI(true); 
             calculateAll(); 
-
         } else {
-            if(hint) hint.innerHTML = `Area not mapped. We will use the National Average.`;
+            hintEl.innerHTML = `Area not mapped. We will use the National Average.`;
             state.baseHousePrice = locationBenchmarks.metadata.national_average * 8.5;
             calculateAll();
         }
     } else {
-        if(hint) hint.innerHTML = '';
+        hintEl.innerHTML = '';
+    }
+}
+
+// The master Postcode Input Router
+function updatePostcodeReadout() {
+    const pcInput = document.getElementById('meas-postcode')?.value.trim();
+    const hint = document.getElementById('postcode-hint');
+    state.postcode = pcInput || '';
+    
+    // Strict Regex for a complete, valid UK Postcode (e.g., SW1A 1AA or G2 8LY)
+    const fullPostcodeRegex = /^([A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2})$/i;
+    
+    if (fullPostcodeRegex.test(state.postcode)) {
+        hint.innerHTML = `<em>Fetching hyper-local data...</em>`;
+        fetchLSOAThenUpdate(state.postcode, hint);
+    } else {
+        runDistrictFallback(state.postcode, hint, false);
     }
 }
 
