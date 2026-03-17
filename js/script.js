@@ -131,51 +131,32 @@ function initDataDashboard() {
         return blendedCost;
     }
 
-    let sumC = 0, sumH = 0, sumL = 0;
-    const districtKeys = Object.keys(locationBenchmarks.districts);
-    const districtCount = districtKeys.length;
-
-    districtKeys.forEach(code => {
-        const d = locationBenchmarks.districts[code];
-        sumC += getCost('essentials', d.slider_positions.core);
-        sumH += getCost('home', d.slider_positions.home) + getBlendedShelter(d, d.slider_positions.home);
-        sumL += getCost('living', d.slider_positions.lifestyle);
-    });
-
-    const baseC = sumC / districtCount;
-    const baseH = sumH / districtCount;
-    const baseL = sumL / districtCount;
-    const totalBaseCost = baseC + baseH + baseL;
-    
-    const baseRatio = natAvg / totalBaseCost;
-
-    // 1. Process and Sort the Data Array for Income S-Curve
+    // 1. Process and Sort the Data Array for Income Chart (Raw £)
     let districtData = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
-        const diff = ((d.avg_disposable_income - natAvg) / natAvg) * 100;
         return {
             code: code,
             name: d.region,
             income: d.avg_disposable_income,
-            diff: diff,
             tier: d.recommended_tier
         };
     });
 
-    districtData.sort((a, b) => a.diff - b.diff);
+    districtData.sort((a, b) => a.income - b.income);
 
     const labels = districtData.map(d => d.name);
-    const dataPoints = districtData.map(d => d.diff);
-    const colors = dataPoints.map(d => d > 0 ? palette.orange : palette.sage);
+    const dataPoints = districtData.map(d => d.income);
+    // Orange if above national average, Sage if below
+    const colors = dataPoints.map(inc => inc > natAvg ? palette.orange : palette.sage);
 
-    // 2. The Macro S-Curve Chart (Income)
+    // 2. The Macro S-Curve Chart (Income in £)
     const ctxMacro = document.getElementById('macroChart').getContext('2d');
     charts.macro = new Chart(ctxMacro, {
         type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: '% Variance from National Average',
+                label: 'Average Disposable Income (£)',
                 data: dataPoints,
                 backgroundColor: colors,
                 borderRadius: 4,
@@ -196,8 +177,8 @@ function initDataDashboard() {
                 },
                 y: { 
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: '% Variance from National Avg', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    ticks: { callback: function(value) { return '£' + value.toLocaleString(); }, font: { family: 'Space Grotesk' } },
+                    title: { display: true, text: 'Average Income (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 }
             },
             plugins: {
@@ -218,8 +199,7 @@ function initDataDashboard() {
                     callbacks: {
                         label: function(context) {
                             let item = districtData[context.dataIndex];
-                            let sign = item.diff > 0 ? '+' : '';
-                            return ` ${sign}${item.diff.toFixed(1)}% (£${item.income.toLocaleString()})`;
+                            return ` £${item.income.toLocaleString()}`;
                         }
                     }
                 }
@@ -227,29 +207,21 @@ function initDataDashboard() {
         }
     });
 
-    // 2.5. The Needs Adjustments Stacked Chart (Absolute % of National Mean)
+    // 2.5. The Needs Adjustments Stacked Chart (Raw £ Costs)
     let needsDataList = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
         
         const distC = getCost('essentials', d.slider_positions.core);
         const distH = getCost('home', d.slider_positions.home) + getBlendedShelter(d, d.slider_positions.home);
         const distL = getCost('living', d.slider_positions.lifestyle);
-
-        // Map to absolute percentage of the national mean (e.g. 110% or 95%) so everything stays positive and stacks perfectly
-        const cPct = (distC / totalBaseCost) * 100;
-        const hPct = (distH / totalBaseCost) * 100;
-        const lPct = (distL / totalBaseCost) * 100;
-        const totalPct = cPct + hPct + lPct;
+        const totalCost = distC + distH + distL;
 
         return {
             name: d.region,
-            core: cPct,
-            home: hPct,
-            lifestyle: lPct,
-            total: totalPct,
             rawC: distC,
             rawH: distH,
-            rawL: distL
+            rawL: distL,
+            total: totalCost
         };
     });
 
@@ -257,9 +229,9 @@ function initDataDashboard() {
     needsDataList.sort((a, b) => a.total - b.total);
 
     const needsLabels = needsDataList.map(d => d.name);
-    const corePoints = needsDataList.map(d => d.core);
-    const homePoints = needsDataList.map(d => d.home);
-    const lifePoints = needsDataList.map(d => d.lifestyle);
+    const corePoints = needsDataList.map(d => d.rawC);
+    const homePoints = needsDataList.map(d => d.rawH);
+    const lifePoints = needsDataList.map(d => d.rawL);
 
     const ctxNeeds = document.getElementById('needsMacroChart').getContext('2d');
     charts.needsMacro = new Chart(ctxNeeds, {
@@ -268,7 +240,7 @@ function initDataDashboard() {
             labels: needsLabels,
             datasets: [
                 {
-                    label: 'Core Needs',
+                    label: 'Core Needs (£)',
                     data: corePoints,
                     backgroundColor: palette.sage,
                     borderRadius: 4,
@@ -277,7 +249,7 @@ function initDataDashboard() {
                     categoryPercentage: 1.0
                 },
                 {
-                    label: 'Home Needs',
+                    label: 'Home Needs (£)',
                     data: homePoints,
                     backgroundColor: palette.dusk,
                     borderRadius: 4,
@@ -286,7 +258,7 @@ function initDataDashboard() {
                     categoryPercentage: 1.0
                 },
                 {
-                    label: 'Lifestyle Needs',
+                    label: 'Lifestyle Needs (£)',
                     data: lifePoints,
                     backgroundColor: palette.orange,
                     borderRadius: 4,
@@ -305,14 +277,14 @@ function initDataDashboard() {
                     display: true, 
                     grid: { display: false },
                     ticks: { display: false },
-                    title: { display: true, text: 'All UK Postal Districts (Sorted by Total Cost %)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    title: { display: true, text: 'All UK Postal Districts (Sorted by Total Cost £)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
                 y: { 
                     stacked: true,
                     beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: 'Cost as % of National Mean', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    ticks: { callback: function(value) { return '£' + value.toLocaleString(); }, font: { family: 'Space Grotesk' } },
+                    title: { display: true, text: 'Regional Cost of Living (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 }
             },
             plugins: {
@@ -339,13 +311,7 @@ function initDataDashboard() {
                     callbacks: {
                         label: function(context) {
                             let val = context.raw;
-                            let item = needsDataList[context.dataIndex];
-                            let rawCost = 0;
-                            if(context.dataset.label.includes('Core')) rawCost = item.rawC;
-                            else if(context.dataset.label.includes('Home')) rawCost = item.rawH;
-                            else if(context.dataset.label.includes('Life')) rawCost = item.rawL;
-                            
-                            return ` ${context.dataset.label}: ${val.toFixed(1)}% of Nat. Mean (£${Math.round(rawCost).toLocaleString()})`;
+                            return ` ${context.dataset.label}: £${Math.round(val).toLocaleString()}`;
                         }
                     }
                 }
@@ -353,8 +319,8 @@ function initDataDashboard() {
         }
     });
 
-    // 2.75. Real Purchasing Power Chart (Income / Cost Ratio)
-    let ratioDataList = Object.keys(locationBenchmarks.districts).map(code => {
+    // 2.75. Real Purchasing Power Chart (Net Surplus / Deficit in £)
+    let netDataList = Object.keys(locationBenchmarks.districts).map(code => {
         const d = locationBenchmarks.districts[code];
         const inc = d.avg_disposable_income;
         const distC = getCost('essentials', d.slider_positions.core);
@@ -362,32 +328,32 @@ function initDataDashboard() {
         const distL = getCost('living', d.slider_positions.lifestyle);
         const distTotalCost = distC + distH + distL;
 
-        const distRatio = inc / distTotalCost;
-        const ratioDiff = ((distRatio - baseRatio) / baseRatio) * 100;
+        const net = inc - distTotalCost;
 
         return {
             name: d.region,
             income: inc,
             cost: distTotalCost,
-            diff: ratioDiff
+            net: net
         };
     });
 
-    ratioDataList.sort((a, b) => a.diff - b.diff);
+    netDataList.sort((a, b) => a.net - b.net);
 
-    const ratioLabels = ratioDataList.map(d => d.name);
-    const ratioPoints = ratioDataList.map(d => d.diff);
-    const ratioColors = ratioPoints.map(d => d > 0 ? palette.orange : palette.sage);
+    const netLabels = netDataList.map(d => d.name);
+    const netPoints = netDataList.map(d => d.net);
+    // Surplus is good (Sage), Deficit is bad (Orange)
+    const netColors = netPoints.map(n => n >= 0 ? palette.sage : palette.orange);
 
     const ctxRatio = document.getElementById('ratioMacroChart').getContext('2d');
     charts.ratioMacro = new Chart(ctxRatio, {
         type: 'bar',
         data: {
-            labels: ratioLabels,
+            labels: netLabels,
             datasets: [{
-                label: '% Variance in Real Purchasing Power',
-                data: ratioPoints,
-                backgroundColor: ratioColors,
+                label: 'Net Surplus / Deficit (£)',
+                data: netPoints,
+                backgroundColor: netColors,
                 borderRadius: 4,
                 borderWidth: 0,
                 barPercentage: 0.9,
@@ -402,12 +368,12 @@ function initDataDashboard() {
                     display: true, 
                     grid: { display: false },
                     ticks: { display: false }, 
-                    title: { display: true, text: 'All UK Postal Districts (Lowest to Highest Purchasing Power)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    title: { display: true, text: 'All UK Postal Districts (Largest Deficit to Largest Surplus)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
                 y: { 
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: '% Variance from National Mean', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    ticks: { callback: function(value) { return (value < 0 ? '-' : '+') + '£' + Math.abs(value).toLocaleString(); }, font: { family: 'Space Grotesk' } },
+                    title: { display: true, text: 'Net Surplus or Deficit (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 }
             },
             plugins: {
@@ -427,9 +393,9 @@ function initDataDashboard() {
                     bodyFont: { family: 'Space Grotesk', size: 12 },
                     callbacks: {
                         label: function(context) {
-                            let item = ratioDataList[context.dataIndex];
-                            let sign = item.diff > 0 ? '+' : '';
-                            return ` ${sign}${item.diff.toFixed(1)}% (Inc: £${item.income.toLocaleString()} | Cost: £${Math.round(item.cost).toLocaleString()})`;
+                            let item = netDataList[context.dataIndex];
+                            let sign = item.net >= 0 ? '+' : '-';
+                            return ` ${sign}£${Math.abs(Math.round(item.net)).toLocaleString()} (Inc: £${item.income.toLocaleString()} | Cost: £${Math.round(item.cost).toLocaleString()})`;
                         }
                     }
                 }
@@ -437,16 +403,18 @@ function initDataDashboard() {
         }
     });
 
-    // 3. The Micro Extremes Chart (Horizontal Bar)
+    // 3. The Micro Extremes Chart (Horizontal Bar mapping Raw £ Income)
     const bottom10 = districtData.slice(0, 10);
     const top10 = districtData.slice(-10);
     const extremeData = [...bottom10, ...top10]; 
     
-    extremeData.sort((a, b) => b.diff - a.diff);
+    // Sort descending by Income
+    extremeData.sort((a, b) => b.income - a.income);
 
     const microLabels = extremeData.map(d => d.name);
-    const microPoints = extremeData.map(d => d.diff);
-    const microColors = microPoints.map(d => d > 0 ? palette.orange : palette.sage);
+    const microPoints = extremeData.map(d => d.income);
+    // Orange for above average, Sage for below
+    const microColors = microPoints.map(inc => inc > natAvg ? palette.orange : palette.sage);
 
     const ctxMicro = document.getElementById('microChart').getContext('2d');
     charts.micro = new Chart(ctxMicro, {
@@ -454,7 +422,7 @@ function initDataDashboard() {
         data: {
             labels: microLabels,
             datasets: [{
-                label: '% Variance',
+                label: 'Average Income (£)',
                 data: microPoints,
                 backgroundColor: microColors,
                 borderRadius: 4
@@ -467,8 +435,8 @@ function initDataDashboard() {
             scales: {
                 x: { 
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: function(value) { return value + '%'; }, font: { family: 'Space Grotesk' } },
-                    title: { display: true, text: '% Variance from National Avg', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
+                    ticks: { callback: function(value) { return '£' + value.toLocaleString(); }, font: { family: 'Space Grotesk' } },
+                    title: { display: true, text: 'Average Income (£)', font: { family: 'Space Grotesk', size: 12, weight: 'bold' }, color: palette.espresso }
                 },
                 y: { 
                     grid: { display: false }, 
@@ -497,8 +465,7 @@ function initDataDashboard() {
                     callbacks: {
                         label: function(context) {
                             let val = context.raw;
-                            let sign = val > 0 ? '+' : '';
-                            return ` ${sign}${val.toFixed(1)}%`;
+                            return ` £${val.toLocaleString()}`;
                         }
                     }
                 }
@@ -535,6 +502,7 @@ window.applyWallet = function() {
     const currentOpen = state.walletOpenPillar;
     state.walletOpenPillar = null; 
     
+    // Explicit User Override: Always advance to the next step when they click apply
     if (currentOpen === 1 && state.unlockedStep === 1) window.advanceStep(2);
     else if (currentOpen === 2 && state.unlockedStep === 2) window.advanceStep(3);
     else calculateAll(); 
