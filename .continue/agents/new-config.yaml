@@ -1,0 +1,5 @@
+models:
+  - title: "Gemini 1.5 Pro"
+    provider: "gemini"
+    model: "gemini-1.5-pro-latest"
+    apiKey: "ADD API KEY HERE"
