@@ -77,7 +77,7 @@
                 <div class="input-grid">
                     <label>Current Age: <input type="number" id="meas-age" class="seamless-input" value="60" min="40" max="95"></label>
                     <label>Postcode Area: 
-                        <input type="text" id="meas-postcode" class="seamless-input" placeholder="e.g. EH2" maxlength="8">
+                        <input type="text" id="meas-postcode" class="seamless-input" placeholder="e.g. G2 8LY" maxlength="8">
                         <span id="postcode-hint" class="input-hint"></span>
                     </label>
                 </div>
@@ -400,17 +400,17 @@
         <p class="wallet-desc" id="wallet-dynamic-desc"></p>
         
         <div class="asset-cards-container">
-            <div id="db-card" class="asset-card">
-                <h5>1. Defined Benefit Pension</h5>
-                <p>Do you have a guaranteed annual pension from a previous employer?</p>
-                <label>Annual Amount (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
-                <button class="text-btn" id="btn-reveal-pots" onclick="window.revealAsset('pots')" style="margin-top:15px; font-size:0.8rem;">+ Add Pension Pots</button>
-            </div>
-            
-            <div id="pots-card" class="asset-card hidden">
-                <h5>2. Pension Pots</h5>
+            <div id="pots-card" class="asset-card">
+                <h5>1. Pension Pots</h5>
                 <p>Total value of accumulated defined contribution pension pots.</p>
                 <label>Total Value (£): <input type="number" id="meas-pots" class="seamless-input" placeholder="£0"></label>
+                <button class="text-btn" id="btn-reveal-db" onclick="window.revealAsset('db')" style="margin-top:15px; font-size:0.8rem;">+ Add Defined Benefit Pension</button>
+            </div>
+            
+            <div id="db-card" class="asset-card hidden">
+                <h5>2. Defined Benefit Pension</h5>
+                <p>Do you have a guaranteed annual pension from a previous employer?</p>
+                <label>Annual Amount (£/yr): <input type="number" id="meas-db" class="seamless-input" placeholder="£0"></label>
                 <button class="text-btn" id="btn-reveal-savings" onclick="window.revealAsset('savings')" style="margin-top:15px; font-size:0.8rem;">+ Add Other Savings</button>
             </div>
 
@@ -421,7 +421,7 @@
             </div>
         </div>
         
-        <span id="withdrawal-hint" class="input-hint hidden" style="margin-top:15px; text-align:center;">We map your pots and savings into an estimated annual income using a sustainable 5% withdrawal rate.</span>
+        <span id="withdrawal-hint" class="input-hint" style="margin-top:15px; text-align:center;">We map your pots and savings into an estimated annual income using a sustainable 5% withdrawal rate.</span>
 
         <div id="wallet-partner-annuity" class="partner-card-tip hidden" style="margin-top: 20px;">
             <div class="pct-content">
