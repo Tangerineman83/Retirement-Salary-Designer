@@ -11,7 +11,7 @@ let state = {
     dbPension: 0,
     pensionPot: 0,
     otherSavings: 0,
-    revealedAssets: ['db'], 
+    revealedAssets: ['pots'], 
     walletOpenPillar: null, 
     homeValue: 0,
     mortgagePmt: 0,
@@ -1413,14 +1413,12 @@ function updateChartsAndJourney() {
             setHTMLSafe('wallet-dynamic-desc', `Your guaranteed annual income falls short here. Input your assets below to see how they can bridge this annual gap.`);
         }
         
-        if (state.revealedAssets.includes('pots')) {
-            document.getElementById('pots-card')?.classList.remove('hidden');
-            document.getElementById('btn-reveal-pots')?.classList.add('hidden');
-            document.getElementById('withdrawal-hint')?.classList.remove('hidden');
+        if (state.revealedAssets.includes('db')) {
+            document.getElementById('db-card')?.classList.remove('hidden');
+            document.getElementById('btn-reveal-db')?.classList.add('hidden');
         } else {
-            document.getElementById('pots-card')?.classList.add('hidden');
-            document.getElementById('btn-reveal-pots')?.classList.remove('hidden');
-            document.getElementById('withdrawal-hint')?.classList.add('hidden');
+            document.getElementById('db-card')?.classList.add('hidden');
+            document.getElementById('btn-reveal-db')?.classList.remove('hidden');
         }
 
         if (state.revealedAssets.includes('savings')) {
